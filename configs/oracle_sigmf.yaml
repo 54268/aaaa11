@@ -1,0 +1,77 @@
+project:
+  name: oracle_kri16_demod_open_set
+  output_dir: ./outputs/oracle_kri16_demod
+
+prep:
+  kind: oracle_sigmf
+  raw_root: ./data/raw/oracle/KRI-16IQImbalances-DemodulatedData
+  processed_root: ./data/processed/oracle_kri16_demod
+  num_known_classes: 10
+  segment_length: 256
+  stride: 128
+  max_segments_per_label: 4000
+  train_ratio: 0.7
+  val_ratio: 0.1
+  label_regex: 'IQ#(\d+)'
+
+data:
+  mode: separate_npz
+  root: ./data/processed/oracle_kri16_demod
+  batch_size: 128
+  num_workers: 0
+  signal_length: 256
+
+model:
+  backbone: cvcnn_iq
+  embedding_dim: 128
+  hidden_dim: 32
+  dropout: 0.2
+  temperature: 1.0
+
+train:
+  seed: 42
+  device: auto
+  epochs: 15
+  lr: 0.001
+  weight_decay: 0.0001
+  prototype_momentum: 0.9
+
+loss:
+  lambda_basic: 1.0
+  lambda_angle: 0.2
+  lambda_prototype: 0.15
+  angle_margin: 0.2
+  lambda_proto_episode: 0.0
+  proto_support: 2
+
+boundary:
+  k: 5
+  alpha: 0.5
+  top_m: 50
+  ordinary_edge_ratio: 0.15
+
+pseudo_unknown:
+  ordinary_eta: 1.0
+  critical_eta: 1.0
+  critical_beta: 0.7
+  ordinary_variations: 1
+  critical_variations: 2
+  jitter: 0.1
+
+openmax:
+  backend: repo_openmax
+  alpha_rank: 3
+  tail_size: 25
+  distance_type: eucl
+  euclid_weight: 1.0
+
+fusion:
+  lambda_grid: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+  threshold_grid: [0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+  selection_weights:
+    oscr: 0.45
+    known_accuracy: 0.35
+    unknown_recall: 0.2
+
+eval:
+  save_predictions: true
