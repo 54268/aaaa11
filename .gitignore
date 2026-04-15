@@ -3,9 +3,7 @@ __pycache__/
 .idea/
 .vscode/
 
-data/raw/
-data/processed/
-data/logs/
+data/
 
 outputs/
 figures/
