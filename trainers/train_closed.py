@@ -17,7 +17,7 @@ from sei_osr.utils.seed import set_seed
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, default=str(ROOT / "configs" / "base.yaml"))
+    parser.add_argument("--config", type=str, default=str(ROOT / "configs" / "oracle_osr_main.yaml"))
     return parser.parse_args()
 
 

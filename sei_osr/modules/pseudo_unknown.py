@@ -23,6 +23,7 @@ def generate_hybrid_pseudo_unknown(
     ordinary_variations: int,
     critical_variations: int,
     jitter: float,
+    enable_conflict_protection: bool = True,
     seed: int = 42,
 ) -> Dict[str, np.ndarray]:
     rng = np.random.default_rng(seed)
@@ -32,10 +33,19 @@ def generate_hybrid_pseudo_unknown(
     source_classes = []
     pseudo_kind = []
 
-    def _append(index: int, kind: str, direction: np.ndarray, base_eta: float, variations: int) -> None:
+    def _append(
+        index: int,
+        kind: str,
+        direction: np.ndarray,
+        base_eta: float,
+        variations: int,
+        eta_multiplier: float = 1.0,
+        variation_bonus: int = 0,
+    ) -> None:
         scale = float(boundary_result["local_scale"][index])
-        delta = base_eta * scale
-        for _ in range(variations):
+        delta = base_eta * eta_multiplier * scale
+        total_variations = max(1, int(variations + variation_bonus))
+        for _ in range(total_variations):
             jitter_scale = 1.0 + rng.uniform(-jitter, jitter)
             pseudo_embeddings.append(embeddings[index] + delta * jitter_scale * direction)
             pseudo_labels.append(-1)
@@ -49,18 +59,40 @@ def generate_hybrid_pseudo_unknown(
     for index in ordinary_indices:
         cls = int(labels[index])
         direction = _normalize(embeddings[index] - prototypes[cls])
-        _append(index, "ordinary_edge", direction, ordinary_eta, ordinary_variations)
+        score = float(boundary_result["scores"][index])
+        eta_multiplier = 0.9 + 0.35 * score
+        variation_bonus = 1 if score >= 0.85 else 0
+        _append(
+            index,
+            "ordinary_edge",
+            direction,
+            ordinary_eta,
+            ordinary_variations,
+            eta_multiplier=eta_multiplier,
+            variation_bonus=variation_bonus,
+        )
 
     for index in critical_indices:
         cls = int(labels[index])
         foreign_cls = int(boundary_result["nearest_foreign"][index])
         normal_dir = _normalize(embeddings[index] - prototypes[cls])
         repel_dir = _normalize(embeddings[index] - prototypes[foreign_cls])
-        if float(np.dot(normal_dir, repel_dir)) < 0.0:
+        if enable_conflict_protection and float(np.dot(normal_dir, repel_dir)) < 0.0:
             repel_dir = repel_dir - float(np.dot(normal_dir, repel_dir)) * normal_dir
             repel_dir = _normalize(repel_dir)
         direction = _normalize(critical_beta * normal_dir + (1.0 - critical_beta) * repel_dir)
-        _append(index, "critical_boundary", direction, critical_eta, critical_variations)
+        score = float(boundary_result["scores"][index])
+        eta_multiplier = 1.0 + 0.6 * score
+        variation_bonus = int(score >= 0.75) + int(score >= 0.9)
+        _append(
+            index,
+            "critical_boundary",
+            direction,
+            critical_eta,
+            critical_variations,
+            eta_multiplier=eta_multiplier,
+            variation_bonus=variation_bonus,
+        )
 
     pseudo_embeddings = np.asarray(pseudo_embeddings, dtype=np.float32)
     pseudo_labels = np.asarray(pseudo_labels, dtype=np.int64)

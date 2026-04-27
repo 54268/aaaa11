@@ -17,7 +17,7 @@ from sei_osr.utils.io import ensure_dir, save_json, save_npz
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, default=str(ROOT / "configs" / "base.yaml"))
+    parser.add_argument("--config", type=str, default=str(ROOT / "configs" / "oracle_osr_main.yaml"))
     return parser.parse_args()
 
 
@@ -28,6 +28,7 @@ def main() -> None:
     boundary_file = np.load(output_dir / "boundary_mining.npz", allow_pickle=True)
 
     boundary = {
+        "scores": boundary_file["scores"],
         "local_scale": boundary_file["local_scale"],
         "nearest_foreign": boundary_file["nearest_foreign"],
         "critical_mask": boundary_file["critical_mask"].astype(bool),
@@ -44,6 +45,7 @@ def main() -> None:
         ordinary_variations=int(config["pseudo_unknown"]["ordinary_variations"]),
         critical_variations=int(config["pseudo_unknown"]["critical_variations"]),
         jitter=float(config["pseudo_unknown"]["jitter"]),
+        enable_conflict_protection=bool(config["pseudo_unknown"].get("enable_conflict_protection", True)),
         seed=int(config["train"]["seed"]),
     )
     save_npz(output_dir / "pseudo_unknown.npz", **pseudo)

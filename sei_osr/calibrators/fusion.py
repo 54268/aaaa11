@@ -29,8 +29,23 @@ class FusionResult:
     metrics: Dict[str, float]
 
 
-def fuse_unknown_score(q_om: np.ndarray, q_pd: np.ndarray, fusion_lambda: float) -> np.ndarray:
-    return fusion_lambda * q_om + (1.0 - fusion_lambda) * q_pd
+def fuse_unknown_score(
+    q_om: np.ndarray,
+    q_pd: np.ndarray,
+    fusion_lambda: float,
+    mode: str = "linear",
+) -> np.ndarray:
+    if mode == "linear":
+        return fusion_lambda * q_om + (1.0 - fusion_lambda) * q_pd
+    if mode == "geometric_mean":
+        return np.sqrt(np.clip(q_om * q_pd, 1e-8, 1.0))
+    if mode == "harmonic_mean":
+        return 2.0 * q_om * q_pd / (q_om + q_pd + 1e-8)
+    if mode == "geometric_blend":
+        arithmetic = 0.5 * (q_om + q_pd)
+        geometric = np.sqrt(np.clip(q_om * q_pd, 1e-8, 1.0))
+        return fusion_lambda * arithmetic + (1.0 - fusion_lambda) * geometric
+    raise ValueError(f"Unsupported fusion mode: {mode}")
 
 
 def apply_unknown_rejection(
@@ -73,12 +88,16 @@ def search_fusion_params(
     min_known_accuracy: float | None = None,
     threshold_mode: str = "global",
     classwise_quantile_grid: Iterable[float] | None = None,
+    classwise_known_weight: float = 0.55,
+    classwise_unknown_weight: float = 0.45,
+    classwise_min_known_accept: float | None = None,
+    fusion_mode: str = "linear",
 ) -> FusionResult:
     best_result = None
     best_relaxed = None
     known_mask = y_true != unknown_label
     for fusion_lambda in lambda_grid:
-        q_u = fuse_unknown_score(q_om, q_pd, fusion_lambda)
+        q_u = fuse_unknown_score(q_om, q_pd, fusion_lambda, mode=fusion_mode)
         if threshold_mode == "classwise_quantile":
             quantiles = sorted({float(q) for q in (classwise_quantile_grid or [0.95])})
             if known_quantile_floor is not None:
@@ -108,6 +127,67 @@ def search_fusion_params(
                         thresholds_per_class=thresholds,
                         threshold_mode="classwise_quantile",
                         threshold_quantile=float(quantile),
+                        metrics=metrics,
+                    ),
+                )
+                if best_relaxed is None or score > best_relaxed[0]:
+                    best_relaxed = candidate
+                if min_known_accuracy is not None and float(metrics.get("known_accuracy", 0.0)) < min_known_accuracy:
+                    continue
+                if best_result is None or score > best_result[0]:
+                    best_result = candidate
+        elif threshold_mode == "classwise_balanced":
+            for fusion_lambda in [fusion_lambda]:
+                q_u = fuse_unknown_score(q_om, q_pd, fusion_lambda, mode=fusion_mode)
+                thresholds = []
+                for cls in range(unknown_label):
+                    cls_known = q_u[known_mask & (known_pred == cls)]
+                    cls_unknown = q_u[(~known_mask) & (known_pred == cls)]
+
+                    if len(cls_known) == 0:
+                        fallback = float(np.quantile(q_u[known_mask], known_quantile_floor or 0.95))
+                        thresholds.append(fallback)
+                        continue
+
+                    candidates = set(float(t) for t in threshold_grid)
+                    for quantile in np.linspace(0.80, 0.995, 24):
+                        candidates.add(float(np.quantile(cls_known, quantile)))
+                    if len(cls_unknown) > 0:
+                        for quantile in np.linspace(0.05, 0.95, 19):
+                            candidates.add(float(np.quantile(cls_unknown, quantile)))
+                    candidates = sorted(candidates)
+
+                    best_cls = None
+                    relaxed_cls = None
+                    for threshold in candidates:
+                        keep_known = float((cls_known <= threshold).mean())
+                        reject_unknown = float((cls_unknown > threshold).mean()) if len(cls_unknown) > 0 else 0.0
+                        cls_score = classwise_known_weight * keep_known + classwise_unknown_weight * reject_unknown
+                        candidate_cls = (cls_score, float(threshold))
+                        if relaxed_cls is None or cls_score > relaxed_cls[0]:
+                            relaxed_cls = candidate_cls
+                        if classwise_min_known_accept is not None and keep_known < classwise_min_known_accept:
+                            continue
+                        if best_cls is None or cls_score > best_cls[0]:
+                            best_cls = candidate_cls
+                    thresholds.append((best_cls or relaxed_cls)[1])
+
+                y_pred = apply_unknown_rejection(
+                    known_pred=known_pred,
+                    q_u=q_u,
+                    unknown_label=unknown_label,
+                    thresholds_per_class=thresholds,
+                )
+                metrics = evaluate_open_set(y_true, y_pred, q_u, unknown_label)
+                score = fusion_selection_score(metrics, selection_weights)
+                candidate = (
+                    score,
+                    FusionResult(
+                        fusion_lambda=float(fusion_lambda),
+                        threshold=None,
+                        thresholds_per_class=thresholds,
+                        threshold_mode="classwise_balanced",
+                        threshold_quantile=None,
                         metrics=metrics,
                     ),
                 )

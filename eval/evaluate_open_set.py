@@ -23,7 +23,7 @@ from sei_osr.utils.visualization import generate_open_set_figures
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, default=str(ROOT / "configs" / "base.yaml"))
+    parser.add_argument("--config", type=str, default=str(ROOT / "configs" / "oracle_osr_main.yaml"))
     parser.add_argument("--ckpt", type=str, default="")
     return parser.parse_args()
 
@@ -62,7 +62,12 @@ def main() -> None:
     openmax_out = openmax.predict(activations_from_distances(distances))
     q_om = openmax_out["unknown_prob"]
     q_pd = prototype_distance_unknown_score(distances, pred_proto, stats_file["mu"], stats_file["sigma"])
-    q_u = fuse_unknown_score(q_om, q_pd, float(fusion_cfg["fusion_lambda"]))
+    q_u = fuse_unknown_score(
+        q_om,
+        q_pd,
+        float(fusion_cfg["fusion_lambda"]),
+        mode=str(fusion_cfg.get("fusion_mode", config["fusion"].get("mode", "linear"))),
+    )
     y_pred = apply_unknown_rejection(
         known_pred=pred_proto,
         q_u=q_u,
@@ -119,24 +124,25 @@ def main() -> None:
         dataset_name=str(dataset_name),
         extra_notes=notes,
     )
-    write_final_report(
-        path=dataset_summary_path(ROOT, str(dataset_name), str(output_dir)),
-        metrics=metrics,
-        config_path=str(config["_config_path"]),
-        output_dir=str(output_dir),
-        dataset_name=str(dataset_name),
-        extra_notes=notes,
-    )
-    write_summary_index(
-        path=ROOT / "RESULT_SUMMARY.md",
-        entries=[
-            {"label": "WiSig 数据集汇总", "path": "RESULT_SUMMARY_WISIG.md"},
-            {"label": "Oracle 数据集汇总", "path": "RESULT_SUMMARY_ORACLE.md"},
-        ],
-        latest_dataset=str(dataset_name),
-        latest_output_dir=str(output_dir),
-        latest_config_path=str(config["_config_path"]),
-    )
+    if bool(config.get("reporting", {}).get("write_root_summaries", True)):
+        write_final_report(
+            path=dataset_summary_path(ROOT, str(dataset_name), str(output_dir)),
+            metrics=metrics,
+            config_path=str(config["_config_path"]),
+            output_dir=str(output_dir),
+            dataset_name=str(dataset_name),
+            extra_notes=notes,
+        )
+        write_summary_index(
+            path=ROOT / "RESULT_SUMMARY.md",
+            entries=[
+                {"label": "WiSig 数据集汇总", "path": "RESULT_SUMMARY_WISIG.md"},
+                {"label": "Oracle 数据集汇总", "path": "RESULT_SUMMARY_ORACLE.md"},
+            ],
+            latest_dataset=str(dataset_name),
+            latest_output_dir=str(output_dir),
+            latest_config_path=str(config["_config_path"]),
+        )
 
 
 if __name__ == "__main__":

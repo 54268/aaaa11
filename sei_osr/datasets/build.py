@@ -4,7 +4,6 @@ from torch.utils.data import DataLoader
 
 from .base import DataBundle
 from .npz_dataset import load_separate_npz_dataset
-from .synthetic import build_synthetic_dataset
 
 
 class OpenSetDataModule:
@@ -49,9 +48,7 @@ class OpenSetDataModule:
 
 def build_data_module(config: dict) -> OpenSetDataModule:
     mode = config["data"]["mode"]
-    if mode == "synthetic":
-        splits = build_synthetic_dataset(config)
-    elif mode == "separate_npz":
+    if mode == "separate_npz":
         splits = load_separate_npz_dataset(
             config["data"]["root"],
             normalize=str(config["data"].get("normalize", "none")),

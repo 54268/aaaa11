@@ -18,7 +18,7 @@ from sei_osr.utils.io import ensure_dir, save_json, save_npz, save_pickle
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, default=str(ROOT / "configs" / "base.yaml"))
+    parser.add_argument("--config", type=str, default=str(ROOT / "configs" / "oracle_osr_main.yaml"))
     parser.add_argument("--ckpt", type=str, default="")
     return parser.parse_args()
 

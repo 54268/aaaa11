@@ -75,6 +75,43 @@ def _plot_openness_curve(path: Path, rows: list[dict]) -> None:
     plt.close(fig)
 
 
+def _plot_accuracy_f1_curve(path: Path, rows: list[dict]) -> None:
+    if not rows:
+        return
+    rows = sorted(rows, key=lambda row: row["openness"])
+    openness = [row["openness"] for row in rows]
+
+    fig, ax = plt.subplots(figsize=(7.2, 4.8))
+    ax.plot(openness, [row["overall_accuracy"] for row in rows], marker="o", linewidth=2.2, color="#1f4e79", label="Overall Accuracy")
+    ax.plot(openness, [row["macro_f1"] for row in rows], marker="s", linewidth=2.2, color="#e67e22", label="Macro-F1")
+    ax.set_xlabel("Openness")
+    ax.set_ylabel("Score")
+    ax.set_title("Accuracy and Macro-F1 vs Openness")
+    ax.grid(False)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.legend(frameon=False, loc="best")
+    fig.tight_layout()
+    fig.savefig(path, dpi=220)
+    plt.close(fig)
+
+
+def _write_accuracy_f1_summary(path: Path, rows: list[dict]) -> None:
+    rows = sorted(rows, key=lambda row: row["openness"])
+    lines = [
+        "# 开放度变化下的准确率与 Macro-F1",
+        "",
+        "| 实验 | Openness | Overall Accuracy | Macro-F1 | Known Accuracy | Unknown Recall |",
+        "| --- | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for row in rows:
+        lines.append(
+            f"| {row['experiment']} | {row['openness']:.4f} | {row['overall_accuracy']:.4f} | "
+            f"{row['macro_f1']:.4f} | {row['known_accuracy']:.4f} | {row['unknown_recall']:.4f} |"
+        )
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 def main() -> None:
     args = parse_args()
     output_dir = ensure_dir(args.output_dir)
@@ -113,6 +150,8 @@ def main() -> None:
     csv_path = output_dir / "osr_results_table.csv"
     md_path = output_dir / "osr_results_table.md"
     png_path = output_dir / "openness_metric_curve.png"
+    acc_f1_png = output_dir / "openness_accuracy_f1_curve.png"
+    acc_f1_md = output_dir / "openness_accuracy_f1_summary.md"
 
     import csv
 
@@ -148,6 +187,8 @@ def main() -> None:
     md_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     _plot_openness_curve(png_path, rows)
+    _plot_accuracy_f1_curve(acc_f1_png, rows)
+    _write_accuracy_f1_summary(acc_f1_md, rows)
 
 
 if __name__ == "__main__":

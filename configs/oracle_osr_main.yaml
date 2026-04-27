@@ -47,10 +47,10 @@ boundary:
 
 pseudo_unknown:
   ordinary_eta: 1.0
-  critical_eta: 1.0
+  critical_eta: 1.15
   critical_beta: 0.7
-  ordinary_variations: 1
-  critical_variations: 2
+  ordinary_variations: 2
+  critical_variations: 3
   jitter: 0.1
 
 openmax:
@@ -61,10 +61,14 @@ openmax:
   euclid_weight: 1.0
 
 fusion:
-  lambda_grid: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-  threshold_grid: [0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.82, 0.84, 0.86]
-  threshold_mode: classwise_quantile
+  mode: geometric_blend
+  lambda_grid: [0.2]
+  threshold_grid: [0.28, 0.3, 0.32, 0.34, 0.35, 0.36, 0.38, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.78, 0.8, 0.82, 0.83, 0.84, 0.85, 0.86, 0.88]
+  threshold_mode: classwise_balanced
   classwise_quantile_grid: [0.90, 0.93, 0.95, 0.97, 0.98, 0.99]
+  classwise_known_weight: 0.45
+  classwise_unknown_weight: 0.55
+  classwise_min_known_accept: 0.88
   selection_weights:
     known_accuracy: 0.45
     unknown_recall: 0.35

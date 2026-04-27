@@ -10,10 +10,7 @@ import torch.nn.functional as F
 from torch import nn
 
 from sei_osr.models.backbones.cvcnn_iq import CVCNNBackbone
-from sei_osr.models.backbones.simple_iq_cnn import SimpleIQCNN
-from sei_osr.models.backbones.torchcvnn_hybrid import TorchCvnnHybridBackbone
 from sei_osr.models.heads.prototype_head import PrototypeClassifierHead
-from sei_osr.modules.protonet_regularizer import EpisodicProtoRegularizer
 from sei_osr.modules.prototype_utils import compute_prototypes
 from sei_osr.utils.io import ensure_dir
 
@@ -35,28 +32,12 @@ class ClosedSetTrainer:
         self.config = config
         self.device = _choose_device(config["train"]["device"])
         embedding_dim = int(config["model"]["embedding_dim"])
-
-        backbone_name = config["model"].get("backbone", "simple_iq_cnn")
-        if backbone_name in {"cvcnn_iq", "cvcnn"}:
-            self.backbone = CVCNNBackbone(
-                signal_length=signal_length,
-                embedding_dim=embedding_dim,
-                hidden_dim=int(config["model"].get("hidden_dim", 32)),
-                dropout=float(config["model"].get("dropout", 0.2)),
-            ).to(self.device)
-        elif backbone_name == "torchcvnn_hybrid":
-            self.backbone = TorchCvnnHybridBackbone(
-                signal_length=signal_length,
-                embedding_dim=embedding_dim,
-                hidden_dim=int(config["model"].get("hidden_dim", 64)),
-                dropout=float(config["model"].get("dropout", 0.2)),
-            ).to(self.device)
-        else:
-            self.backbone = SimpleIQCNN(
-                signal_length=signal_length,
-                embedding_dim=embedding_dim,
-                dropout=float(config["model"].get("dropout", 0.2)),
-            ).to(self.device)
+        self.backbone = CVCNNBackbone(
+            signal_length=signal_length,
+            embedding_dim=embedding_dim,
+            hidden_dim=int(config["model"].get("hidden_dim", 32)),
+            dropout=float(config["model"].get("dropout", 0.2)),
+        ).to(self.device)
         self.head = PrototypeClassifierHead(
             num_classes=num_classes,
             embedding_dim=embedding_dim,
@@ -68,11 +49,6 @@ class ClosedSetTrainer:
             lr=float(config["train"]["lr"]),
             weight_decay=float(config["train"].get("weight_decay", 0.0)),
         )
-        self.proto_episode_reg = None
-        if float(config["loss"].get("lambda_proto_episode", 0.0)) > 0.0:
-            self.proto_episode_reg = EpisodicProtoRegularizer(
-                n_support=int(config["loss"].get("proto_support", 2))
-            )
         self._last_embeddings = None
 
     def _scheme_regularization_loss(
@@ -96,22 +72,16 @@ class ClosedSetTrainer:
         angle = F.relu(angle_margin - (pos - neg)).mean()
         prototype = (1.0 - pos).mean()
 
-        proto_episode = logits.new_tensor(0.0)
-        if self.proto_episode_reg is not None:
-            proto_episode = self.proto_episode_reg(self._last_embeddings, labels)
-
         total = (
             float(loss_cfg.get("lambda_basic", 1.0)) * basic
             + float(loss_cfg.get("lambda_angle", 0.0)) * angle
             + float(loss_cfg.get("lambda_prototype", 0.0)) * prototype
-            + float(loss_cfg.get("lambda_proto_episode", 0.0)) * proto_episode
         )
         return {
             "total": total,
             "basic": basic,
             "angle": angle,
             "prototype": prototype,
-            "proto_episode": proto_episode,
         }
 
     @torch.no_grad()

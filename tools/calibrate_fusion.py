@@ -20,7 +20,7 @@ from sei_osr.utils.io import ensure_dir, load_pickle, save_json
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, default=str(ROOT / "configs" / "base.yaml"))
+    parser.add_argument("--config", type=str, default=str(ROOT / "configs" / "oracle_osr_main.yaml"))
     parser.add_argument("--ckpt", type=str, default="")
     return parser.parse_args()
 
@@ -92,6 +92,10 @@ def main() -> None:
         min_known_accuracy=config["fusion"].get("min_known_accuracy"),
         threshold_mode=str(config["fusion"].get("threshold_mode", "global")),
         classwise_quantile_grid=config["fusion"].get("classwise_quantile_grid"),
+        classwise_known_weight=float(config["fusion"].get("classwise_known_weight", 0.55)),
+        classwise_unknown_weight=float(config["fusion"].get("classwise_unknown_weight", 0.45)),
+        classwise_min_known_accept=config["fusion"].get("classwise_min_known_accept"),
+        fusion_mode=str(config["fusion"].get("mode", "linear")),
     )
     save_json(
         output_dir / "fusion.json",
@@ -101,6 +105,7 @@ def main() -> None:
             "thresholds_per_class": result.thresholds_per_class,
             "threshold_mode": result.threshold_mode,
             "threshold_quantile": result.threshold_quantile,
+            "fusion_mode": str(config["fusion"].get("mode", "linear")),
             "metrics": result.metrics,
         },
     )

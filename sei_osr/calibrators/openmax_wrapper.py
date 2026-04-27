@@ -7,7 +7,7 @@ import numpy as np
 from scipy.special import softmax
 from scipy.stats import weibull_min
 
-from .openmax_backends import PytorchOodOpenMaxAdapter, RepoOpenMaxAdapter
+from .openmax_backends import RepoOpenMaxAdapter
 
 
 @dataclass
@@ -34,14 +34,6 @@ class OpenMaxCalibrator:
                 alpha_rank=self.alpha_rank,
                 tail_size=self.tail_size,
                 distance_type=self.distance_type,
-            )
-            self.adapter.fit(activations, labels, predictions)
-            return
-        if self.backend == "pytorch_ood":
-            self.adapter = PytorchOodOpenMaxAdapter(
-                alpha_rank=self.alpha_rank,
-                tail_size=self.tail_size,
-                euclid_weight=self.euclid_weight,
             )
             self.adapter.fit(activations, labels, predictions)
             return
@@ -75,7 +67,7 @@ class OpenMaxCalibrator:
         return float(weibull_min.cdf(dist, tail.shape, loc=tail.loc, scale=tail.scale))
 
     def predict(self, activations: np.ndarray) -> Dict[str, np.ndarray]:
-        if self.backend in {"repo_openmax", "pytorch_ood"}:
+        if self.backend == "repo_openmax":
             if self.adapter is None:
                 raise RuntimeError("OpenMax adapter is not fitted.")
             return self.adapter.predict(activations)
@@ -112,7 +104,7 @@ class OpenMaxCalibrator:
         }
 
     def state_dict(self) -> Dict[str, object]:
-        if self.backend in {"repo_openmax", "pytorch_ood"} and self.adapter is not None:
+        if self.backend == "repo_openmax" and self.adapter is not None:
             return self.adapter.state_dict()
         return {
             "alpha_rank": self.alpha_rank,
@@ -130,10 +122,6 @@ class OpenMaxCalibrator:
         if backend == "repo_openmax":
             obj = cls(alpha_rank=int(state["alpha_rank"]), tail_size=int(state["tail_size"]), backend=backend, distance_type=str(state.get("distance_type", "eucl")))
             obj.adapter = RepoOpenMaxAdapter.from_state_dict(state)
-            return obj
-        if backend == "pytorch_ood":
-            obj = cls(alpha_rank=int(state["alpha_rank"]), tail_size=int(state["tail_size"]), backend=backend, euclid_weight=float(state.get("euclid_weight", 1.0)))
-            obj.adapter = PytorchOodOpenMaxAdapter.from_state_dict(state)
             return obj
         obj = cls(
             alpha_rank=int(state["alpha_rank"]),

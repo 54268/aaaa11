@@ -11,8 +11,3 @@ figures/
 *.pt
 *.pth
 *.ckpt
-
-third_party/openmax/
-third_party/pytorch-ood/
-third_party/torchcvnn/
-third_party/prototypical-networks/
