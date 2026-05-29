@@ -1,0 +1,122 @@
+﻿[
+  {
+    "num_unknown_classes": 1.0,
+    "openness": 0.015268072165338098,
+    "overall_accuracy": 0.9877976190476191,
+    "known_accuracy": 0.983984375,
+    "macro_f1": 0.9903151500330258,
+    "unknown_recall": 1.0,
+    "auroc": 1.0,
+    "fpr95": 0.0
+  },
+  {
+    "num_unknown_classes": 2.0,
+    "openness": 0.029857499854668124,
+    "overall_accuracy": 0.9901442307692307,
+    "known_accuracy": 0.983984375,
+    "macro_f1": 0.9909894667339385,
+    "unknown_recall": 1.0,
+    "auroc": 0.9997744140625,
+    "fpr95": 0.0015625
+  },
+  {
+    "num_unknown_classes": 3.0,
+    "openness": 0.0438171125324851,
+    "overall_accuracy": 0.8304435483870968,
+    "known_accuracy": 0.983984375,
+    "macro_f1": 0.9374554341193811,
+    "unknown_recall": 0.6666666666666666,
+    "auroc": 0.98211279296875,
+    "fpr95": 0.05390625
+  },
+  {
+    "num_unknown_classes": 4.0,
+    "openness": 0.057190958417936644,
+    "overall_accuracy": 0.8539930555555556,
+    "known_accuracy": 0.983984375,
+    "macro_f1": 0.9409197995296479,
+    "unknown_recall": 0.75,
+    "auroc": 0.984005615234375,
+    "fpr95": 0.05390625
+  },
+  {
+    "num_unknown_classes": 5.0,
+    "openness": 0.07001889004944573,
+    "overall_accuracy": 0.7501524390243902,
+    "known_accuracy": 0.983984375,
+    "macro_f1": 0.9256507226127829,
+    "unknown_recall": 0.6005,
+    "auroc": 0.9837579101562499,
+    "fpr95": 0.05390625
+  },
+  {
+    "num_unknown_classes": 6.0,
+    "openness": 0.08233706451775291,
+    "overall_accuracy": 0.6688858695652173,
+    "known_accuracy": 0.983984375,
+    "macro_f1": 0.8675215533959112,
+    "unknown_recall": 0.5008333333333334,
+    "auroc": 0.9819063720703125,
+    "fpr95": 0.053515625
+  },
+  {
+    "num_unknown_classes": 7.0,
+    "openness": 0.09417837268432339,
+    "overall_accuracy": 0.7013480392156862,
+    "known_accuracy": 0.983984375,
+    "macro_f1": 0.8710990777929023,
+    "unknown_recall": 0.5721428571428572,
+    "auroc": 0.9840782296316966,
+    "fpr95": 0.053515625
+  },
+  {
+    "num_unknown_classes": 8.0,
+    "openness": 0.10557280900008414,
+    "overall_accuracy": 0.6785714285714286,
+    "known_accuracy": 0.983984375,
+    "macro_f1": 0.8364031913746091,
+    "unknown_recall": 0.55640625,
+    "auroc": 0.9841949768066407,
+    "fpr95": 0.053515625
+  },
+  {
+    "num_unknown_classes": 9.0,
+    "openness": 0.11654779140122762,
+    "overall_accuracy": 0.7049180327868853,
+    "known_accuracy": 0.983984375,
+    "macro_f1": 0.8387379060133134,
+    "unknown_recall": 0.6056944444444444,
+    "auroc": 0.9852091200086807,
+    "fpr95": 0.053515625
+  },
+  {
+    "num_unknown_classes": 10.0,
+    "openness": 0.12712843905603055,
+    "overall_accuracy": 0.7272727272727273,
+    "known_accuracy": 0.983984375,
+    "macro_f1": 0.8405065863430662,
+    "unknown_recall": 0.645125,
+    "auroc": 0.9865298828125001,
+    "fpr95": 0.053515625
+  },
+  {
+    "num_unknown_classes": 11.0,
+    "openness": 0.1373378143724927,
+    "overall_accuracy": 0.676056338028169,
+    "known_accuracy": 0.983984375,
+    "macro_f1": 0.7958609231336987,
+    "unknown_recall": 0.5864772727272727,
+    "auroc": 0.9828589754971592,
+    "fpr95": 0.053515625
+  },
+  {
+    "num_unknown_classes": 12.0,
+    "openness": 0.14719713457755823,
+    "overall_accuracy": 0.6869243421052632,
+    "known_accuracy": 0.983984375,
+    "macro_f1": 0.7802381721604825,
+    "unknown_recall": 0.6077083333333333,
+    "auroc": 0.9836547444661458,
+    "fpr95": 0.053515625
+  }
+]

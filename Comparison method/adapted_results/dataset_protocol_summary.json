@@ -1,0 +1,22 @@
+[
+  {
+    "dataset": "wisig_singleday_osr_k16_u12",
+    "train_known": 8960,
+    "val_known": 1280,
+    "test_known": 2560,
+    "test_unknown": 9600,
+    "known_classes": 16,
+    "unknown_classes": 12,
+    "signal_length": 256
+  },
+  {
+    "dataset": "oracle_kri16_demod",
+    "train_known": 28000,
+    "val_known": 4000,
+    "test_known": 8000,
+    "test_unknown": 24000,
+    "known_classes": 10,
+    "unknown_classes": 6,
+    "signal_length": 256
+  }
+]

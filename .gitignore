@@ -1,12 +1,13 @@
 __pycache__/
 *.py[cod]
+.pytest_cache/
+pytest-cache-files*/
 .idea/
 .vscode/
 
-data/
+/data/
 
-outputs/
-figures/
+/outputs/
 
 *.pt
 *.pth
@@ -16,3 +17,8 @@ third_party/openmax/
 third_party/pytorch-ood/
 third_party/torchcvnn/
 third_party/prototypical-networks/
+
+# 临时探索/调参日志和缓存
+_explore_*.json
+_explore_*.log
+_run_*.log

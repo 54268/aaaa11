@@ -1,0 +1,6 @@
+﻿{
+  "alpha_rank": 3,
+  "tail_size": 25,
+  "backend": "repo_openmax",
+  "num_val_samples": 1280
+}

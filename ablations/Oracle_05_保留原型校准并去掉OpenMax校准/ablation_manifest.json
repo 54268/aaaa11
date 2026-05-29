@@ -1,0 +1,5 @@
+﻿{
+  "config_path": "E:\\learn_pytorch\\笔记\\方案\\os_sei_code\\experiments\ablations\\Oracle_05_保留原型校准并去掉OpenMax校准\\config.yaml",
+  "base_checkpoint": "E:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\oracle_kri16_demod_known_first\\best_closed_set.pt",
+  "base_output_dir": "E:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\oracle_kri16_demod_known_first"
+}

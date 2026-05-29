@@ -1,0 +1,35 @@
+﻿{
+  "fusion_lambda": 1.0,
+  "threshold": null,
+  "thresholds_per_class": [
+    0.6654561817646024,
+    0.696519935131073,
+    0.6763050210475922,
+    0.5735728740692139,
+    0.6833984613418581,
+    0.6674787396192551,
+    0.6617270860075951,
+    0.6285026276111603,
+    0.5950385522842406,
+    0.5394278395175925
+  ],
+  "threshold_mode": "classwise_balanced",
+  "threshold_quantile": null,
+  "fusion_mode": "linear",
+  "selection_note": "Ablation-display calibration only. Uses classwise thresholds on baseline confidence score to keep the no-calibration row comparable to the other Oracle ablations.",
+  "metrics": {
+    "overall_accuracy": 0.31350261991132605,
+    "macro_precision": 0.33750269026370294,
+    "macro_recall": 0.8765041101076197,
+    "macro_f1": 0.4297344707164582,
+    "weighted_f1": 0.15760996793604115,
+    "known_accuracy": 0.96375,
+    "unknown_precision": 0.5862068965517241,
+    "unknown_recall": 0.004045211183819155,
+    "known_fpr_as_unknown": 0.006,
+    "unknown_false_accept_rate": 0.9959547888161808,
+    "auroc": 0.5047812908982748,
+    "fpr95": 0.9055,
+    "oscr": 0.5022056662700773
+  }
+}

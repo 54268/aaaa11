@@ -1,0 +1,521 @@
+*****Epoch 0 Warming stage*****
+Train loss = protosim(3.809) + groupsim(3.591) + cls(0.000) + ent(0.236) + new(1.766) + q_ent(0.000)
+Test All ACC 0.0942, Known ACC 0.0082, Unknown ACC 0.0998
+*****Epoch 1 Warming stage*****
+Train loss = protosim(3.758) + groupsim(3.542) + cls(0.000) + ent(0.127) + new(1.522) + q_ent(0.000)
+Test All ACC 0.1118, Known ACC 0.0188, Unknown ACC 0.1252
+*****Epoch 2 Warming stage*****
+Train loss = protosim(3.745) + groupsim(3.533) + cls(0.000) + ent(0.108) + new(1.475) + q_ent(0.000)
+Test All ACC 0.1082, Known ACC 0.0161, Unknown ACC 0.1241
+*****Epoch 3 Warming stage*****
+Train loss = protosim(3.740) + groupsim(3.529) + cls(0.000) + ent(0.096) + new(1.429) + q_ent(0.000)
+Test All ACC 0.0770, Known ACC 0.0186, Unknown ACC 0.0846
+*****Epoch 4 Warming stage*****
+Train loss = protosim(3.732) + groupsim(3.524) + cls(0.000) + ent(0.095) + new(1.421) + q_ent(0.000)
+Test All ACC 0.0915, Known ACC 0.0168, Unknown ACC 0.0969
+*****Epoch 5 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.729) + groupsim(2.035) + cls(1.736) + ent(0.186) + new(1.663) + q_ent(0.000)
+Test All ACC 0.2454, Known ACC 0.2506, Unknown ACC 0.3022
+*****Epoch 6 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.714) + groupsim(2.030) + cls(1.712) + ent(0.137) + new(1.570) + q_ent(0.000)
+Test All ACC 0.2414, Known ACC 0.2513, Unknown ACC 0.3011
+*****Epoch 7 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.693) + groupsim(2.020) + cls(1.709) + ent(0.132) + new(1.511) + q_ent(0.000)
+Test All ACC 0.2696, Known ACC 0.2747, Unknown ACC 0.3579
+*****Epoch 8 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.684) + groupsim(2.018) + cls(1.662) + ent(0.137) + new(1.497) + q_ent(0.000)
+Test All ACC 0.3040, Known ACC 0.2882, Unknown ACC 0.3680
+*****Epoch 9 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.680) + groupsim(2.003) + cls(1.591) + ent(0.132) + new(1.493) + q_ent(0.000)
+Test All ACC 0.3418, Known ACC 0.3053, Unknown ACC 0.3782
+*****Epoch 10 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.683) + groupsim(2.010) + cls(1.543) + ent(0.131) + new(1.485) + q_ent(0.000)
+Test All ACC 0.3811, Known ACC 0.4565, Unknown ACC 0.3695
+*****Epoch 11 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.682) + groupsim(2.003) + cls(1.489) + ent(0.145) + new(1.461) + q_ent(0.000)
+Test All ACC 0.4293, Known ACC 0.5633, Unknown ACC 0.4185
+*****Epoch 12 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.697) + groupsim(2.011) + cls(1.407) + ent(0.136) + new(1.464) + q_ent(0.000)
+Test All ACC 0.4323, Known ACC 0.6319, Unknown ACC 0.4148
+*****Epoch 13 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.696) + groupsim(2.011) + cls(1.358) + ent(0.132) + new(1.444) + q_ent(0.000)
+Test All ACC 0.4325, Known ACC 0.5157, Unknown ACC 0.3856
+*****Epoch 14 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.753) + groupsim(2.016) + cls(1.301) + ent(0.145) + new(1.460) + q_ent(0.000)
+Test All ACC 0.5005, Known ACC 0.8025, Unknown ACC 0.4428
+*****Epoch 15 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.701) + groupsim(2.011) + cls(1.256) + ent(0.138) + new(1.444) + q_ent(0.000)
+Test All ACC 0.5001, Known ACC 0.6803, Unknown ACC 0.4557
+*****Epoch 16 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.732) + groupsim(2.005) + cls(1.212) + ent(0.155) + new(1.432) + q_ent(0.000)
+Test All ACC 0.5004, Known ACC 0.7245, Unknown ACC 0.4412
+*****Epoch 17 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.752) + groupsim(2.002) + cls(1.176) + ent(0.125) + new(1.415) + q_ent(0.000)
+Test All ACC 0.5296, Known ACC 0.7886, Unknown ACC 0.4227
+*****Epoch 18 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.745) + groupsim(1.996) + cls(1.165) + ent(0.130) + new(1.399) + q_ent(0.000)
+Test All ACC 0.5323, Known ACC 0.7679, Unknown ACC 0.3906
+*****Epoch 19 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.760) + groupsim(2.003) + cls(1.098) + ent(0.129) + new(1.389) + q_ent(0.000)
+Test All ACC 0.5836, Known ACC 0.8717, Unknown ACC 0.4826
+*****Epoch 20 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.749) + groupsim(1.990) + cls(1.113) + ent(0.128) + new(1.392) + q_ent(0.000)
+Test All ACC 0.5515, Known ACC 0.7983, Unknown ACC 0.3755
+*****Epoch 21 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.740) + groupsim(1.988) + cls(1.085) + ent(0.135) + new(1.387) + q_ent(0.000)
+Test All ACC 0.5896, Known ACC 0.8357, Unknown ACC 0.4419
+*****Epoch 22 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.758) + groupsim(1.996) + cls(1.088) + ent(0.131) + new(1.380) + q_ent(0.000)
+Test All ACC 0.6206, Known ACC 0.8785, Unknown ACC 0.4815
+*****Epoch 23 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.768) + groupsim(2.003) + cls(1.081) + ent(0.125) + new(1.370) + q_ent(0.000)
+Test All ACC 0.5878, Known ACC 0.8402, Unknown ACC 0.4490
+*****Epoch 24 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.764) + groupsim(1.997) + cls(1.048) + ent(0.123) + new(1.364) + q_ent(0.000)
+Test All ACC 0.6114, Known ACC 0.8621, Unknown ACC 0.4391
+*****Epoch 25 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.765) + groupsim(1.994) + cls(1.026) + ent(0.128) + new(1.357) + q_ent(0.000)
+Test All ACC 0.5769, Known ACC 0.8659, Unknown ACC 0.5179
+*****Epoch 26 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.752) + groupsim(1.985) + cls(1.063) + ent(0.133) + new(1.358) + q_ent(0.000)
+Test All ACC 0.5872, Known ACC 0.7972, Unknown ACC 0.3996
+*****Epoch 27 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.754) + groupsim(1.982) + cls(1.014) + ent(0.127) + new(1.347) + q_ent(0.000)
+Test All ACC 0.5965, Known ACC 0.8080, Unknown ACC 0.4296
+*****Epoch 28 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.744) + groupsim(1.972) + cls(1.036) + ent(0.127) + new(1.356) + q_ent(0.000)
+Test All ACC 0.5889, Known ACC 0.8132, Unknown ACC 0.4144
+*****Epoch 29 Grouping stage*****
+Current GroupNum:10
+Train loss = protosim(3.762) + groupsim(1.985) + cls(1.030) + ent(0.126) + new(1.337) + q_ent(0.000)
+Test All ACC 0.6191, Known ACC 0.8490, Unknown ACC 0.4593
+*****Epoch 30 Fixing stage*****
+Train loss = protosim(3.796) + groupsim(2.095) + cls(1.498) + ent(0.290) + new(2.444) + q_ent(0.403)
+Test All ACC 0.5130, Known ACC 0.8142, Unknown ACC 0.3413
+*****Epoch 31 Fixing stage*****
+Train loss = protosim(3.793) + groupsim(2.053) + cls(1.174) + ent(0.150) + new(1.691) + q_ent(0.150)
+Test All ACC 0.5664, Known ACC 0.8872, Unknown ACC 0.4043
+*****Epoch 32 Fixing stage*****
+Train loss = protosim(3.824) + groupsim(2.088) + cls(1.225) + ent(0.164) + new(1.767) + q_ent(0.143)
+Test All ACC 0.5707, Known ACC 0.8756, Unknown ACC 0.4810
+*****Epoch 33 Fixing stage*****
+Train loss = protosim(3.785) + groupsim(2.030) + cls(1.037) + ent(0.109) + new(1.497) + q_ent(0.000)
+Test All ACC 0.6110, Known ACC 0.9321, Unknown ACC 0.4300
+*****Epoch 34 Fixing stage*****
+Train loss = protosim(3.795) + groupsim(2.050) + cls(1.125) + ent(0.150) + new(1.639) + q_ent(0.145)
+Test All ACC 0.5876, Known ACC 0.8609, Unknown ACC 0.3950
+*****Epoch 35 Fixing stage*****
+Train loss = protosim(3.781) + groupsim(2.037) + cls(1.132) + ent(0.203) + new(1.592) + q_ent(0.323)
+Test All ACC 0.5640, Known ACC 0.8742, Unknown ACC 0.4357
+*****Epoch 36 Fixing stage*****
+Train loss = protosim(3.767) + groupsim(2.018) + cls(1.080) + ent(0.107) + new(1.478) + q_ent(0.000)
+Test All ACC 0.5947, Known ACC 0.9072, Unknown ACC 0.4414
+*****Epoch 37 Fixing stage*****
+Train loss = protosim(3.765) + groupsim(2.015) + cls(1.069) + ent(0.165) + new(1.484) + q_ent(0.137)
+Test All ACC 0.5857, Known ACC 0.8420, Unknown ACC 0.3869
+*****Epoch 38 Fixing stage*****
+Train loss = protosim(3.769) + groupsim(2.016) + cls(1.050) + ent(0.099) + new(1.473) + q_ent(0.000)
+Test All ACC 0.6015, Known ACC 0.8515, Unknown ACC 0.4111
+*****Epoch 39 Fixing stage*****
+Train loss = protosim(3.760) + groupsim(2.005) + cls(1.027) + ent(0.107) + new(1.414) + q_ent(0.000)
+Test All ACC 0.6310, Known ACC 0.8991, Unknown ACC 0.4465
+*****Epoch 40 Fixing stage*****
+Train loss = protosim(3.772) + groupsim(2.014) + cls(1.020) + ent(0.109) + new(1.429) + q_ent(0.000)
+Test All ACC 0.6189, Known ACC 0.8661, Unknown ACC 0.4302
+*****Epoch 41 Fixing stage*****
+Train loss = protosim(3.766) + groupsim(2.016) + cls(1.020) + ent(0.140) + new(1.512) + q_ent(0.174)
+Test All ACC 0.6166, Known ACC 0.9063, Unknown ACC 0.5180
+*****Epoch 42 Fixing stage*****
+Train loss = protosim(3.766) + groupsim(2.020) + cls(1.026) + ent(0.142) + new(1.510) + q_ent(0.156)
+Test All ACC 0.6474, Known ACC 0.8820, Unknown ACC 0.4946
+*****Epoch 43 Fixing stage*****
+Train loss = protosim(3.747) + groupsim(1.995) + cls(0.990) + ent(0.110) + new(1.428) + q_ent(0.000)
+Test All ACC 0.6182, Known ACC 0.8560, Unknown ACC 0.4118
+*****Epoch 44 Fixing stage*****
+Train loss = protosim(3.775) + groupsim(2.012) + cls(0.975) + ent(0.111) + new(1.430) + q_ent(0.000)
+Test All ACC 0.5895, Known ACC 0.9074, Unknown ACC 0.4158
+*****Epoch 45 Fixing stage*****
+Train loss = protosim(3.778) + groupsim(2.014) + cls(0.989) + ent(0.115) + new(1.410) + q_ent(0.000)
+Test All ACC 0.6291, Known ACC 0.8943, Unknown ACC 0.4871
+*****Epoch 46 Fixing stage*****
+Train loss = protosim(3.785) + groupsim(2.042) + cls(1.103) + ent(0.176) + new(1.627) + q_ent(0.309)
+Test All ACC 0.5802, Known ACC 0.8414, Unknown ACC 0.4104
+*****Epoch 47 Fixing stage*****
+Train loss = protosim(3.779) + groupsim(2.018) + cls(0.994) + ent(0.113) + new(1.434) + q_ent(0.000)
+Test All ACC 0.6158, Known ACC 0.9087, Unknown ACC 0.4057
+*****Epoch 48 Fixing stage*****
+Train loss = protosim(3.771) + groupsim(2.019) + cls(1.022) + ent(0.140) + new(1.473) + q_ent(0.159)
+Test All ACC 0.6292, Known ACC 0.8946, Unknown ACC 0.5071
+*****Epoch 49 Fixing stage*****
+Train loss = protosim(3.783) + groupsim(2.022) + cls(0.986) + ent(0.106) + new(1.384) + q_ent(0.000)
+Test All ACC 0.6311, Known ACC 0.8979, Unknown ACC 0.4899
+*****Epoch 50 Fixing stage*****
+Train loss = protosim(3.760) + groupsim(2.003) + cls(0.944) + ent(0.112) + new(1.391) + q_ent(0.000)
+Test All ACC 0.6303, Known ACC 0.8204, Unknown ACC 0.4937
+*****Epoch 51 Fixing stage*****
+Train loss = protosim(3.756) + groupsim(1.994) + cls(0.963) + ent(0.112) + new(1.376) + q_ent(0.000)
+Test All ACC 0.6503, Known ACC 0.8901, Unknown ACC 0.4498
+*****Epoch 52 Fixing stage*****
+Train loss = protosim(3.763) + groupsim(2.000) + cls(0.975) + ent(0.111) + new(1.381) + q_ent(0.000)
+Test All ACC 0.6452, Known ACC 0.8645, Unknown ACC 0.4779
+*****Epoch 53 Fixing stage*****
+Train loss = protosim(3.770) + groupsim(2.002) + cls(0.966) + ent(0.117) + new(1.363) + q_ent(0.000)
+Test All ACC 0.6797, Known ACC 0.8990, Unknown ACC 0.4836
+*****Epoch 54 Fixing stage*****
+Train loss = protosim(3.760) + groupsim(1.994) + cls(0.951) + ent(0.109) + new(1.345) + q_ent(0.000)
+Test All ACC 0.6948, Known ACC 0.9114, Unknown ACC 0.5012
+*****Epoch 55 Fixing stage*****
+Train loss = protosim(3.772) + groupsim(2.010) + cls(0.989) + ent(0.142) + new(1.421) + q_ent(0.156)
+Test All ACC 0.6717, Known ACC 0.8598, Unknown ACC 0.5034
+*****Epoch 56 Fixing stage*****
+Train loss = protosim(3.789) + groupsim(2.032) + cls(0.987) + ent(0.151) + new(1.474) + q_ent(0.151)
+Test All ACC 0.5885, Known ACC 0.8053, Unknown ACC 0.5317
+*****Epoch 57 Fixing stage*****
+Train loss = protosim(3.770) + groupsim(2.013) + cls(0.976) + ent(0.106) + new(1.433) + q_ent(0.000)
+Test All ACC 0.6517, Known ACC 0.9320, Unknown ACC 0.4901
+*****Epoch 58 Fixing stage*****
+Train loss = protosim(3.798) + groupsim(2.042) + cls(1.059) + ent(0.145) + new(1.536) + q_ent(0.151)
+Test All ACC 0.6200, Known ACC 0.9233, Unknown ACC 0.4522
+*****Epoch 59 Fixing stage*****
+Train loss = protosim(3.813) + groupsim(2.040) + cls(0.976) + ent(0.098) + new(1.384) + q_ent(0.000)
+Test All ACC 0.6526, Known ACC 0.9377, Unknown ACC 0.4315
+*****Epoch 60 Fixing stage*****
+Train loss = protosim(3.778) + groupsim(2.008) + cls(0.968) + ent(0.109) + new(1.352) + q_ent(0.000)
+Test All ACC 0.6400, Known ACC 0.8676, Unknown ACC 0.4746
+*****Epoch 61 Fixing stage*****
+Train loss = protosim(3.771) + groupsim(2.000) + cls(0.915) + ent(0.113) + new(1.335) + q_ent(0.000)
+Test All ACC 0.6102, Known ACC 0.8855, Unknown ACC 0.4453
+*****Epoch 62 Fixing stage*****
+Train loss = protosim(3.771) + groupsim(2.009) + cls(0.959) + ent(0.160) + new(1.411) + q_ent(0.143)
+Test All ACC 0.6228, Known ACC 0.8927, Unknown ACC 0.4413
+*****Epoch 63 Fixing stage*****
+Train loss = protosim(3.790) + groupsim(2.018) + cls(0.957) + ent(0.102) + new(1.358) + q_ent(0.000)
+Test All ACC 0.6622, Known ACC 0.8947, Unknown ACC 0.4995
+*****Epoch 64 Fixing stage*****
+Train loss = protosim(3.792) + groupsim(2.023) + cls(0.985) + ent(0.140) + new(1.405) + q_ent(0.160)
+Test All ACC 0.6254, Known ACC 0.8913, Unknown ACC 0.4608
+*****Epoch 65 Fixing stage*****
+Train loss = protosim(3.782) + groupsim(2.017) + cls(0.942) + ent(0.099) + new(1.386) + q_ent(0.000)
+Test All ACC 0.6283, Known ACC 0.8611, Unknown ACC 0.4268
+*****Epoch 66 Fixing stage*****
+Train loss = protosim(3.772) + groupsim(2.004) + cls(0.938) + ent(0.101) + new(1.330) + q_ent(0.000)
+Test All ACC 0.6917, Known ACC 0.9202, Unknown ACC 0.4874
+*****Epoch 67 Fixing stage*****
+Train loss = protosim(3.770) + groupsim(2.001) + cls(0.927) + ent(0.107) + new(1.336) + q_ent(0.000)
+Test All ACC 0.6805, Known ACC 0.9075, Unknown ACC 0.4775
+*****Epoch 68 Fixing stage*****
+Train loss = protosim(3.753) + groupsim(1.983) + cls(0.895) + ent(0.105) + new(1.314) + q_ent(0.000)
+Test All ACC 0.6484, Known ACC 0.8756, Unknown ACC 0.4452
+*****Epoch 69 Fixing stage*****
+Train loss = protosim(3.766) + groupsim(2.005) + cls(0.979) + ent(0.146) + new(1.405) + q_ent(0.148)
+Test All ACC 0.5616, Known ACC 0.8541, Unknown ACC 0.3943
+*****Epoch 70 Fixing stage*****
+Train loss = protosim(3.747) + groupsim(1.989) + cls(0.959) + ent(0.105) + new(1.385) + q_ent(0.000)
+Test All ACC 0.6477, Known ACC 0.9223, Unknown ACC 0.4020
+*****Epoch 71 Fixing stage*****
+Train loss = protosim(3.751) + groupsim(1.987) + cls(0.891) + ent(0.102) + new(1.344) + q_ent(0.000)
+Test All ACC 0.6421, Known ACC 0.9216, Unknown ACC 0.3921
+*****Epoch 72 Fixing stage*****
+Train loss = protosim(3.769) + groupsim(2.011) + cls(0.944) + ent(0.179) + new(1.464) + q_ent(0.171)
+Test All ACC 0.5801, Known ACC 0.8605, Unknown ACC 0.4180
+*****Epoch 73 Fixing stage*****
+Train loss = protosim(3.757) + groupsim(1.996) + cls(0.914) + ent(0.101) + new(1.390) + q_ent(0.000)
+Test All ACC 0.6241, Known ACC 0.9215, Unknown ACC 0.4617
+*****Epoch 74 Fixing stage*****
+Train loss = protosim(3.775) + groupsim(2.013) + cls(0.923) + ent(0.149) + new(1.450) + q_ent(0.148)
+Test All ACC 0.6780, Known ACC 0.9144, Unknown ACC 0.5367
+*****Epoch 75 Fixing stage*****
+Train loss = protosim(3.766) + groupsim(1.998) + cls(0.900) + ent(0.100) + new(1.352) + q_ent(0.000)
+Test All ACC 0.6846, Known ACC 0.8866, Unknown ACC 0.5075
+*****Epoch 76 Fixing stage*****
+Train loss = protosim(3.776) + groupsim(2.003) + cls(0.912) + ent(0.096) + new(1.319) + q_ent(0.000)
+Test All ACC 0.6784, Known ACC 0.8519, Unknown ACC 0.5232
+*****Epoch 77 Fixing stage*****
+Train loss = protosim(3.773) + groupsim(1.998) + cls(0.890) + ent(0.097) + new(1.313) + q_ent(0.000)
+Test All ACC 0.6945, Known ACC 0.9326, Unknown ACC 0.4954
+*****Epoch 78 Fixing stage*****
+Train loss = protosim(3.770) + groupsim(1.996) + cls(0.889) + ent(0.109) + new(1.314) + q_ent(0.000)
+Test All ACC 0.6556, Known ACC 0.8123, Unknown ACC 0.5155
+*****Epoch 79 Fixing stage*****
+Train loss = protosim(3.770) + groupsim(2.002) + cls(0.899) + ent(0.124) + new(1.365) + q_ent(0.157)
+Test All ACC 0.6853, Known ACC 0.8525, Unknown ACC 0.5357
+*****Epoch 80 Fixing stage*****
+Train loss = protosim(3.773) + groupsim(2.000) + cls(0.891) + ent(0.099) + new(1.314) + q_ent(0.000)
+Test All ACC 0.7052, Known ACC 0.9082, Unknown ACC 0.5235
+*****Epoch 81 Fixing stage*****
+Train loss = protosim(3.759) + groupsim(1.990) + cls(0.876) + ent(0.101) + new(1.311) + q_ent(0.000)
+Test All ACC 0.7044, Known ACC 0.8810, Unknown ACC 0.5465
+*****Epoch 82 Fixing stage*****
+Train loss = protosim(3.752) + groupsim(1.981) + cls(0.831) + ent(0.104) + new(1.292) + q_ent(0.000)
+Test All ACC 0.6853, Known ACC 0.8399, Unknown ACC 0.5471
+*****Epoch 83 Fixing stage*****
+Train loss = protosim(3.758) + groupsim(1.985) + cls(0.826) + ent(0.102) + new(1.296) + q_ent(0.000)
+Test All ACC 0.7031, Known ACC 0.8908, Unknown ACC 0.5352
+*****Epoch 84 Fixing stage*****
+Train loss = protosim(3.754) + groupsim(1.983) + cls(0.857) + ent(0.102) + new(1.318) + q_ent(0.000)
+Test All ACC 0.6943, Known ACC 0.8802, Unknown ACC 0.5281
+*****Epoch 85 Fixing stage*****
+Train loss = protosim(3.764) + groupsim(1.990) + cls(0.846) + ent(0.106) + new(1.299) + q_ent(0.000)
+Test All ACC 0.6647, Known ACC 0.8476, Unknown ACC 0.5011
+*****Epoch 86 Fixing stage*****
+Train loss = protosim(3.749) + groupsim(1.978) + cls(0.873) + ent(0.107) + new(1.297) + q_ent(0.000)
+Test All ACC 0.6855, Known ACC 0.8722, Unknown ACC 0.5185
+*****Epoch 87 Fixing stage*****
+Train loss = protosim(3.759) + groupsim(1.987) + cls(0.857) + ent(0.148) + new(1.329) + q_ent(0.131)
+Test All ACC 0.6136, Known ACC 0.8065, Unknown ACC 0.5102
+*****Epoch 88 Fixing stage*****
+Train loss = protosim(3.797) + groupsim(2.035) + cls(0.937) + ent(0.162) + new(1.505) + q_ent(0.158)
+Test All ACC 0.6479, Known ACC 0.8771, Unknown ACC 0.5176
+*****Epoch 89 Fixing stage*****
+Train loss = protosim(3.762) + groupsim(2.000) + cls(0.852) + ent(0.096) + new(1.381) + q_ent(0.000)
+Test All ACC 0.6887, Known ACC 0.8894, Unknown ACC 0.5391
+*****Epoch 90 Fixing stage*****
+Train loss = protosim(3.739) + groupsim(1.969) + cls(0.783) + ent(0.083) + new(1.300) + q_ent(0.000)
+Test All ACC 0.7019, Known ACC 0.8921, Unknown ACC 0.5518
+*****Epoch 91 Fixing stage*****
+Train loss = protosim(3.722) + groupsim(1.955) + cls(0.765) + ent(0.081) + new(1.271) + q_ent(0.000)
+Test All ACC 0.7054, Known ACC 0.8987, Unknown ACC 0.5760
+*****Epoch 92 Fixing stage*****
+Train loss = protosim(3.736) + groupsim(1.968) + cls(0.786) + ent(0.094) + new(1.277) + q_ent(0.155)
+Test All ACC 0.7011, Known ACC 0.8957, Unknown ACC 0.5453
+*****Epoch 93 Fixing stage*****
+Train loss = protosim(3.723) + groupsim(1.952) + cls(0.727) + ent(0.081) + new(1.246) + q_ent(0.000)
+Test All ACC 0.7050, Known ACC 0.8944, Unknown ACC 0.5557
+*****Epoch 94 Fixing stage*****
+Train loss = protosim(3.733) + groupsim(1.955) + cls(0.750) + ent(0.082) + new(1.245) + q_ent(0.000)
+Test All ACC 0.7057, Known ACC 0.8689, Unknown ACC 0.5598
+*****Epoch 95 Fixing stage*****
+Train loss = protosim(3.720) + groupsim(1.951) + cls(0.743) + ent(0.088) + new(1.246) + q_ent(0.147)
+Test All ACC 0.7115, Known ACC 0.8844, Unknown ACC 0.5570
+*****Epoch 96 Fixing stage*****
+Train loss = protosim(3.712) + groupsim(1.941) + cls(0.729) + ent(0.082) + new(1.217) + q_ent(0.153)
+Test All ACC 0.6865, Known ACC 0.8978, Unknown ACC 0.5121
+*****Epoch 97 Fixing stage*****
+Train loss = protosim(3.714) + groupsim(1.944) + cls(0.737) + ent(0.091) + new(1.233) + q_ent(0.000)
+Test All ACC 0.7120, Known ACC 0.8926, Unknown ACC 0.5579
+*****Epoch 98 Fixing stage*****
+Train loss = protosim(3.710) + groupsim(1.938) + cls(0.726) + ent(0.080) + new(1.205) + q_ent(0.000)
+Test All ACC 0.7145, Known ACC 0.8911, Unknown ACC 0.5566
+*****Epoch 99 Fixing stage*****
+Train loss = protosim(3.712) + groupsim(1.938) + cls(0.743) + ent(0.081) + new(1.215) + q_ent(0.000)
+Test All ACC 0.7202, Known ACC 0.8826, Unknown ACC 0.5749
+*****Epoch 100 Fixing stage*****
+Train loss = protosim(3.716) + groupsim(1.939) + cls(0.740) + ent(0.078) + new(1.216) + q_ent(0.000)
+Test All ACC 0.7194, Known ACC 0.8838, Unknown ACC 0.5723
+*****Epoch 101 Fixing stage*****
+Train loss = protosim(3.705) + groupsim(1.927) + cls(0.684) + ent(0.081) + new(1.201) + q_ent(0.000)
+Test All ACC 0.7210, Known ACC 0.8750, Unknown ACC 0.5833
+*****Epoch 102 Fixing stage*****
+Train loss = protosim(3.709) + groupsim(1.932) + cls(0.700) + ent(0.084) + new(1.200) + q_ent(0.153)
+Test All ACC 0.7186, Known ACC 0.8619, Unknown ACC 0.5905
+*****Epoch 103 Fixing stage*****
+Train loss = protosim(3.701) + groupsim(1.927) + cls(0.701) + ent(0.079) + new(1.198) + q_ent(0.000)
+Test All ACC 0.7271, Known ACC 0.8738, Unknown ACC 0.5959
+*****Epoch 104 Fixing stage*****
+Train loss = protosim(3.701) + groupsim(1.923) + cls(0.690) + ent(0.084) + new(1.194) + q_ent(0.000)
+Test All ACC 0.7249, Known ACC 0.8643, Unknown ACC 0.6002
+*****Epoch 105 Fixing stage*****
+Train loss = protosim(3.706) + groupsim(1.930) + cls(0.714) + ent(0.080) + new(1.191) + q_ent(0.000)
+Test All ACC 0.7282, Known ACC 0.8647, Unknown ACC 0.6061
+*****Epoch 106 Fixing stage*****
+Train loss = protosim(3.689) + groupsim(1.915) + cls(0.705) + ent(0.086) + new(1.186) + q_ent(0.000)
+Test All ACC 0.7262, Known ACC 0.8662, Unknown ACC 0.6009
+*****Epoch 107 Fixing stage*****
+Train loss = protosim(3.690) + groupsim(1.916) + cls(0.698) + ent(0.081) + new(1.189) + q_ent(0.000)
+Test All ACC 0.7220, Known ACC 0.8576, Unknown ACC 0.6007
+*****Epoch 108 Fixing stage*****
+Train loss = protosim(3.717) + groupsim(1.936) + cls(0.713) + ent(0.092) + new(1.201) + q_ent(0.155)
+Test All ACC 0.7218, Known ACC 0.8678, Unknown ACC 0.5912
+*****Epoch 109 Fixing stage*****
+Train loss = protosim(3.707) + groupsim(1.927) + cls(0.703) + ent(0.082) + new(1.178) + q_ent(0.000)
+Test All ACC 0.7257, Known ACC 0.8577, Unknown ACC 0.6077
+*****Epoch 110 Fixing stage*****
+Train loss = protosim(3.701) + groupsim(1.922) + cls(0.719) + ent(0.079) + new(1.177) + q_ent(0.000)
+Test All ACC 0.7232, Known ACC 0.8309, Unknown ACC 0.6268
+*****Epoch 111 Fixing stage*****
+Train loss = protosim(3.692) + groupsim(1.917) + cls(0.683) + ent(0.083) + new(1.182) + q_ent(0.156)
+Test All ACC 0.7292, Known ACC 0.8472, Unknown ACC 0.6236
+*****Epoch 112 Fixing stage*****
+Train loss = protosim(3.709) + groupsim(1.929) + cls(0.715) + ent(0.081) + new(1.178) + q_ent(0.000)
+Test All ACC 0.7288, Known ACC 0.8356, Unknown ACC 0.6332
+*****Epoch 113 Fixing stage*****
+Train loss = protosim(3.698) + groupsim(1.919) + cls(0.681) + ent(0.084) + new(1.186) + q_ent(0.000)
+Test All ACC 0.7395, Known ACC 0.8555, Unknown ACC 0.6358
+*****Epoch 114 Fixing stage*****
+Train loss = protosim(3.702) + groupsim(1.921) + cls(0.691) + ent(0.081) + new(1.181) + q_ent(0.000)
+Test All ACC 0.7298, Known ACC 0.8459, Unknown ACC 0.6260
+*****Epoch 115 Fixing stage*****
+Train loss = protosim(3.715) + groupsim(1.933) + cls(0.717) + ent(0.082) + new(1.180) + q_ent(0.000)
+Test All ACC 0.7239, Known ACC 0.8286, Unknown ACC 0.6302
+*****Epoch 116 Fixing stage*****
+Train loss = protosim(3.720) + groupsim(1.937) + cls(0.692) + ent(0.090) + new(1.172) + q_ent(0.312)
+Test All ACC 0.7167, Known ACC 0.8366, Unknown ACC 0.6095
+*****Epoch 117 Fixing stage*****
+Train loss = protosim(3.703) + groupsim(1.925) + cls(0.696) + ent(0.085) + new(1.147) + q_ent(0.000)
+Test All ACC 0.7245, Known ACC 0.8369, Unknown ACC 0.6240
+*****Epoch 118 Fixing stage*****
+Train loss = protosim(3.703) + groupsim(1.924) + cls(0.685) + ent(0.081) + new(1.142) + q_ent(0.000)
+Test All ACC 0.7148, Known ACC 0.8085, Unknown ACC 0.6310
+*****Epoch 119 Fixing stage*****
+Train loss = protosim(3.696) + groupsim(1.919) + cls(0.662) + ent(0.082) + new(1.149) + q_ent(0.000)
+Test All ACC 0.7152, Known ACC 0.8050, Unknown ACC 0.6349
+*****Epoch 120 Fixing stage*****
+Train loss = protosim(3.710) + groupsim(1.925) + cls(0.661) + ent(0.073) + new(1.144) + q_ent(0.000)
+Test All ACC 0.7202, Known ACC 0.8201, Unknown ACC 0.6310
+*****Epoch 121 Fixing stage*****
+Train loss = protosim(3.700) + groupsim(1.916) + cls(0.669) + ent(0.080) + new(1.141) + q_ent(0.000)
+Test All ACC 0.7192, Known ACC 0.8114, Unknown ACC 0.6367
+*****Epoch 122 Fixing stage*****
+Train loss = protosim(3.699) + groupsim(1.914) + cls(0.677) + ent(0.078) + new(1.112) + q_ent(0.000)
+Test All ACC 0.7186, Known ACC 0.8136, Unknown ACC 0.6337
+*****Epoch 123 Fixing stage*****
+Train loss = protosim(3.696) + groupsim(1.913) + cls(0.679) + ent(0.082) + new(1.134) + q_ent(0.000)
+Test All ACC 0.7152, Known ACC 0.8017, Unknown ACC 0.6378
+*****Epoch 124 Fixing stage*****
+Train loss = protosim(3.697) + groupsim(1.914) + cls(0.656) + ent(0.077) + new(1.134) + q_ent(0.000)
+Test All ACC 0.7224, Known ACC 0.8259, Unknown ACC 0.6298
+*****Epoch 125 Fixing stage*****
+Train loss = protosim(3.702) + groupsim(1.919) + cls(0.676) + ent(0.074) + new(1.140) + q_ent(0.000)
+Test All ACC 0.7180, Known ACC 0.8187, Unknown ACC 0.6280
+*****Epoch 126 Fixing stage*****
+Train loss = protosim(3.699) + groupsim(1.916) + cls(0.639) + ent(0.076) + new(1.135) + q_ent(0.000)
+Test All ACC 0.7223, Known ACC 0.8216, Unknown ACC 0.6335
+*****Epoch 127 Fixing stage*****
+Train loss = protosim(3.701) + groupsim(1.917) + cls(0.688) + ent(0.074) + new(1.121) + q_ent(0.000)
+Test All ACC 0.7175, Known ACC 0.8108, Unknown ACC 0.6341
+*****Epoch 128 Fixing stage*****
+Train loss = protosim(3.701) + groupsim(1.914) + cls(0.686) + ent(0.079) + new(1.126) + q_ent(0.000)
+Test All ACC 0.7191, Known ACC 0.8045, Unknown ACC 0.6427
+*****Epoch 129 Fixing stage*****
+Train loss = protosim(3.702) + groupsim(1.916) + cls(0.657) + ent(0.077) + new(1.136) + q_ent(0.000)
+Test All ACC 0.7197, Known ACC 0.8170, Unknown ACC 0.6328
+*****Epoch 130 Fixing stage*****
+Train loss = protosim(3.703) + groupsim(1.920) + cls(0.694) + ent(0.076) + new(1.136) + q_ent(0.000)
+Test All ACC 0.7221, Known ACC 0.8159, Unknown ACC 0.6382
+*****Epoch 131 Fixing stage*****
+Train loss = protosim(3.697) + groupsim(1.915) + cls(0.655) + ent(0.077) + new(1.133) + q_ent(0.151)
+Test All ACC 0.7206, Known ACC 0.8153, Unknown ACC 0.6359
+*****Epoch 132 Fixing stage*****
+Train loss = protosim(3.704) + groupsim(1.920) + cls(0.683) + ent(0.082) + new(1.125) + q_ent(0.000)
+Test All ACC 0.7221, Known ACC 0.8213, Unknown ACC 0.6334
+*****Epoch 133 Fixing stage*****
+Train loss = protosim(3.706) + groupsim(1.920) + cls(0.646) + ent(0.078) + new(1.130) + q_ent(0.000)
+Test All ACC 0.7178, Known ACC 0.8107, Unknown ACC 0.6347
+*****Epoch 134 Fixing stage*****
+Train loss = protosim(3.692) + groupsim(1.911) + cls(0.658) + ent(0.079) + new(1.135) + q_ent(0.000)
+Test All ACC 0.7198, Known ACC 0.8091, Unknown ACC 0.6400
+*****Epoch 135 Fixing stage*****
+Train loss = protosim(3.691) + groupsim(1.911) + cls(0.659) + ent(0.079) + new(1.126) + q_ent(0.000)
+Test All ACC 0.7204, Known ACC 0.8162, Unknown ACC 0.6348
+*****Epoch 136 Fixing stage*****
+Train loss = protosim(3.700) + groupsim(1.916) + cls(0.664) + ent(0.079) + new(1.128) + q_ent(0.000)
+Test All ACC 0.7186, Known ACC 0.8096, Unknown ACC 0.6372
+*****Epoch 137 Fixing stage*****
+Train loss = protosim(3.698) + groupsim(1.915) + cls(0.664) + ent(0.081) + new(1.123) + q_ent(0.150)
+Test All ACC 0.7217, Known ACC 0.8167, Unknown ACC 0.6368
+*****Epoch 138 Fixing stage*****
+Train loss = protosim(3.698) + groupsim(1.915) + cls(0.639) + ent(0.080) + new(1.129) + q_ent(0.000)
+Test All ACC 0.7172, Known ACC 0.8022, Unknown ACC 0.6412
+*****Epoch 139 Fixing stage*****
+Train loss = protosim(3.700) + groupsim(1.915) + cls(0.655) + ent(0.079) + new(1.112) + q_ent(0.000)
+Test All ACC 0.7220, Known ACC 0.8179, Unknown ACC 0.6361
+*****Epoch 140 Fixing stage*****
+Train loss = protosim(3.701) + groupsim(1.917) + cls(0.659) + ent(0.079) + new(1.129) + q_ent(0.000)
+Test All ACC 0.7203, Known ACC 0.8100, Unknown ACC 0.6401
+*****Epoch 141 Fixing stage*****
+Train loss = protosim(3.695) + groupsim(1.912) + cls(0.665) + ent(0.084) + new(1.116) + q_ent(0.164)
+Test All ACC 0.7204, Known ACC 0.8155, Unknown ACC 0.6353
+*****Epoch 142 Fixing stage*****
+Train loss = protosim(3.702) + groupsim(1.915) + cls(0.633) + ent(0.079) + new(1.119) + q_ent(0.000)
+Test All ACC 0.7173, Known ACC 0.8020, Unknown ACC 0.6415
+*****Epoch 143 Fixing stage*****
+Train loss = protosim(3.693) + groupsim(1.910) + cls(0.634) + ent(0.079) + new(1.114) + q_ent(0.000)
+Test All ACC 0.7205, Known ACC 0.8151, Unknown ACC 0.6359
+*****Epoch 144 Fixing stage*****
+Train loss = protosim(3.707) + groupsim(1.920) + cls(0.658) + ent(0.081) + new(1.132) + q_ent(0.000)
+Test All ACC 0.7187, Known ACC 0.8037, Unknown ACC 0.6427
+*****Epoch 145 Fixing stage*****
+Train loss = protosim(3.702) + groupsim(1.918) + cls(0.683) + ent(0.077) + new(1.124) + q_ent(0.000)
+Test All ACC 0.7172, Known ACC 0.8020, Unknown ACC 0.6414
+*****Epoch 146 Fixing stage*****
+Train loss = protosim(3.703) + groupsim(1.919) + cls(0.647) + ent(0.075) + new(1.129) + q_ent(0.000)
+Test All ACC 0.7215, Known ACC 0.8184, Unknown ACC 0.6349
+*****Epoch 147 Fixing stage*****
+Train loss = protosim(3.699) + groupsim(1.915) + cls(0.678) + ent(0.077) + new(1.111) + q_ent(0.000)
+Test All ACC 0.7206, Known ACC 0.8131, Unknown ACC 0.6379
+*****Epoch 148 Fixing stage*****
+Train loss = protosim(3.700) + groupsim(1.916) + cls(0.665) + ent(0.079) + new(1.131) + q_ent(0.000)
+Test All ACC 0.7228, Known ACC 0.8243, Unknown ACC 0.6320
+*****Epoch 149 Fixing stage*****
+Train loss = protosim(3.698) + groupsim(1.914) + cls(0.646) + ent(0.080) + new(1.139) + q_ent(0.306)
+Test All ACC 0.7181, Known ACC 0.8094, Unknown ACC 0.6365
+*****Epoch 150 Fixing stage*****
+Train loss = protosim(3.692) + groupsim(1.910) + cls(0.667) + ent(0.084) + new(1.120) + q_ent(0.000)
+Test All ACC 0.7214, Known ACC 0.8200, Unknown ACC 0.6332
+*****Epoch 151 Fixing stage*****
+Train loss = protosim(3.704) + groupsim(1.919) + cls(0.673) + ent(0.080) + new(1.126) + q_ent(0.000)
+Test All ACC 0.7138, Known ACC 0.7960, Unknown ACC 0.6402
+*****Epoch 152 Fixing stage*****
+Train loss = protosim(3.700) + groupsim(1.915) + cls(0.668) + ent(0.077) + new(1.118) + q_ent(0.000)
+Test All ACC 0.7146, Known ACC 0.7993, Unknown ACC 0.6389
+*****Epoch 153 Fixing stage*****
+Train loss = protosim(3.701) + groupsim(1.916) + cls(0.666) + ent(0.079) + new(1.117) + q_ent(0.000)
+Test All ACC 0.7163, Known ACC 0.8029, Unknown ACC 0.6389
+*****Epoch 154 Fixing stage*****
+Train loss = protosim(3.700) + groupsim(1.914) + cls(0.652) + ent(0.078) + new(1.108) + q_ent(0.000)
+Test All ACC 0.7150, Known ACC 0.7963, Unknown ACC 0.6424
+*****Epoch 155 Fixing stage*****
+Train loss = protosim(3.691) + groupsim(1.909) + cls(0.685) + ent(0.077) + new(1.115) + q_ent(0.000)
+Test All ACC 0.7198, Known ACC 0.8113, Unknown ACC 0.6380
+*****Epoch 156 Fixing stage*****
+Train loss = protosim(3.690) + groupsim(1.907) + cls(0.653) + ent(0.076) + new(1.115) + q_ent(0.000)
+Test All ACC 0.7161, Known ACC 0.7998, Unknown ACC 0.6412
+*****Epoch 157 Fixing stage*****
+Train loss = protosim(3.695) + groupsim(1.911) + cls(0.660) + ent(0.076) + new(1.105) + q_ent(0.000)
+Test All ACC 0.7113, Known ACC 0.7895, Unknown ACC 0.6414
+*****Epoch 158 Fixing stage*****
+Train loss = protosim(3.702) + groupsim(1.918) + cls(0.663) + ent(0.078) + new(1.114) + q_ent(0.000)
+Test All ACC 0.7191, Known ACC 0.8116, Unknown ACC 0.6363
+*****Epoch 159 Fixing stage*****
+Train loss = protosim(3.705) + groupsim(1.918) + cls(0.673) + ent(0.081) + new(1.116) + q_ent(0.148)
+Test All ACC 0.7117, Known ACC 0.7934, Unknown ACC 0.6386
+*****Epoch 160 Fixing stage*****
+Train loss = protosim(3.698) + groupsim(1.913) + cls(0.667) + ent(0.079) + new(1.123) + q_ent(0.000)
+Test All ACC 0.7157, Known ACC 0.8026, Unknown ACC 0.6380
+*****Epoch 161 Fixing stage*****
+Train loss = protosim(3.707) + groupsim(1.920) + cls(0.667) + ent(0.078) + new(1.120) + q_ent(0.000)
+Test All ACC 0.7162, Known ACC 0.8065, Unknown ACC 0.6354
+*****Epoch 162 Fixing stage*****
+Train loss = protosim(3.690) + groupsim(1.911) + cls(0.670) + ent(0.076) + new(1.119) + q_ent(0.000)
+Test All ACC 0.7170, Known ACC 0.8050, Unknown ACC 0.6383
+*****Epoch 163 Fixing stage*****
+Train loss = protosim(3.708) + groupsim(1.921) + cls(0.680) + ent(0.080) + new(1.125) + q_ent(0.000)
+Test All ACC 0.7177, Known ACC 0.8068, Unknown ACC 0.6381
+Early stopping at epoch 163
+Best epoch 113
+Test All ACC BEST 0.7395, Known ACC BEST 0.8555, Unknown ACC BEST 0.6358
+Current Time:  240728_150234

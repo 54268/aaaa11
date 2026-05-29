@@ -1,0 +1,3 @@
+dataset,method,task,seed,nmi,ari,purity,hungarian_accuracy
+oracle_kri16_demod,OpenRFI-style Prototype Grouping,unknown_subdivision,42,0.07286125594364765,0.010132562063147747,0.2708333333333333,0.2569444444444444
+wisig_singleday_osr_k16_u12,OpenRFI-style Prototype Grouping,unknown_subdivision,42,0.2177620663280271,0.04777236688533827,0.2534722222222222,0.23958333333333334

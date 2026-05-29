@@ -1,0 +1,72 @@
+{
+  "project_root": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code",
+  "config_sources_found": [
+    "settings.default_wisig_config",
+    "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\data\\splits\\wisig\\single_day_rx1_eq0\\wisig_single_day_rx1_eq0_k16_u12_seed42.json",
+    "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\wisig_singleday_osr_k16_u12\\unknown_subdivision\\unknown_subdivision_metrics.json"
+  ],
+  "warnings": [],
+  "settings_config": {
+    "output_dir": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\wisig_singleday_osr_k16_u12",
+    "raw_path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\data\\raw\\wisig\\SingleDay.pkl",
+    "split_file": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\data\\splits\\wisig\\single_day_rx1_eq0\\wisig_single_day_rx1_eq0_k16_u12_seed42.json",
+    "processed_root": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\data\\processed\\wisig_singleday_osr_k16_u12",
+    "signal_length": 256,
+    "normalize": "per_sample",
+    "batch_size": 128
+  },
+  "subset": "SingleDay",
+  "known_tx_list": [
+    "13-3",
+    "20-7",
+    "7-10",
+    "6-15",
+    "3-13",
+    "11-4",
+    "8-3",
+    "7-11",
+    "15-1",
+    "3-18",
+    "4-11",
+    "14-7",
+    "11-7",
+    "5-5",
+    "11-1",
+    "1-11"
+  ],
+  "unknown_tx_list": [
+    "20-19",
+    "6-1",
+    "2-19",
+    "16-16",
+    "20-15",
+    "8-20",
+    "10-7",
+    "11-17",
+    "8-18",
+    "10-11",
+    "20-12",
+    "14-10"
+  ],
+  "include_rx": [
+    "1-1"
+  ],
+  "include_capture_dates": [
+    "2021_03_23"
+  ],
+  "include_equalized": [
+    0
+  ],
+  "unknown_count": 12,
+  "samples_per_class": 800,
+  "split_file": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\data\\splits\\wisig\\single_day_rx1_eq0\\wisig_single_day_rx1_eq0_k16_u12_seed42.json",
+  "existing_wisig_unknown_subdivision": {
+    "path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\wisig_singleday_osr_k16_u12\\unknown_subdivision\\unknown_subdivision_metrics.json",
+    "nmi": 0.9858064459520769,
+    "ari": 0.9755342438696702,
+    "purity": 0.9989651604001379,
+    "hungarian_accuracy": 0.968839829826377,
+    "resolved_num_clusters": 12,
+    "uncertain_size": 0
+  }
+}

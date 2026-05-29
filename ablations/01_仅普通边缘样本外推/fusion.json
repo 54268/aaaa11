@@ -1,0 +1,23 @@
+﻿{
+  "fusion_lambda": 0.8,
+  "threshold": 0.8620508199930191,
+  "thresholds_per_class": null,
+  "threshold_mode": "global",
+  "threshold_quantile": null,
+  "fusion_mode": "linear",
+  "metrics": {
+    "overall_accuracy": 0.556442417331813,
+    "macro_precision": 0.5593299652759187,
+    "macro_recall": 0.9436539382592415,
+    "macro_f1": 0.6647726236345521,
+    "weighted_f1": 0.4633108202747969,
+    "known_accuracy": 0.99375,
+    "unknown_precision": 0.964824120603015,
+    "unknown_recall": 0.14211695040710584,
+    "known_fpr_as_unknown": 0.00546875,
+    "unknown_false_accept_rate": 0.8578830495928942,
+    "auroc": 0.8695428155070319,
+    "fpr95": 0.47265625,
+    "oscr": 0.868900062453738
+  }
+}

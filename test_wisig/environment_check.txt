@@ -1,0 +1,7 @@
+# 环境依赖检查
+
+- numpy: OK, version=1.26.4
+- pandas: OK, version=2.3.1
+- sklearn: OK, version=1.6.1
+- matplotlib: OK, version=3.9.4
+- scipy: OK, version=1.13.1

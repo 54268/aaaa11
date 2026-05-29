@@ -1,0 +1,23 @@
+[1/8] 检查依赖
+[2/8] 只读识别当前项目 WiSig 协议
+配置来源：['settings.default_wisig_config', 'D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\data\\splits\\wisig\\single_day_rx1_eq0\\wisig_single_day_rx1_eq0_k16_u12_seed42.json', 'D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\wisig_singleday_osr_k16_u12\\unknown_subdivision\\unknown_subdivision_metrics.json']
+[3/8] 扫描并加载 WiSig 官方 compact subsets
+成功加载 subset：SingleDay, ManySig, ManyRx, ManyTx
+[4/8] 运行当前 SingleDay unknown 协议直接聚类诊断
+[5/8] 运行 P1 四个 subset 统一 6 类弱基线诊断
+[6/8] 运行 P2 shared-Tx 对齐诊断
+[7/8] 运行 P3 receiver/day 条件敏感性诊断
+[8/8] 读取 Oracle 旁注并生成最终报告
+
+===== 诊断完成 =====
+新建内容均位于 test_wisig/：README、入口脚本、src、config、cache、logs、results、environment_check.txt。
+确认未写入 outputs/、settings/、functions/、data/raw/wisig/，未修改主实验入口。
+成功识别到 subset：SingleDay, ManySig, ManyRx, ManyTx
+当前 SingleDay unknown 协议三个 baseline 汇总：
+- FFT Magnitude + PCA + K-Means: NMI=0.921285±0.005880, Hungarian=0.829600±0.028157
+- Raw IQ + PCA + GMM: NMI=0.368094±0.009209, Hungarian=0.327333±0.016690
+- Raw IQ + PCA + K-Means: NMI=0.223301±0.007922, Hungarian=0.240533±0.006633
+P1 成功运行：True；P2 成功运行：True；P3 成功运行：True
+是否支持当前 WiSig SingleDay 细分设置过于容易：未形成强支持
+- 自动规则未形成强结论：当前结果需要结合 P1/P2/P3 表格人工判断。
+最终报告：D:\learn_pytorch\笔记\方案\os_sei_code\test_wisig\results\final_diagnostic_report.md

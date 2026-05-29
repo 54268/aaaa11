@@ -1,0 +1,19 @@
+﻿{
+    "figure_dir":  "E:\\learn_pytorch\\绗旇\\鏂规\\os_sei_code\\娑堣瀺瀹為獙\\Oracle_01_浠呮櫘閫氳竟缂樻牱鏈鎺╘\figures",
+    "files":  [
+                  "confusion_label_map.csv",
+                  "confusion_matrix.png",
+                  "figures_index.json",
+                  "openness_accuracy_f1_curve.png",
+                  "openness_accuracy_f1_summary.md",
+                  "openness_curve.json",
+                  "openness_metric_curve.png",
+                  "pr_curve.png",
+                  "roc_curve.png",
+                  "unknown_score_histogram.png"
+              ],
+    "notes":  {
+                  "confusion_label_map":  "confusion_label_map.csv stores display label to raw class label mapping."
+              }
+}
+

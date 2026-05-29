@@ -1,98 +1,69 @@
-# 开放集 SEI 工程说明
+# 开放集 SEI 项目说明
 
-这个目录现在已经按“纯开放集识别（OSR）”重构成两条主线：
+项目已经整理成少量入口加函数目录的结构，不再使用 YAML 和命令行参数。
 
-- WiSig 主实验：不再把官网四个 compact subset 无差别合并，也不把四个子集分别当主实验；而是从 `SingleDay` 中抽取一个受控条件数据池，再做可复现的 known / unknown 划分。
-- Oracle 主实验：独立训练、独立评测，不和 WiSig 混成一个训练集。
+更完整的方案背景、数据流和方法细节见 `项目详细说明.md`。
 
-## 推荐入口
+## 主要入口
 
-### 运行 WiSig 主实验
+- `run_oracle.py`：Oracle 拒识主入口，默认连带做未知类细分。
+- `run_wisig.py`：WiSig 拒识主入口，默认连带做未知类细分。
+- `run_oracle_subdivision.py`：基于已有 Oracle 闭集模型，单独刷新未知类细分。
+- `run_wisig_subdivision.py`：基于已有 WiSig 闭集模型，单独刷新未知类细分。
+- `explore_subdivision.py`：在 Oracle 或 WiSig 上批量对比 feature_mode + 聚类后端 + target_k 组合，结果写入 `_explore_subdivision_<dataset>.json`。
 
-```bash
-python run_wisig_demo.py
-```
+入口文件顶部放常用开关和常改参数，直接改变量即可。完整默认参数放在 `settings/`，函数实现放在 `functions/`。
 
-默认会跑：
+## 目录说明
 
-- `configs/wisig_singleday_osr_k16_u12.yaml`
+- `functions/`：数据处理、模型、拒识方法、细分方法、通用工具函数。
+- `settings/`：不常改的完整默认参数。
+- `data/`：数据集和预处理结果。
+- `outputs/`：正式实验输出。
+- `ablations/`：消融实验记录和历史结果。
+- `third_party/`：外部依赖代码。
 
-对应的数据池条件是：
+## 常用参数
 
-- 数据来源：`WiSig SingleDay`
-- 固定接收机：`1-1`
-- 固定采集日期：`2021_03_23`
-- 固定 equalized：`0`
-- 类别定义：`transmitter identity`
+- `RUN_DATA_PREPARE`：是否重新预处理数据。数据已经处理好时保持 `False`。
+- `RUN_TRAINING`：是否重新训练闭集模型。平时调拒识和细分时保持 `False`，避免覆盖已有权重。
+- `RUN_UNKNOWN_SUBDIVISION`：是否在拒识结束后继续做未知类细分。
+- `CHECKPOINT_PATH`：指定已有权重路径；为 `None` 时使用对应输出目录里的 `best_closed_set.pt`。
+- `EPOCHS`：训练轮数。
+- `LEARNING_RATE`：学习率。
+- `BATCH_SIZE`：批大小。
+- `FUSION_LAMBDA_GRID`：OpenMax 分数和原型距离分数的融合权重。
+- `THRESHOLD_GRID`：拒识阈值搜索范围。
+- `MIN_KNOWN_ACCURACY`：阈值搜索时要求的已知类准确率下限。
+- `SUBDIVISION_FEATURE_MODE`：未知类细分特征，可选 `score_distance` / `embedding` / `embedding_distance` / `prototype_residual` / `residual_distance`。
+- `SUBDIVISION_PCA_DIM`：细分前的 PCA 维度。
+- `SUBDIVISION_K_MIN` / `SUBDIVISION_K_MAX`：未知细分类数搜索范围；二者相同表示固定类别数。
+- `SUBDIVISION_CLUSTERING_BACKEND`：细分后端，可选 `kmeans`（球面 KMeans）、`agglomerative_cosine`（余弦凝聚式）、`gmm` / `gmm_full`（高斯混合）、`gmm_full_direct`（GMM-full 直接出标签，不做原型再分配）。
+- `SUBDIVISION_TARGET_NUM_CLUSTERS`：若设置则提示自动 K 搜索向该值靠拢；`SUBDIVISION_TARGET_K_STRENGTH=1.0` 时直接锁定到此值。
 
-### 运行 Oracle 主实验
+## 输出文件
 
-```bash
-python run_oracle_demo.py
-```
+每次实验输出在 `outputs/<实验名>/`：
 
-默认会跑：
+- `final_report.md`：中文结果报告。
+- `open_set_metrics.json`：开放集拒识完整指标。
+- `open_set_predictions.csv`：逐样本预测结果。
+- `figures/`：ROC、PR、混淆矩阵、分数直方图等图表。
+- `unknown_subdivision/`：未知类细分结果，包含 `unknown_subdivision_report.md`、`unknown_subdivision_metrics.json`、`unknown_subdivision_labels.npy`、`unknown_subdivision_assignments.csv`、`unknown_subdivision_centers.npy`、`true_unknown_confusion.csv`、`k_search_history.json`。
 
-- `configs/oracle_osr_main.yaml`
+## 指标说明
 
-### 通用入口
-
-```bash
-python run_osr_experiment.py --config configs/wisig_singleday_osr_k16_u12.yaml
-python run_osr_experiment.py --config configs/oracle_osr_main.yaml
-```
-
-## 数据划分与 split 文件
-
-WiSig 和 Oracle 都已经改成 split 文件驱动：
-
-- WiSig split：`data/splits/wisig/single_day_rx1_eq0/`
-- Oracle split：`data/splits/oracle/`
-
-这些 split 文件会明确记录：
-
-- known classes 列表
-- unknown classes 列表
-- 随机种子
-- 训练/验证比例
-- 受控条件池的过滤条件
-- openness
-
-## 结果与图表
-
-每次实验的输出在：
-
-- `outputs/<实验名>/`
-
-自动生成的图在：
-
-- `figures/<实验名>/`
-
-结果汇总快捷入口：
-
-- `RESULT_SUMMARY.md`：总入口，不再保存单次实验结果
-- `RESULT_SUMMARY_WISIG.md`：WiSig 最近一次运行结果汇总
-- `RESULT_SUMMARY_ORACLE.md`：Oracle 最近一次运行结果汇总
-
-## 结果表与 openness 曲线
-
-如果你已经跑完多组 WiSig 主实验，比如 `K=16, U=4/8/12`，可以用下面的命令汇总结果并画 openness 曲线：
-
-```bash
-python tools/export_osr_results_table.py ^
-  --configs configs/wisig_singleday_osr_k16_u4.yaml configs/wisig_singleday_osr_k16_u8.yaml configs/wisig_singleday_osr_k16_u12.yaml ^
-  --output-dir outputs/tables/wisig_singleday_main
-```
-
-## 重点说明
-
-- 本工程是纯 OSR，不包含 class-incremental 训练流程。
-- known / unknown 是按类别严格隔离的。
-- unknown 类不参与训练。
-- WiSig 和 Oracle 分别独立训练与评测。
-- 跨数据集泛化评测单独用 `tools/evaluate_cross_dataset.py`，作为补充实验，不替代主实验。
-
-更详细的设计说明请看：
-
-- `纯OSR实验设计与入口说明.md`
-- `模型演进与仓库适配说明.md`
+- `overall_accuracy`：总体准确率，所有已知和未知样本一起统计。
+- `known_accuracy`：已知类准确率，只看真实已知类样本是否被正确分到对应已知类别。
+- `unknown_precision`：未知类精确率，被拒识为未知的样本中真实未知样本的比例。
+- `unknown_recall`：未知类召回率，真实未知样本被拒识出来的比例。
+- `known_fpr_as_unknown`：已知类误拒率，真实已知样本被误拒为未知的比例。
+- `unknown_false_accept_rate`：未知类误接收率，真实未知样本被误分到已知类别的比例。
+- `macro_f1`：宏平均 F1，各类别 F1 的平均值，更关注类别均衡。
+- `auroc`：已知/未知区分能力，越高越好。
+- `fpr95`：未知召回约 95% 时的已知类误拒率，越低越好。
+- `oscr`：开放集分类-拒识综合曲线面积，越高越好。
+- `nmi`：归一化互信息，衡量未知细分聚类和真实未知类别的一致性。
+- `ari`：调整兰德指数，衡量聚类划分和真实类别的一致性。
+- `purity`：聚类纯度，每个簇中主导真实类别所占比例。
+- `hungarian_accuracy`：匈牙利匹配后的聚类准确率。

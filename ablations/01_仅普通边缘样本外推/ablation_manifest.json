@@ -1,0 +1,5 @@
+﻿{
+  "config_path": "E:\\learn_pytorch\\笔记\\方案\\os_sei_code\\experiments\ablations\\01_仅普通边缘样本外推\\config.yaml",
+  "base_checkpoint": "E:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\wisig_singleday_osr_k16_u12\\best_closed_set.pt",
+  "base_output_dir": "E:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\wisig_singleday_osr_k16_u12"
+}

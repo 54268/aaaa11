@@ -1,0 +1,15 @@
+﻿{
+  "overall_accuracy": 0.52415625,
+  "macro_precision": 0.7419222539169524,
+  "macro_recall": 0.9087083333333336,
+  "macro_f1": 0.7381972916196115,
+  "weighted_f1": 0.600088983575932,
+  "known_accuracy": 0.96175,
+  "unknown_precision": 0.9919152190538622,
+  "unknown_recall": 0.3782916666666667,
+  "known_fpr_as_unknown": 0.00925,
+  "unknown_false_accept_rate": 0.6217083333333333,
+  "auroc": 0.7745989739583333,
+  "fpr95": 0.729875,
+  "oscr": 0.7618811276041667
+}
