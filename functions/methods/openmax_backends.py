@@ -1,5 +1,7 @@
 ﻿from __future__ import annotations
 
+import importlib.machinery
+import importlib.util
 import sys
 from pathlib import Path
 from typing import Dict
@@ -16,12 +18,54 @@ def _register_path(path: Path) -> None:
         sys.path.insert(0, str(path))
 
 
+def _load_pyc_module(module_name: str, pyc_path: Path, is_package: bool = False):
+    loader = importlib.machinery.SourcelessFileLoader(module_name, str(pyc_path))
+    spec = importlib.util.spec_from_loader(
+        module_name,
+        loader,
+        origin=str(pyc_path),
+        is_package=is_package,
+    )
+    if spec is None:
+        raise ModuleNotFoundError(f"Cannot create import spec for {module_name}: {pyc_path}")
+    if is_package:
+        spec.submodule_search_locations = [str(pyc_path.parent.parent)]
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    loader.exec_module(module)
+    return module
+
+
+def _load_openmax_from_pyc(repo_root: Path):
+    package_dir = repo_root / "openmax"
+    pycache = package_dir / "__pycache__"
+    tag = sys.implementation.cache_tag
+    required = {
+        "openmax": pycache / f"__init__.{tag}.pyc",
+        "openmax.distances": pycache / f"distances.{tag}.pyc",
+        "openmax.weibull_fitting": pycache / f"weibull_fitting.{tag}.pyc",
+        "openmax.openmax": pycache / f"openmax.{tag}.pyc",
+    }
+    missing = [str(path) for path in required.values() if not path.exists()]
+    if missing:
+        raise ModuleNotFoundError("third_party/openmax 缺少源码且找不到可用 pyc: " + "; ".join(missing))
+
+    _load_pyc_module("openmax", required["openmax"], is_package=True)
+    _load_pyc_module("openmax.distances", required["openmax.distances"])
+    weibull_module = _load_pyc_module("openmax.weibull_fitting", required["openmax.weibull_fitting"])
+    openmax_module = _load_pyc_module("openmax.openmax", required["openmax.openmax"])
+    return openmax_module.OpenMax, weibull_module.WeibullFitting
+
+
 class RepoOpenMaxAdapter:
     def __init__(self, alpha_rank: int = 3, tail_size: int = 20, distance_type: str = "eucl") -> None:
         repo_root = _project_root() / "third_party" / "openmax"
         _register_path(repo_root)
-        from openmax.openmax import OpenMax  # type: ignore
-        from openmax.weibull_fitting import WeibullFitting  # type: ignore
+        try:
+            from openmax.openmax import OpenMax  # type: ignore
+            from openmax.weibull_fitting import WeibullFitting  # type: ignore
+        except ModuleNotFoundError:
+            OpenMax, WeibullFitting = _load_openmax_from_pyc(repo_root)
 
         self._OpenMax = OpenMax
         self._WeibullFitting = WeibullFitting

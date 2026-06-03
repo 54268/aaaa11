@@ -1,7 +1,7 @@
 ﻿from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Iterable
+from typing import Any, Dict, Iterable
 
 import numpy as np
 
@@ -48,6 +48,67 @@ def fuse_unknown_score(
     raise ValueError(f"Unsupported fusion mode: {mode}")
 
 
+def fit_score_calibration(
+    q_u: np.ndarray,
+    known_pred: np.ndarray,
+    num_classes: int,
+    mode: str | None,
+) -> dict[str, Any] | None:
+    if mode in (None, "", "none"):
+        return None
+    if mode != "classwise_z":
+        raise ValueError(f"Unsupported score calibration mode: {mode}")
+
+    global_mean = float(np.mean(q_u))
+    global_std = float(np.std(q_u) + 1e-6)
+    means = []
+    sigmas = []
+    counts = []
+    for cls in range(num_classes):
+        cls_scores = q_u[known_pred == cls]
+        counts.append(int(len(cls_scores)))
+        if len(cls_scores) < 2:
+            means.append(global_mean)
+            sigmas.append(global_std)
+            continue
+        means.append(float(np.mean(cls_scores)))
+        sigmas.append(float(np.std(cls_scores) + 1e-6))
+    return {
+        "mode": "classwise_z",
+        "means": means,
+        "sigmas": sigmas,
+        "counts": counts,
+        "fallback_mean": global_mean,
+        "fallback_sigma": global_std,
+    }
+
+
+def apply_score_calibration(
+    q_u: np.ndarray,
+    known_pred: np.ndarray,
+    calibration: dict[str, Any] | None,
+) -> np.ndarray:
+    if not calibration or calibration.get("mode") in (None, "", "none"):
+        return q_u
+    mode = str(calibration.get("mode"))
+    if mode != "classwise_z":
+        raise ValueError(f"Unsupported score calibration mode: {mode}")
+
+    means = np.asarray(calibration["means"], dtype=np.float64)
+    sigmas = np.asarray(calibration["sigmas"], dtype=np.float64)
+    fallback_mean = float(calibration.get("fallback_mean", float(np.mean(q_u))))
+    fallback_sigma = float(calibration.get("fallback_sigma", float(np.std(q_u) + 1e-6)))
+
+    calibrated = np.empty_like(q_u, dtype=np.float64)
+    valid = (known_pred >= 0) & (known_pred < len(means))
+    z = np.empty_like(q_u, dtype=np.float64)
+    z[valid] = (q_u[valid] - means[known_pred[valid]]) / (sigmas[known_pred[valid]] + 1e-6)
+    z[~valid] = (q_u[~valid] - fallback_mean) / (fallback_sigma + 1e-6)
+    z = np.clip(z, -50.0, 50.0)
+    calibrated[:] = 1.0 / (1.0 + np.exp(-z))
+    return calibrated
+
+
 def apply_unknown_rejection(
     known_pred: np.ndarray,
     q_u: np.ndarray,
@@ -64,6 +125,45 @@ def apply_unknown_rejection(
         raise ValueError("Either threshold or thresholds_per_class must be provided.")
     y_pred[q_u > float(threshold)] = unknown_label
     return y_pred
+
+
+def apply_known_rescue(
+    y_pred: np.ndarray,
+    known_pred: np.ndarray,
+    q_u: np.ndarray,
+    distances: np.ndarray,
+    unknown_label: int,
+    rescue_config: dict[str, Any] | None,
+) -> np.ndarray:
+    if not rescue_config or not bool(rescue_config.get("enabled", False)):
+        return y_pred
+    rules = rescue_config.get("rules_per_class") or []
+    if not rules:
+        return y_pred
+
+    sorted_distances = np.sort(distances, axis=1)
+    d_min = sorted_distances[:, 0]
+    if sorted_distances.shape[1] > 1:
+        d_margin = sorted_distances[:, 1] - sorted_distances[:, 0]
+    else:
+        d_margin = np.zeros_like(d_min)
+
+    rescued = y_pred.copy()
+    rejected_mask = y_pred == unknown_label
+    for rule in rules:
+        cls = int(rule["class_index"])
+        max_score = float(rule.get("max_score", np.inf))
+        max_distance = float(rule.get("max_distance", np.inf))
+        min_margin = float(rule.get("min_margin", -np.inf))
+        mask = (
+            rejected_mask
+            & (known_pred == cls)
+            & (q_u <= max_score)
+            & (d_min <= max_distance)
+            & (d_margin >= min_margin)
+        )
+        rescued[mask] = known_pred[mask]
+    return rescued
 
 
 def fusion_selection_score(metrics: Dict[str, float], selection_weights: Dict[str, float] | None = None) -> float:

@@ -183,7 +183,7 @@ def _fit_labels_gmm_direct(
     seed: int,
     n_init: int,
     covariance_type: str = "full",
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """直接用 GMM 完成聚类（不经过原型引导的余弦再分配）。
 
     返回 (labels, centers)，centers 是原始空间的高斯均值。
@@ -197,7 +197,8 @@ def _fit_labels_gmm_direct(
         random_state=seed,
     )
     labels = gmm.fit_predict(features).astype(np.int64)
-    return labels, gmm.means_.astype(np.float64)
+    confidence = gmm.predict_proba(features).max(axis=1).astype(np.float64)
+    return labels, gmm.means_.astype(np.float64), confidence
 
 
 def _build_initial_centers(
@@ -294,6 +295,8 @@ def prototype_guided_clustering(
     backend: str = "kmeans",
     agg_sample_size: int = 8000,
     merge_similarity_threshold: float | None = None,
+    direct_confidence_quantile: float = 0.0,
+    direct_min_cluster_size: int = 0,
 ) -> OfscilSubdivisionResult:
     """通用入口：先用指定后端拟合初始中心，然后做带原型约束的迭代再分配。
 
@@ -309,20 +312,36 @@ def prototype_guided_clustering(
     k = max(1, min(int(num_clusters), n_samples))
 
     if str(backend).lower() in _DIRECT_GMM_BACKENDS:
-        labels, gmm_means = _fit_labels_gmm_direct(features, k, seed=seed, n_init=n_init, covariance_type="full")
-        suspected_known = np.zeros(n_samples, dtype=bool)
+        labels, gmm_means, confidence = _fit_labels_gmm_direct(features, k, seed=seed, n_init=n_init, covariance_type="full")
+        uncertain_mask = np.zeros(n_samples, dtype=bool)
+        confidence_quantile = float(direct_confidence_quantile)
+        if confidence_quantile > 0.0:
+            confidence_quantile = min(max(confidence_quantile, 0.0), 0.95)
+            confidence_threshold = float(np.quantile(confidence, confidence_quantile))
+            uncertain_mask |= confidence < confidence_threshold
+            labels = np.where(uncertain_mask, -1, labels).astype(np.int64)
+
+        min_cluster_size = int(direct_min_cluster_size)
+        if min_cluster_size > 0:
+            for cluster_id in range(k):
+                cluster_mask = labels == cluster_id
+                if int(cluster_mask.sum()) < min_cluster_size:
+                    uncertain_mask |= cluster_mask
+            labels = np.where(uncertain_mask, -1, labels).astype(np.int64)
+
         if known_anchor_features is not None and len(known_anchor_features):
             known_distances = cosine_distance_matrix(features, known_anchor_features)
             nearest_known_dist = known_distances.min(axis=1)
             unknown_distances = cosine_distance_matrix(features, gmm_means)
             nearest_unknown_dist = unknown_distances.min(axis=1)
             suspected_known = nearest_known_dist <= (nearest_unknown_dist + float(known_reject_margin))
-            labels = np.where(suspected_known, -1, labels).astype(np.int64)
+            uncertain_mask |= suspected_known
+            labels = np.where(uncertain_mask, -1, labels).astype(np.int64)
         return OfscilSubdivisionResult(
             labels=labels,
             centers=l2_normalize(gmm_means),
             resolved_k=int(len(np.unique(labels[labels != -1]))),
-            suspected_known_mask=suspected_known,
+            suspected_known_mask=uncertain_mask,
             k_search_history=[],
         )
 
@@ -570,6 +589,8 @@ def run_ofscil_subdivision(
     n_init: int = 30,
     merge_similarity_threshold: float | None = None,
     agg_sample_size: int = 8000,
+    direct_confidence_quantile: float = 0.0,
+    direct_min_cluster_size: int = 0,
 ) -> OfscilSubdivisionResult:
     if target_num_clusters is not None and int(target_num_clusters) > 0 and k_min == k_max:
         selected_k = int(target_num_clusters)
@@ -606,6 +627,8 @@ def run_ofscil_subdivision(
         backend=backend,
         agg_sample_size=agg_sample_size,
         merge_similarity_threshold=merge_similarity_threshold,
+        direct_confidence_quantile=direct_confidence_quantile,
+        direct_min_cluster_size=direct_min_cluster_size,
     )
     result.k_search_history.extend(history)
     return result

@@ -11,7 +11,7 @@ from run_oracle import CHECKPOINT_PATH, build_config
 
 
 # 是否先刷新边界挖掘、伪未知、OpenMax、融合阈值和开放集评估结果。
-RUN_OSR_REFRESH = False
+RUN_OSR_REFRESH = True
 
 # 是否只复用已有闭集模型；细分入口通常不重新训练。
 USE_EXISTING_CLOSED_SET_MODEL = True

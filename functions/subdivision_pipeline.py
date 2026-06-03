@@ -7,7 +7,13 @@ from typing import Any
 import numpy as np
 
 from functions.methods.openmax_wrapper import OpenMaxCalibrator
-from functions.methods.fusion import apply_unknown_rejection, fuse_unknown_score, prototype_distance_unknown_score
+from functions.methods.fusion import (
+    apply_known_rescue,
+    apply_score_calibration,
+    apply_unknown_rejection,
+    fuse_unknown_score,
+    prototype_distance_unknown_score,
+)
 from functions.data.data_build import build_data_module
 from functions.methods.unknown_subdivision import (
     evaluate_unknown_subdivision,
@@ -18,6 +24,9 @@ from functions.methods.prototype_utils import activations_from_distances, predic
 from functions.pipeline import checkpoint_path_for, load_pipeline_config
 from functions.model.closed_set import ClosedSetTrainer
 from functions.common.io import ensure_dir, load_json, load_pickle, save_json
+
+
+IQ_STAT_FEATURE_DIM = 49
 
 
 def _jsonable(value: Any) -> Any:
@@ -42,6 +51,78 @@ def _npz_label_names(path: Path, fallback_prefix: str) -> np.ndarray:
     return np.asarray([f"{fallback_prefix}_{label}" for label in labels], dtype=str)
 
 
+def _normalize_signal_samples(samples: np.ndarray, normalize: str) -> np.ndarray:
+    samples = np.asarray(samples, dtype=np.float32)
+    if normalize == "per_sample":
+        mean = samples.mean(axis=2, keepdims=True)
+        std = samples.std(axis=2, keepdims=True)
+        return (samples - mean) / (std + 1e-6)
+    return samples
+
+
+def _sequence_stats(values: np.ndarray) -> np.ndarray:
+    values = np.asarray(values, dtype=np.float64)
+    mean = values.mean(axis=1)
+    std = values.std(axis=1)
+    centered = values - mean[:, None]
+    safe_std = np.maximum(std, 1e-8)
+    skewness = (centered**3).mean(axis=1) / (safe_std**3)
+    excess_kurtosis = (centered**4).mean(axis=1) / (safe_std**4) - 3.0
+    quantiles = np.quantile(values, [0.05, 0.25, 0.50, 0.75, 0.95], axis=1).T
+    stats = np.column_stack(
+        [
+            mean,
+            std,
+            values.min(axis=1),
+            values.max(axis=1),
+            skewness,
+            excess_kurtosis,
+            quantiles,
+        ]
+    )
+    return np.nan_to_num(stats, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32)
+
+
+def build_iq_stat_features(signal_samples: np.ndarray | None, num_rows: int) -> np.ndarray:
+    if signal_samples is None:
+        return np.zeros((int(num_rows), IQ_STAT_FEATURE_DIM), dtype=np.float32)
+    samples = np.asarray(signal_samples, dtype=np.float32)
+    if samples.ndim != 3 or samples.shape[1] != 2:
+        raise ValueError("embedding_stats 需要形状为 [N, 2, L] 的 I/Q 样本。")
+
+    i_part = samples[:, 0, :]
+    q_part = samples[:, 1, :]
+    complex_signal = i_part + 1j * q_part
+    amplitude = np.abs(complex_signal)
+    phase_delta = np.angle(complex_signal[:, 1:] * np.conj(complex_signal[:, :-1]))
+
+    power = np.mean(np.abs(complex_signal) ** 2, axis=1) + 1e-8
+    second_order = np.mean(complex_signal**2, axis=1)
+    centered_i = i_part - i_part.mean(axis=1, keepdims=True)
+    centered_q = q_part - q_part.mean(axis=1, keepdims=True)
+
+    extras = np.column_stack(
+        [
+            np.mean(i_part * q_part, axis=1),
+            np.mean(centered_i * centered_q, axis=1),
+            np.abs(second_order) / power,
+            np.real(second_order),
+            np.imag(second_order),
+        ]
+    ).astype(np.float32)
+    features = np.concatenate(
+        [
+            _sequence_stats(i_part),
+            _sequence_stats(q_part),
+            _sequence_stats(amplitude),
+            _sequence_stats(phase_delta),
+            extras,
+        ],
+        axis=1,
+    )
+    return features.astype(np.float32)
+
+
 def build_cluster_features(
     mode: str,
     embeddings: np.ndarray,
@@ -51,11 +132,16 @@ def build_cluster_features(
     q_u: np.ndarray,
     known_pred: np.ndarray,
     prototypes: np.ndarray,
+    signal_samples: np.ndarray | None = None,
 ) -> np.ndarray:
     if mode == "embedding":
         return embeddings
+    if mode in {"embedding_stats", "embedding_iq_stats"}:
+        return np.concatenate([embeddings, build_iq_stat_features(signal_samples, len(embeddings))], axis=1)
     if mode == "embedding_distance":
         return np.concatenate([embeddings, distances], axis=1)
+    if mode == "embedding_score_distance":
+        return np.concatenate([embeddings, distances, q_om[:, None], q_pd[:, None], q_u[:, None]], axis=1)
     if mode == "prototype_distance":
         return distances
     if mode == "score_distance":
@@ -149,7 +235,13 @@ def _write_report(path: Path, metrics: dict[str, Any], dataset_name: str = "") -
         ("method", "聚类协议"),
         ("clustering_backend", "聚类后端"),
         ("feature_mode", "聚类特征"),
+        ("use_known_prototype_anchors", "是否启用已知原型锚点"),
         ("resolved_num_clusters", "自动确定的未知细分类数"),
+        ("target_num_clusters", "协议目标未知细分类数"),
+        ("fit_num_clusters", "实际拟合候选细分类数"),
+        ("overcluster_extra_clusters", "冗余候选细分类数"),
+        ("direct_confidence_quantile", "GMM低置信过滤分位数"),
+        ("direct_min_cluster_size", "GMM不稳定小簇最小样本数"),
         ("selected_unknown_cache_size", "进入 unknown cache 的样本数"),
         ("uncertain_size", "未分配/不确定样本数"),
         ("uncertain_ratio", "未分配/不确定样本比例"),
@@ -170,7 +262,7 @@ def _write_report(path: Path, metrics: dict[str, Any], dataset_name: str = "") -
     lines = [
         f"# {title_suffix}未知类细分结果",
         "",
-        "当前协议：已知原型引导的半监督聚类（支持 KMeans / Agglomerative / GMM 后端）。",
+        "当前协议：unknown cache 细分聚类（支持 KMeans / Agglomerative / GMM 后端；GMM-full-direct 直接由 GMM 输出候选标签，再通过 GMM 后验置信度和不稳定小簇规则标记不确定样本）。",
         "",
         "| 指标键 | 中文说明 | 数值 |",
         "| --- | --- | ---: |",
@@ -231,6 +323,7 @@ def run_unknown_subdivision(
         float(fusion_cfg["fusion_lambda"]),
         mode=str(fusion_cfg.get("fusion_mode", config["fusion"].get("mode", "linear"))),
     )
+    q_u = apply_score_calibration(q_u, known_pred, fusion_cfg.get("score_calibration"))
     y_pred = apply_unknown_rejection(
         known_pred=known_pred,
         q_u=q_u,
@@ -238,12 +331,28 @@ def run_unknown_subdivision(
         threshold=fusion_cfg.get("threshold"),
         thresholds_per_class=fusion_cfg.get("thresholds_per_class"),
     )
+    y_pred = apply_known_rescue(
+        y_pred=y_pred,
+        known_pred=known_pred,
+        q_u=q_u,
+        distances=distances,
+        unknown_label=unknown_label,
+        rescue_config=fusion_cfg.get("known_rescue", config["fusion"].get("known_rescue")),
+    )
     selected_mask = y_pred == unknown_label
 
     data_root = Path(config["data"]["root"])
     known_names = _npz_label_names(data_root / "test_known.npz", "known")
     unknown_names = _npz_label_names(data_root / "test_unknown.npz", "unknown")
     all_names = np.concatenate([known_names, unknown_names], axis=0)
+    all_signal_samples = np.concatenate(
+        [
+            datamodule.bundle.test_known.x,
+            datamodule.bundle.test_unknown.x,
+        ],
+        axis=0,
+    )
+    all_signal_samples = _normalize_signal_samples(all_signal_samples, str(config["data"].get("normalize", "none")))
     source_split = np.concatenate(
         [
             np.full(len(known_names), "known", dtype="<U7"),
@@ -261,6 +370,7 @@ def run_unknown_subdivision(
     selected_q_u = q_u[selected_mask]
     selected_true_open = true_open_labels[selected_mask]
     selected_names = all_names[selected_mask]
+    selected_signal_samples = all_signal_samples[selected_mask]
 
     feature_mode = str(cfg.get("feature_mode", "embedding_distance"))
     sample_features = build_cluster_features(
@@ -272,18 +382,29 @@ def run_unknown_subdivision(
         selected_q_u,
         selected_known_pred,
         prototypes,
+        signal_samples=selected_signal_samples,
     )
-    anchor_features = _known_anchor_features(feature_mode, prototypes)
+    use_known_anchors = bool(cfg.get("use_known_prototype_anchors", True))
+    anchor_features = _known_anchor_features(feature_mode, prototypes) if use_known_anchors else None
+    preprocessor_input = sample_features if anchor_features is None else np.vstack([sample_features, anchor_features])
     preprocessor = fit_feature_preprocessor(
-        np.vstack([sample_features, anchor_features]),
+        preprocessor_input,
         pca_dim=int(cfg.get("pca_dim", 16)),
     )
     prepared_samples = preprocessor.transform(sample_features)
-    prepared_anchors = preprocessor.transform(anchor_features)
+    prepared_anchors = preprocessor.transform(anchor_features) if anchor_features is not None else None
 
     target_num_clusters = cfg.get("target_num_clusters")
     if target_num_clusters is not None:
         target_num_clusters = int(target_num_clusters)
+    overcluster_extra = int(cfg.get("overcluster_extra_clusters", 0))
+    fit_k_min = int(cfg.get("k_min", 2))
+    fit_k_max = int(cfg.get("k_max", 15))
+    fit_target_num_clusters = target_num_clusters
+    if overcluster_extra > 0 and target_num_clusters is not None:
+        fit_k_min = fit_k_min + overcluster_extra
+        fit_k_max = fit_k_max + overcluster_extra
+        fit_target_num_clusters = target_num_clusters + overcluster_extra
     merge_similarity_threshold = cfg.get("merge_similarity_threshold")
     if merge_similarity_threshold is not None:
         merge_similarity_threshold = float(merge_similarity_threshold)
@@ -291,14 +412,14 @@ def run_unknown_subdivision(
     result = run_ofscil_subdivision(
         prepared_samples,
         prepared_anchors,
-        k_min=int(cfg.get("k_min", 2)),
-        k_max=int(cfg.get("k_max", 15)),
+        k_min=fit_k_min,
+        k_max=fit_k_max,
         seed=int(config.get("train", {}).get("seed", 42)),
         auto_sample_size=int(cfg.get("auto_sample_size", 3000)),
         assignment_margin=float(cfg.get("assignment_margin", 0.0)),
         known_reject_margin=float(cfg.get("known_reject_margin", 0.0)),
         backend=str(cfg.get("clustering_backend", "kmeans")),
-        target_num_clusters=target_num_clusters,
+        target_num_clusters=fit_target_num_clusters,
         target_k_strength=float(cfg.get("target_k_strength", 0.10)),
         uncertain_penalty=float(cfg.get("uncertain_penalty", 0.15)),
         stability_weight=float(cfg.get("stability_weight", 0.30)),
@@ -307,6 +428,8 @@ def run_unknown_subdivision(
         n_init=int(cfg.get("n_init", 30)),
         merge_similarity_threshold=merge_similarity_threshold,
         agg_sample_size=int(cfg.get("agg_sample_size", 8000)),
+        direct_confidence_quantile=float(cfg.get("direct_confidence_quantile", 0.0)),
+        direct_min_cluster_size=int(cfg.get("direct_min_cluster_size", 0)),
     )
 
     true_unknown_mask = selected_true_open == unknown_label
@@ -314,12 +437,20 @@ def run_unknown_subdivision(
     metrics = evaluate_unknown_subdivision(selected_names[eval_mask], result.labels[eval_mask])
     nearest_known = _nearest_known_distance(selected_embeddings, prototypes)
     assigned_known = nearest_known[result.labels != -1] if np.any(result.labels != -1) else nearest_known
+    clustering_backend = str(cfg.get("clustering_backend", "kmeans"))
+    method_prefix = "prototype_guided" if use_known_anchors else "unknown_only"
     metrics.update(
         {
-            "method": f"prototype_guided_{cfg.get('clustering_backend', 'kmeans')}",
+            "method": f"{method_prefix}_{clustering_backend}",
             "feature_mode": feature_mode,
-            "clustering_backend": str(cfg.get("clustering_backend", "kmeans")),
+            "clustering_backend": clustering_backend,
+            "use_known_prototype_anchors": use_known_anchors,
             "resolved_num_clusters": int(result.resolved_k),
+            "target_num_clusters": int(target_num_clusters) if target_num_clusters is not None else None,
+            "fit_num_clusters": int(fit_target_num_clusters) if fit_target_num_clusters is not None else int(result.resolved_k),
+            "overcluster_extra_clusters": int(overcluster_extra),
+            "direct_confidence_quantile": float(cfg.get("direct_confidence_quantile", 0.0)),
+            "direct_min_cluster_size": int(cfg.get("direct_min_cluster_size", 0)),
             "selected_unknown_cache_size": int(len(selected_indices)),
             "uncertain_size": int((result.labels == -1).sum()),
             "uncertain_ratio": float((result.labels == -1).mean()) if len(result.labels) else 0.0,

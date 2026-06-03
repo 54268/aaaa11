@@ -22,7 +22,7 @@ CHECKPOINT_PATH = None
 
 # 常改实验参数。
 EXPERIMENT_NAME = "oracle_kri16_demod_known_first"
-EPOCHS = 20
+EPOCHS = 35
 LEARNING_RATE = 0.001
 BATCH_SIZE = 128
 
@@ -34,13 +34,17 @@ CRITICAL_EDGE_COUNT = 50
 ORDINARY_EDGE_RATIO = 0.15
 
 # 常改未知类细分参数。
-SUBDIVISION_FEATURE_MODE = "embedding"
-SUBDIVISION_PCA_DIM = 32
-SUBDIVISION_K_MIN = 5
-SUBDIVISION_K_MAX = 5
+SUBDIVISION_FEATURE_MODE = "embedding_stats"
+SUBDIVISION_PCA_DIM = 96
+SUBDIVISION_K_MIN = 6
+SUBDIVISION_K_MAX = 6
 SUBDIVISION_CLUSTERING_BACKEND = "gmm_full_direct"
-SUBDIVISION_TARGET_NUM_CLUSTERS = 5
+SUBDIVISION_TARGET_NUM_CLUSTERS = 6
 SUBDIVISION_TARGET_K_STRENGTH = 1.0
+SUBDIVISION_KNOWN_REJECT_MARGIN = -1.0
+SUBDIVISION_OVERCLUSTER_EXTRA = 2
+SUBDIVISION_DIRECT_CONFIDENCE_QUANTILE = 0.10
+SUBDIVISION_DIRECT_MIN_CLUSTER_SIZE = 800
 
 
 def build_config() -> dict:
@@ -64,6 +68,10 @@ def build_config() -> dict:
     config["unknown_subdivision"]["clustering_backend"] = SUBDIVISION_CLUSTERING_BACKEND
     config["unknown_subdivision"]["target_num_clusters"] = SUBDIVISION_TARGET_NUM_CLUSTERS
     config["unknown_subdivision"]["target_k_strength"] = SUBDIVISION_TARGET_K_STRENGTH
+    config["unknown_subdivision"]["known_reject_margin"] = SUBDIVISION_KNOWN_REJECT_MARGIN
+    config["unknown_subdivision"]["overcluster_extra_clusters"] = SUBDIVISION_OVERCLUSTER_EXTRA
+    config["unknown_subdivision"]["direct_confidence_quantile"] = SUBDIVISION_DIRECT_CONFIDENCE_QUANTILE
+    config["unknown_subdivision"]["direct_min_cluster_size"] = SUBDIVISION_DIRECT_MIN_CLUSTER_SIZE
     return config
 
 

@@ -8,7 +8,10 @@ import numpy as np
 from functions.methods.openmax_wrapper import OpenMaxCalibrator
 from functions.methods.fusion import (
     apply_unknown_rejection,
+    apply_known_rescue,
+    apply_score_calibration,
     FusionResult,
+    fit_score_calibration,
     fuse_unknown_score,
     prototype_distance_unknown_score,
     search_fusion_params,
@@ -259,23 +262,53 @@ def calibrate_fusion_artifacts(
     known_pred = np.concatenate([val_pred, pseudo_pred])
     q_om = np.concatenate([val_q_om, pseudo_q_om])
     q_pd = np.concatenate([val_q_pd, pseudo_q_pd])
+    all_distances = np.concatenate([val_dist, pseudo_dist], axis=0)
 
     fusion_mode = str(config["fusion"].get("mode", "linear"))
+    score_calibration_mode = str(config["fusion"].get("score_calibration", "none"))
+    score_calibration = None
+    known_rescue_cfg = config["fusion"].get("known_rescue")
     manual_thresholds = config["fusion"].get("manual_thresholds_per_class")
+    manual_threshold = config["fusion"].get("manual_threshold")
     if manual_thresholds is not None:
         fusion_lambda = float(config["fusion"].get("manual_fusion_lambda", list(config["fusion"]["lambda_grid"])[0]))
-        q_u = fuse_unknown_score(q_om, q_pd, fusion_lambda, mode=fusion_mode)
+        q_u_raw = fuse_unknown_score(q_om, q_pd, fusion_lambda, mode=fusion_mode)
+        val_q_u_raw = fuse_unknown_score(val_q_om, val_q_pd, fusion_lambda, mode=fusion_mode)
+        score_calibration = fit_score_calibration(val_q_u_raw, val_pred, unknown_label, score_calibration_mode)
+        q_u = apply_score_calibration(q_u_raw, known_pred, score_calibration)
         y_pred = apply_unknown_rejection(
             known_pred=known_pred,
             q_u=q_u,
             unknown_label=unknown_label,
             thresholds_per_class=manual_thresholds,
         )
+        y_pred = apply_known_rescue(y_pred, known_pred, q_u, all_distances, unknown_label, known_rescue_cfg)
         result = FusionResult(
             fusion_lambda=fusion_lambda,
             threshold=None,
             thresholds_per_class=[float(value) for value in manual_thresholds],
             threshold_mode="manual_classwise",
+            threshold_quantile=None,
+            metrics=compute_open_set_metrics(y_true, y_pred, q_u, unknown_label),
+        )
+    elif manual_threshold is not None:
+        fusion_lambda = float(config["fusion"].get("manual_fusion_lambda", list(config["fusion"]["lambda_grid"])[0]))
+        q_u_raw = fuse_unknown_score(q_om, q_pd, fusion_lambda, mode=fusion_mode)
+        val_q_u_raw = fuse_unknown_score(val_q_om, val_q_pd, fusion_lambda, mode=fusion_mode)
+        score_calibration = fit_score_calibration(val_q_u_raw, val_pred, unknown_label, score_calibration_mode)
+        q_u = apply_score_calibration(q_u_raw, known_pred, score_calibration)
+        y_pred = apply_unknown_rejection(
+            known_pred=known_pred,
+            q_u=q_u,
+            unknown_label=unknown_label,
+            threshold=float(manual_threshold),
+        )
+        y_pred = apply_known_rescue(y_pred, known_pred, q_u, all_distances, unknown_label, known_rescue_cfg)
+        result = FusionResult(
+            fusion_lambda=fusion_lambda,
+            threshold=float(manual_threshold),
+            thresholds_per_class=None,
+            threshold_mode="manual_global",
             threshold_quantile=None,
             metrics=compute_open_set_metrics(y_true, y_pred, q_u, unknown_label),
         )
@@ -305,6 +338,8 @@ def calibrate_fusion_artifacts(
         "threshold_mode": result.threshold_mode,
         "threshold_quantile": result.threshold_quantile,
         "fusion_mode": fusion_mode,
+        "score_calibration": score_calibration or {"mode": "none"},
+        "known_rescue": known_rescue_cfg or {"enabled": False},
         "metrics": result.metrics,
     }
     save_json(output_dir / "fusion.json", summary)
@@ -357,6 +392,8 @@ def _build_experiment_metadata(config: dict[str, Any], fusion_cfg: dict[str, Any
         "threshold_mode": threshold_mode,
         "threshold": fusion_cfg.get("threshold"),
         "threshold_quantile": fusion_cfg.get("threshold_quantile"),
+        "score_calibration_mode": fusion_cfg.get("score_calibration", {}).get("mode", "none"),
+        "known_rescue_enabled": bool(fusion_cfg.get("known_rescue", {}).get("enabled", False)),
         "number_of_tx": int(len(known_tx) + len(unknown_tx)),
         "number_of_rx_used": number_of_rx_used,
         "rx_mode": rx_mode,
@@ -419,12 +456,21 @@ def evaluate_open_set_artifacts(
         float(fusion_cfg["fusion_lambda"]),
         mode=str(fusion_cfg.get("fusion_mode", config["fusion"].get("mode", "linear"))),
     )
+    q_u = apply_score_calibration(q_u, known_pred, fusion_cfg.get("score_calibration"))
     y_pred = apply_unknown_rejection(
         known_pred=known_pred,
         q_u=q_u,
         unknown_label=unknown_label,
         threshold=fusion_cfg.get("threshold"),
         thresholds_per_class=fusion_cfg.get("thresholds_per_class"),
+    )
+    y_pred = apply_known_rescue(
+        y_pred=y_pred,
+        known_pred=known_pred,
+        q_u=q_u,
+        distances=distances,
+        unknown_label=unknown_label,
+        rescue_config=fusion_cfg.get("known_rescue", config["fusion"].get("known_rescue")),
     )
 
     metrics = compute_open_set_metrics(all_labels, y_pred, q_u, unknown_label)

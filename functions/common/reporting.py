@@ -119,6 +119,8 @@ def write_final_report(
     metadata_rows = [
         ("threshold_strategy_used", "阈值策略"),
         ("threshold_mode", "阈值模式"),
+        ("score_calibration_mode", "分数校准方式"),
+        ("known_rescue_enabled", "已知类救回"),
         ("number_of_tx", "Tx 总数"),
         ("number_of_rx_used", "使用 Rx 数"),
         ("rx_mode", "Rx 协议"),
