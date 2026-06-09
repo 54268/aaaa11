@@ -36,6 +36,7 @@ class OfscilSubdivisionResult:
     resolved_k: int
     suspected_known_mask: np.ndarray
     k_search_history: list[dict[str, Any]]
+    diagnostics: dict[str, Any]
 
 
 @dataclass
@@ -183,7 +184,7 @@ def _fit_labels_gmm_direct(
     seed: int,
     n_init: int,
     covariance_type: str = "full",
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict[str, Any]]:
     """直接用 GMM 完成聚类（不经过原型引导的余弦再分配）。
 
     返回 (labels, centers)，centers 是原始空间的高斯均值。
@@ -198,7 +199,14 @@ def _fit_labels_gmm_direct(
     )
     labels = gmm.fit_predict(features).astype(np.int64)
     confidence = gmm.predict_proba(features).max(axis=1).astype(np.float64)
-    return labels, gmm.means_.astype(np.float64), confidence
+    diagnostics = {
+        "gmm_bic": float(gmm.bic(features)),
+        "gmm_aic": float(gmm.aic(features)),
+        "gmm_lower_bound": float(gmm.lower_bound_),
+        "gmm_mean_confidence": float(confidence.mean()),
+        "gmm_median_confidence": float(np.median(confidence)),
+    }
+    return labels, gmm.means_.astype(np.float64), confidence, diagnostics
 
 
 def _build_initial_centers(
@@ -307,12 +315,12 @@ def prototype_guided_clustering(
     n_samples = len(features)
     if n_samples == 0:
         empty = np.zeros((0,), dtype=np.int64)
-        return OfscilSubdivisionResult(empty, np.zeros((0, features.shape[1])), 0, empty.astype(bool), [])
+        return OfscilSubdivisionResult(empty, np.zeros((0, features.shape[1])), 0, empty.astype(bool), [], {})
 
     k = max(1, min(int(num_clusters), n_samples))
 
     if str(backend).lower() in _DIRECT_GMM_BACKENDS:
-        labels, gmm_means, confidence = _fit_labels_gmm_direct(features, k, seed=seed, n_init=n_init, covariance_type="full")
+        labels, gmm_means, confidence, diagnostics = _fit_labels_gmm_direct(features, k, seed=seed, n_init=n_init, covariance_type="full")
         uncertain_mask = np.zeros(n_samples, dtype=bool)
         confidence_quantile = float(direct_confidence_quantile)
         if confidence_quantile > 0.0:
@@ -343,6 +351,7 @@ def prototype_guided_clustering(
             resolved_k=int(len(np.unique(labels[labels != -1]))),
             suspected_known_mask=uncertain_mask,
             k_search_history=[],
+            diagnostics=diagnostics,
         )
 
     normalized_features = l2_normalize(features)
@@ -400,6 +409,7 @@ def prototype_guided_clustering(
         resolved_k=int(len(np.unique(labels[labels != -1]))),
         suspected_known_mask=suspected_known,
         k_search_history=[],
+        diagnostics={},
     )
 
 

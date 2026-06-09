@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import random
+import sys
 import warnings
 from pathlib import Path
 from typing import Dict
@@ -9,13 +10,21 @@ from typing import Dict
 import numpy as np
 import torch
 import torch.nn.functional as F
+from scipy.special import softmax
 from scipy.spatial.distance import cdist
+from scipy.stats import genpareto
 from sklearn.cluster import KMeans, SpectralClustering
 from sklearn.preprocessing import StandardScaler
 from torch.utils.data import DataLoader
 
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from data_io import IQDataset, LoadedProtocol, make_iq_dataset
+from functions.methods.openmax_wrapper import OpenMaxCalibrator
 from metrics import evaluate_clustering, evaluate_open_set
+from openrfi_grouping import openrfi_world_prototype_grouping, openrfi_world_prototype_grouping_scores
 
 
 warnings.filterwarnings(
@@ -62,38 +71,115 @@ def train_classifier(
     use_margin_labels: bool,
     checkpoint_path: Path,
     reuse_checkpoint: bool,
+    confusing_sample_generator: torch.nn.Module | None = None,
+    confusing_sample_discriminator: torch.nn.Module | None = None,
+    confusing_noise_dim: int = 32,
+    confusing_beta: float = 0.1,
+    confusing_gan_lr: float = 2e-4,
 ) -> Dict[str, object]:
     model.to(device)
+    if confusing_sample_generator is not None:
+        confusing_sample_generator.to(device)
+    if confusing_sample_discriminator is not None:
+        confusing_sample_discriminator.to(device)
     train_loader = loader(train_set, batch_size=batch_size, shuffle=True)
     val_loader = loader(val_set, batch_size=batch_size, shuffle=False)
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
 
+    training_status = "trained"
     if reuse_checkpoint and checkpoint_path.exists():
-        model.load_state_dict(torch.load(checkpoint_path, map_location=device))
-        val_acc = closed_set_accuracy(model, val_loader, device)
-        return {
-            "best_val_acc": float(val_acc),
-            "best_epoch": 0,
-            "training_status": "reused_checkpoint",
-        }
+        try:
+            model.load_state_dict(torch.load(checkpoint_path, map_location=device))
+        except RuntimeError as exc:
+            training_status = "retrained_incompatible_checkpoint"
+            print(f"[{checkpoint_path.stem}] checkpoint incompatible with current model; retraining ({exc})")
+        else:
+            val_acc = closed_set_accuracy(model, val_loader, device)
+            return {
+                "best_val_acc": float(val_acc),
+                "best_epoch": 0,
+                "training_status": "reused_checkpoint",
+            }
 
     opt = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    use_confusing_samples = (
+        confusing_sample_generator is not None
+        and confusing_sample_discriminator is not None
+        and hasattr(model, "fake_loss")
+    )
+    if use_confusing_samples:
+        opt_d = torch.optim.Adam(confusing_sample_discriminator.parameters(), lr=confusing_gan_lr, betas=(0.5, 0.999))
+        opt_g = torch.optim.Adam(confusing_sample_generator.parameters(), lr=confusing_gan_lr, betas=(0.5, 0.999))
+    else:
+        opt_d = None
+        opt_g = None
     best_acc = -1.0
     best_epoch = 0
 
     for epoch in range(1, epochs + 1):
         model.train()
+        if confusing_sample_generator is not None:
+            confusing_sample_generator.train()
+        if confusing_sample_discriminator is not None:
+            confusing_sample_discriminator.train()
         losses = []
         for x, y in train_loader:
             x = x.to(device)
             y = y.to(device)
-            logits = model(x, y if use_margin_labels else None)
-            loss = F.cross_entropy(logits, y)
+            if use_confusing_samples:
+                batch_size_now = x.size(0)
+
+                opt_d.zero_grad()
+                real_logits = confusing_sample_discriminator(x)
+                real_target = torch.ones_like(real_logits)
+                loss_d_real = F.binary_cross_entropy_with_logits(real_logits, real_target)
+                noise = torch.randn(batch_size_now, confusing_noise_dim, device=device)
+                fake_x = confusing_sample_generator(noise)
+                fake_logits = confusing_sample_discriminator(fake_x.detach())
+                fake_target = torch.zeros_like(fake_logits)
+                loss_d_fake = F.binary_cross_entropy_with_logits(fake_logits, fake_target)
+                loss_d = loss_d_real + loss_d_fake
+                loss_d.backward()
+                opt_d.step()
+
+                opt_g.zero_grad()
+                noise = torch.randn(batch_size_now, confusing_noise_dim, device=device)
+                fake_x = confusing_sample_generator(noise)
+                fake_logits = confusing_sample_discriminator(fake_x)
+                loss_g_adv = F.binary_cross_entropy_with_logits(fake_logits, torch.ones_like(fake_logits))
+                loss_g = loss_g_adv + confusing_beta * model.fake_loss(fake_x)
+                loss_g.backward()
+                opt_g.step()
+
             opt.zero_grad()
+            if hasattr(model, "training_loss"):
+                loss = model.training_loss(x, y)
+            else:
+                logits = model(x, y if use_margin_labels else None)
+                loss = F.cross_entropy(logits, y)
+            if use_confusing_samples:
+                noise = torch.randn(x.size(0), confusing_noise_dim, device=device)
+                fake_x = confusing_sample_generator(noise)
+                loss = loss + confusing_beta * model.fake_loss(fake_x)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
             opt.step()
             losses.append(float(loss.item()))
+
+        if use_confusing_samples:
+            for x, y in train_loader:
+                x = x.to(device)
+                y = y.to(device)
+                opt.zero_grad()
+                if hasattr(model, "training_loss"):
+                    loss = model.training_loss(x, y)
+                else:
+                    logits = model(x, y if use_margin_labels else None)
+                    loss = F.cross_entropy(logits, y)
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
+                opt.step()
+                losses.append(float(loss.item()))
 
         val_acc = closed_set_accuracy(model, val_loader, device)
         if val_acc > best_acc:
@@ -106,7 +192,7 @@ def train_classifier(
     return {
         "best_val_acc": float(best_acc),
         "best_epoch": int(best_epoch),
-        "training_status": "trained",
+        "training_status": training_status,
     }
 
 
@@ -162,6 +248,20 @@ def _encode_label_names(names: np.ndarray) -> np.ndarray:
     unique_names = sorted(np.unique(names.astype(str)).tolist())
     mapping = {name: idx for idx, name in enumerate(unique_names)}
     return np.asarray([mapping[name] for name in names.astype(str)], dtype=np.int64)
+
+
+def _balanced_indices(y: np.ndarray, max_per_class: int | None, seed: int) -> np.ndarray:
+    if max_per_class is None:
+        return np.arange(len(y), dtype=np.int64)
+    rng = np.random.default_rng(seed)
+    indices: list[np.ndarray] = []
+    for label in sorted(np.unique(y).tolist()):
+        label_idx = np.where(y == label)[0]
+        take = min(int(max_per_class), len(label_idx))
+        indices.append(rng.choice(label_idx, size=take, replace=False))
+    selected = np.concatenate(indices)
+    rng.shuffle(selected)
+    return selected.astype(np.int64)
 
 
 def _protocol_metadata(protocol: LoadedProtocol, output_dir: Path) -> Dict[str, object]:
@@ -224,6 +324,84 @@ def _softmax_open_set_prediction(
     return pred, unknown_score, threshold
 
 
+def _openmax_probabilities(
+    train_logits: np.ndarray,
+    train_labels: np.ndarray,
+    train_predictions: np.ndarray,
+    query_logits: np.ndarray,
+    *,
+    alpha_rank: int = 3,
+    tail_size: int = 25,
+    backend: str = "repo_openmax",
+    distance_type: str = "eucos",
+) -> tuple[np.ndarray, np.ndarray]:
+    calibrator = OpenMaxCalibrator(
+        alpha_rank=alpha_rank,
+        tail_size=tail_size,
+        backend=backend,
+        distance_type=distance_type,
+    )
+    calibrator.fit(
+        np.asarray(train_logits, dtype=np.float32),
+        np.asarray(train_labels, dtype=np.int64),
+        np.asarray(train_predictions, dtype=np.int64),
+    )
+    result = calibrator.predict(np.asarray(query_logits, dtype=np.float32))
+    return (
+        np.asarray(result["known_probs"], dtype=np.float64),
+        np.asarray(result["unknown_prob"], dtype=np.float64),
+    )
+
+
+def _openmax_open_set_prediction(
+    train_logits: np.ndarray,
+    train_labels: np.ndarray,
+    val_logits: np.ndarray,
+    test_logits: np.ndarray,
+    known_quantile: float,
+    unknown_label: int,
+    *,
+    backend: str = "native",
+    distance_type: str = "eucl",
+) -> tuple[np.ndarray, np.ndarray, float]:
+    train_predictions = np.argmax(train_logits, axis=1)
+    _, val_unknown = _openmax_probabilities(
+        train_logits,
+        train_labels,
+        train_predictions,
+        val_logits,
+        backend=backend,
+        distance_type=distance_type,
+    )
+    threshold = float(np.quantile(val_unknown, 1.0 - known_quantile))
+    known_probs, unknown_score = _openmax_probabilities(
+        train_logits,
+        train_labels,
+        train_predictions,
+        test_logits,
+        backend=backend,
+        distance_type=distance_type,
+    )
+    pred = known_probs.argmax(axis=1).astype(np.int64)
+    pred[unknown_score >= threshold] = unknown_label
+    return pred, unknown_score, threshold
+
+
+def _arpl_open_set_prediction(
+    val_logits: np.ndarray,
+    test_logits: np.ndarray,
+    known_quantile: float,
+    unknown_label: int,
+) -> tuple[np.ndarray, np.ndarray, float]:
+    val_conf = np.max(val_logits, axis=1)
+    threshold = float(np.quantile(val_conf, known_quantile))
+    test_conf = np.max(test_logits, axis=1)
+    pred = np.argmax(test_logits, axis=1).astype(np.int64)
+    pred[test_conf < threshold] = unknown_label
+    unknown_score = -test_conf
+    return pred, unknown_score, threshold
+
+
 def _center_open_set_prediction(
     train_features: np.ndarray,
     train_labels: np.ndarray,
@@ -248,6 +426,261 @@ def _center_open_set_prediction(
     return pred, unknown_score, threshold
 
 
+def _normalize_rows(values: np.ndarray, eps: float = 1e-8) -> np.ndarray:
+    values = np.asarray(values, dtype=np.float32)
+    return values / (np.linalg.norm(values, axis=1, keepdims=True) + eps)
+
+
+def _hyperrsi_gpd_open_set_prediction(
+    train_features: np.ndarray,
+    train_labels: np.ndarray,
+    test_features: np.ndarray,
+    unknown_label: int,
+    *,
+    tail_quantile: float = 0.99,
+    probability_threshold: float = 0.5,
+) -> tuple[np.ndarray, np.ndarray, float]:
+    train_features = _normalize_rows(train_features)
+    test_features = _normalize_rows(test_features)
+    centers = []
+    for label in range(unknown_label):
+        cls_features = train_features[train_labels == label]
+        if len(cls_features) == 0:
+            centers.append(np.zeros(train_features.shape[1], dtype=np.float32))
+        else:
+            centers.append(cls_features.mean(axis=0))
+    centers = _normalize_rows(np.stack(centers, axis=0))
+
+    train_cosine = train_features @ centers.T
+    intra_distance = 1.0 - train_cosine[np.arange(len(train_labels)), train_labels]
+    tail_start = float(np.quantile(intra_distance, tail_quantile))
+    excess_tail = intra_distance[intra_distance >= tail_start] - tail_start
+    if len(excess_tail) >= 3 and float(excess_tail.max()) > 1e-8:
+        shape, _, scale = genpareto.fit(excess_tail, floc=0.0)
+        scale = max(float(scale), 1e-6)
+    else:
+        shape = 0.0
+        scale = max(float(np.std(intra_distance)), float(excess_tail.max(initial=0.0)), 1e-3)
+
+    test_cosine = test_features @ centers.T
+    pred = test_cosine.argmax(axis=1).astype(np.int64)
+    max_distance = 1.0 - test_cosine[np.arange(len(test_features)), pred]
+    excess = np.maximum(max_distance - tail_start, 0.0)
+    confidence = np.clip(genpareto.sf(excess, shape, loc=0.0, scale=scale), 0.0, 1.0)
+    pred[confidence < probability_threshold] = unknown_label
+    unknown_score = 1.0 - confidence
+    return pred, unknown_score.astype(np.float32), float(probability_threshold)
+
+
+def _subdivide_rejected_cache(
+    *,
+    method_name: str,
+    protocol: LoadedProtocol,
+    output_dir: Path,
+    seed: int,
+    test_features: np.ndarray,
+    y_true_rejection: np.ndarray,
+    open_set_pred: np.ndarray,
+    train_features: np.ndarray,
+    train_labels: np.ndarray,
+    true_unknown_cluster_labels: np.ndarray,
+    closed_set_pred: np.ndarray,
+    backend: str,
+    n_prototypes: int,
+    train_summary: Dict[str, object],
+) -> Dict[str, object]:
+    unknown_label = protocol.num_known_classes
+    selected_mask = open_set_pred == unknown_label
+    true_unknown_mask = y_true_rejection == unknown_label
+    selected_features = test_features[selected_mask]
+    selected_true_unknown = true_unknown_mask[selected_mask]
+    selected_true_labels = true_unknown_cluster_labels[selected_mask]
+    n_clusters = int(protocol.num_unknown_classes)
+
+    if len(selected_features) == 0:
+        pred = np.zeros((0,), dtype=np.int64)
+    elif backend == "openrfi_prototype_grouping":
+        pred = _prototype_grouping(selected_features, n_clusters=n_clusters, n_prototypes=n_prototypes, seed=seed)
+    elif backend == "closed_set_prediction":
+        pred = closed_set_pred[selected_mask].astype(np.int64)
+    else:
+        raise ValueError(f"Unsupported subdivision backend: {backend}")
+
+    eval_mask = selected_true_unknown
+    if int(eval_mask.sum()) > 0 and len(np.unique(selected_true_labels[eval_mask])) > 1:
+        metrics = evaluate_clustering(selected_true_labels[eval_mask], pred[eval_mask])
+    else:
+        metrics = {"nmi": 0.0, "ari": 0.0, "purity": 0.0, "hungarian_accuracy": 0.0}
+
+    if len(pred):
+        valid_counts = np.unique(pred, return_counts=True)[1]
+        cluster_size_min = int(valid_counts.min())
+        cluster_size_max = int(valid_counts.max())
+        cluster_size_mean = float(valid_counts.mean())
+        num_predicted_clusters = int(len(np.unique(pred)))
+    else:
+        cluster_size_min = 0
+        cluster_size_max = 0
+        cluster_size_mean = 0.0
+        num_predicted_clusters = 0
+
+    known_centers = []
+    for label in sorted(np.unique(train_labels).tolist()):
+        known_centers.append(train_features[train_labels == label].mean(axis=0))
+    if known_centers and len(selected_features):
+        known_centers_arr = np.stack(known_centers, axis=0)
+        nearest_known = cdist(selected_features, known_centers_arr).min(axis=1)
+        nearest_mean = float(nearest_known.mean())
+        nearest_min = float(nearest_known.min())
+    else:
+        nearest_mean = 0.0
+        nearest_min = 0.0
+
+    selected_count = int(selected_mask.sum())
+    selected_true_unknown_count = int((selected_mask & true_unknown_mask).sum())
+    total_unknown_count = int(true_unknown_mask.sum())
+    unknown_cache_precision = float(selected_true_unknown_count / max(selected_count, 1))
+    unknown_cache_recall = float(selected_true_unknown_count / max(total_unknown_count, 1))
+
+    result = {
+        "dataset": protocol.name,
+        "method": method_name,
+        "task": "unknown_subdivision",
+        "seed": seed,
+        "method_detail": backend,
+        "clustering_backend": backend,
+        "feature_mode": "method_native_output" if backend == "closed_set_prediction" else "method_embedding",
+        "resolved_num_clusters": num_predicted_clusters,
+        "num_evaluated_unknown": selected_true_unknown_count,
+        "num_true_unknown_classes": int(protocol.num_unknown_classes),
+        "num_predicted_clusters": num_predicted_clusters,
+        "selected_unknown_cache_size": selected_count,
+        "uncertain_size": int(total_unknown_count - selected_true_unknown_count),
+        "uncertain_ratio": float(1.0 - unknown_cache_recall),
+        "cluster_size_min": cluster_size_min,
+        "cluster_size_max": cluster_size_max,
+        "cluster_size_mean": cluster_size_mean,
+        "nearest_known_proto_distance_mean": nearest_mean,
+        "nearest_known_proto_distance_min": nearest_min,
+        "unknown_cache_precision": unknown_cache_precision,
+        "unknown_cache_recall": unknown_cache_recall,
+        "coverage_of_selected_true_unknown": 1.0 if selected_true_unknown_count > 0 else 0.0,
+        "coverage_of_total_test_unknown": unknown_cache_recall,
+        "suspected_known_noise_size": int(selected_count - selected_true_unknown_count),
+        "n_prototypes": n_prototypes if backend == "openrfi_prototype_grouping" else "",
+        **_protocol_metadata(protocol, output_dir),
+        **train_summary,
+        **metrics,
+    }
+    safe_name = method_name.lower().replace(" ", "_").replace("/", "_")
+    (output_dir / f"{safe_name}_{protocol.name}_seed{seed}_subdivision_metrics.json").write_text(
+        json.dumps(result, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return result
+
+
+def _subdivide_world_kplusm(
+    *,
+    method_name: str,
+    protocol: LoadedProtocol,
+    output_dir: Path,
+    seed: int,
+    test_features: np.ndarray,
+    y_true_rejection: np.ndarray,
+    true_unknown_cluster_labels: np.ndarray,
+    n_prototypes: int,
+    graph_lambda: float,
+    graph_neighbors: int,
+    confidence_threshold: float | None,
+    train_summary: Dict[str, object],
+) -> Dict[str, object]:
+    unknown_label = protocol.num_known_classes
+    pred, confidence = openrfi_world_prototype_grouping_scores(
+        test_features,
+        total_num_clusters=protocol.num_known_classes + protocol.num_unknown_classes,
+        n_prototypes=n_prototypes,
+        seed=seed,
+        n_neighbors=graph_neighbors,
+        graph_lambda=graph_lambda,
+    )
+    selected_mask = np.ones(len(test_features), dtype=bool)
+    if confidence_threshold is not None:
+        selected_mask = confidence >= float(confidence_threshold)
+
+    true_unknown_mask = y_true_rejection == unknown_label
+    selected_true_unknown_mask = selected_mask & true_unknown_mask
+    selected_true_known_mask = selected_mask & ~true_unknown_mask
+    selected_true_labels = true_unknown_cluster_labels
+
+    eval_mask = selected_true_unknown_mask
+    if int(eval_mask.sum()) > 0 and len(np.unique(selected_true_labels[eval_mask])) > 1:
+        metrics = evaluate_clustering(selected_true_labels[eval_mask], pred[eval_mask])
+    else:
+        metrics = {"nmi": 0.0, "ari": 0.0, "purity": 0.0, "hungarian_accuracy": 0.0}
+
+    if len(pred):
+        valid_counts = np.unique(pred, return_counts=True)[1]
+        cluster_size_min = int(valid_counts.min())
+        cluster_size_max = int(valid_counts.max())
+        cluster_size_mean = float(valid_counts.mean())
+        num_predicted_clusters = int(len(np.unique(pred)))
+    else:
+        cluster_size_min = 0
+        cluster_size_max = 0
+        cluster_size_mean = 0.0
+        num_predicted_clusters = 0
+
+    total_count = int(len(test_features))
+    selected_count = int(selected_mask.sum())
+    selected_true_unknown_count = int(selected_true_unknown_mask.sum())
+    total_unknown_count = int(true_unknown_mask.sum())
+    unknown_cache_precision = float(selected_true_unknown_count / max(selected_count, 1))
+    unknown_cache_recall = float(selected_true_unknown_count / max(total_unknown_count, 1))
+
+    result = {
+        "dataset": protocol.name,
+        "method": method_name,
+        "task": "unknown_subdivision",
+        "seed": seed,
+        "method_detail": "openrfi_world_kplusm_grouping",
+        "clustering_backend": "openrfi_world_kplusm_grouping",
+        "feature_mode": "full_test_world",
+        "subdivision_scope": "full_test_world",
+        "cluster_budget_mode": "K_plus_M",
+        "resolved_num_clusters": int(protocol.num_known_classes + protocol.num_unknown_classes),
+        "num_evaluated_unknown": selected_true_unknown_count,
+        "num_true_unknown_classes": int(protocol.num_unknown_classes),
+        "num_predicted_clusters": num_predicted_clusters,
+        "selected_unknown_cache_size": selected_count,
+        "uncertain_size": int(total_unknown_count - selected_true_unknown_count),
+        "uncertain_ratio": float(1.0 - unknown_cache_recall),
+        "cluster_size_min": cluster_size_min,
+        "cluster_size_max": cluster_size_max,
+        "cluster_size_mean": cluster_size_mean,
+        "nearest_known_proto_distance_mean": 0.0,
+        "nearest_known_proto_distance_min": 0.0,
+        "unknown_cache_precision": unknown_cache_precision,
+        "unknown_cache_recall": unknown_cache_recall,
+        "coverage_of_selected_true_unknown": 1.0 if selected_true_unknown_count > 0 else 0.0,
+        "coverage_of_total_test_unknown": unknown_cache_recall,
+        "suspected_known_noise_size": int(selected_true_known_mask.sum()),
+        "n_prototypes": n_prototypes,
+        "graph_lambda": float(graph_lambda),
+        "graph_neighbors": int(graph_neighbors),
+        "confidence_threshold": float(confidence_threshold) if confidence_threshold is not None else "",
+        **_protocol_metadata(protocol, output_dir),
+        **train_summary,
+        **metrics,
+    }
+    safe_name = method_name.lower().replace(" ", "_").replace("/", "_")
+    (output_dir / f"{safe_name}_{protocol.name}_seed{seed}_subdivision_metrics.json").write_text(
+        json.dumps(result, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return result
+
+
 def run_open_set_baseline(
     *,
     method_name: str,
@@ -267,7 +700,20 @@ def run_open_set_baseline(
     known_quantile: float,
     use_margin_labels: bool,
     reuse_checkpoint: bool,
-) -> Dict[str, object]:
+    subdivision_backend: str | None = None,
+    n_prototypes: int = 50,
+    subdivision_n_prototypes: int | None = None,
+    subdivision_graph_neighbors: int = 3,
+    subdivision_graph_lambda: float = 1.0,
+    subdivision_confidence_threshold: float | None = None,
+    confusing_sample_generator: torch.nn.Module | None = None,
+    confusing_sample_discriminator: torch.nn.Module | None = None,
+    confusing_noise_dim: int = 32,
+    confusing_beta: float = 0.1,
+    confusing_gan_lr: float = 2e-4,
+    openmax_backend: str = "native",
+    openmax_distance_type: str = "eucl",
+) -> list[Dict[str, object]]:
     set_seed(seed)
     output_dir.mkdir(parents=True, exist_ok=True)
     train_set = make_iq_dataset(protocol.train_x, protocol.train_y, normalize, max_train_per_class, seed)
@@ -275,6 +721,16 @@ def run_open_set_baseline(
     test_known = make_iq_dataset(protocol.test_known_x, protocol.test_known_y, normalize, max_eval_per_class, seed)
     test_unknown_y_reject = np.full(len(protocol.test_unknown_y), protocol.num_known_classes, dtype=np.int64)
     test_unknown = make_iq_dataset(protocol.test_unknown_x, test_unknown_y_reject, normalize, max_eval_per_class, seed)
+    known_eval_indices = _balanced_indices(protocol.test_known_y, max_eval_per_class, seed)
+    unknown_eval_indices = _balanced_indices(test_unknown_y_reject, max_eval_per_class, seed)
+    unknown_cluster_labels = _encode_label_names(protocol.test_unknown_names)
+    true_unknown_cluster_labels = np.concatenate(
+        [
+            np.full(len(known_eval_indices), -1, dtype=np.int64),
+            unknown_cluster_labels[unknown_eval_indices],
+        ],
+        axis=0,
+    )
 
     ckpt = output_dir / f"{method_name}_{protocol.name}_seed{seed}.pt"
     train_summary = train_classifier(
@@ -289,6 +745,11 @@ def run_open_set_baseline(
         use_margin_labels=use_margin_labels,
         checkpoint_path=ckpt,
         reuse_checkpoint=reuse_checkpoint,
+        confusing_sample_generator=confusing_sample_generator,
+        confusing_sample_discriminator=confusing_sample_discriminator,
+        confusing_noise_dim=confusing_noise_dim,
+        confusing_beta=confusing_beta,
+        confusing_gan_lr=confusing_gan_lr,
     )
 
     train_out = extract_outputs(model, train_set, batch_size=batch_size, device=device)
@@ -317,6 +778,31 @@ def run_open_set_baseline(
             known_quantile,
             unknown_label,
         )
+    elif score_mode == "hyperrsi_evt":
+        pred, unknown_score, threshold = _hyperrsi_gpd_open_set_prediction(
+            train_out["features"],
+            train_out["labels"],
+            test_features,
+            unknown_label,
+        )
+    elif score_mode == "openmax":
+        pred, unknown_score, threshold = _openmax_open_set_prediction(
+            train_out["logits"],
+            train_out["labels"],
+            val_out["logits"],
+            test_logits,
+            known_quantile,
+            unknown_label,
+            backend=openmax_backend,
+            distance_type=openmax_distance_type,
+        )
+    elif score_mode == "arpl":
+        pred, unknown_score, threshold = _arpl_open_set_prediction(
+            val_out["logits"],
+            test_logits,
+            known_quantile,
+            unknown_label,
+        )
     else:
         raise ValueError(f"Unsupported score_mode: {score_mode}")
 
@@ -338,7 +824,45 @@ def run_open_set_baseline(
         json.dumps(result, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
-    return result
+    rows = [result]
+    if subdivision_backend is not None:
+        if subdivision_backend == "openrfi_world_kplusm":
+            rows.append(
+                _subdivide_world_kplusm(
+                    method_name=method_name,
+                    protocol=protocol,
+                    output_dir=output_dir,
+                    seed=seed,
+                    test_features=test_features,
+                    y_true_rejection=y_true,
+                    true_unknown_cluster_labels=true_unknown_cluster_labels,
+                    n_prototypes=subdivision_n_prototypes if subdivision_n_prototypes is not None else n_prototypes,
+                    graph_lambda=subdivision_graph_lambda,
+                    graph_neighbors=subdivision_graph_neighbors,
+                    confidence_threshold=subdivision_confidence_threshold,
+                    train_summary=train_summary,
+                )
+            )
+            return rows
+        rows.append(
+            _subdivide_rejected_cache(
+                method_name=method_name,
+                protocol=protocol,
+                output_dir=output_dir,
+                seed=seed,
+                test_features=test_features,
+                y_true_rejection=y_true,
+                open_set_pred=pred,
+                train_features=train_out["features"],
+                train_labels=train_out["labels"],
+                true_unknown_cluster_labels=true_unknown_cluster_labels,
+                closed_set_pred=np.argmax(test_logits, axis=1).astype(np.int64),
+                backend=subdivision_backend,
+                n_prototypes=n_prototypes,
+                train_summary=train_summary,
+            )
+        )
+    return rows
 
 
 def _prototype_grouping(

@@ -114,6 +114,7 @@ def mine_boundary_artifacts(
         labels=payload["labels"],
         prototypes=payload["prototypes"],
         k=int(config["boundary"]["k"]),
+        beta=float(config["boundary"].get("beta", 1.0)),
         alpha=float(config["boundary"]["alpha"]),
         top_m=int(config["boundary"]["top_m"]),
         ordinary_edge_ratio=float(config["boundary"]["ordinary_edge_ratio"]),
@@ -126,11 +127,17 @@ def mine_boundary_artifacts(
         embedding_space="original",
         scores=boundary["scores"],
         local_edge=boundary["local_edge"],
+        prototype_deviation=boundary["prototype_deviation"],
+        local_sparsity=boundary["local_sparsity"],
+        local_marginality=boundary["local_marginality"],
         gap=boundary["gap"],
+        competition_distance=boundary["competition_distance"],
         local_scale=boundary["local_scale"],
         nearest_foreign=boundary["nearest_foreign"],
+        marginal_mask=boundary["marginal_mask"].astype("int64"),
         critical_mask=boundary["critical_mask"].astype("int64"),
         ordinary_edge_mask=boundary["ordinary_edge_mask"].astype("int64"),
+        noise_mask=boundary["noise_mask"].astype("int64"),
     )
     save_json(output_dir / "boundary_summary.json", boundary["summary"])
     return boundary["summary"]

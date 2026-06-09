@@ -128,6 +128,7 @@ def prepare_wisig_compact(config: dict) -> Dict[str, object]:
         unknown_classes = tx_list[split_idx:]
 
     class_to_idx = {name: idx for idx, name in enumerate(known_classes)}
+    selected_tx = set(known_classes) | set(unknown_classes)
     all_known_x = []
     all_known_y = []
     all_known_name = []
@@ -136,6 +137,8 @@ def prepare_wisig_compact(config: dict) -> Dict[str, object]:
     all_unknown_name = []
 
     for tx_name in tx_list:
+        if tx_name not in selected_tx:
+            continue
         samples_acc = []
         for payload in payloads:
             if tx_name not in payload["tx_list"]:

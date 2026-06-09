@@ -42,7 +42,10 @@ SUBDIVISION_CLUSTERING_BACKEND = "gmm_full_direct"
 SUBDIVISION_TARGET_NUM_CLUSTERS = 6
 SUBDIVISION_TARGET_K_STRENGTH = 1.0
 SUBDIVISION_KNOWN_REJECT_MARGIN = -1.0
-SUBDIVISION_OVERCLUSTER_EXTRA = 2
+SUBDIVISION_OVERCLUSTER_EXTRA = 1
+SUBDIVISION_OVERCLUSTER_CANDIDATES = [0, 1, 2, 3]
+SUBDIVISION_M_SELECTION_MODE = "offline_min_gain"
+SUBDIVISION_M_MIN_QUALITY_GAIN = 0.01
 SUBDIVISION_DIRECT_CONFIDENCE_QUANTILE = 0.10
 SUBDIVISION_DIRECT_MIN_CLUSTER_SIZE = 800
 
@@ -70,6 +73,9 @@ def build_config() -> dict:
     config["unknown_subdivision"]["target_k_strength"] = SUBDIVISION_TARGET_K_STRENGTH
     config["unknown_subdivision"]["known_reject_margin"] = SUBDIVISION_KNOWN_REJECT_MARGIN
     config["unknown_subdivision"]["overcluster_extra_clusters"] = SUBDIVISION_OVERCLUSTER_EXTRA
+    config["unknown_subdivision"]["overcluster_extra_candidates"] = SUBDIVISION_OVERCLUSTER_CANDIDATES
+    config["unknown_subdivision"]["m_selection_mode"] = SUBDIVISION_M_SELECTION_MODE
+    config["unknown_subdivision"]["m_selection_min_quality_gain"] = SUBDIVISION_M_MIN_QUALITY_GAIN
     config["unknown_subdivision"]["direct_confidence_quantile"] = SUBDIVISION_DIRECT_CONFIDENCE_QUANTILE
     config["unknown_subdivision"]["direct_min_cluster_size"] = SUBDIVISION_DIRECT_MIN_CLUSTER_SIZE
     return config

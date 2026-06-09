@@ -2,35 +2,52 @@
 
 ## 目标
 
-把 `raw/` 中保留的三篇论文代码适配为可在当前项目 WiSig 与 Oracle 数据划分上运行的对比方法。所有新增代码、日志、缓存和结果只放在 `Comparison method/` 内，不修改主方法目录。
+把 `raw/` 中适合当前任务的论文代码统一适配到当前项目的 WiSig / Oracle 协议上，形成可直接用于论文第四章的对比方法集合。
 
-## 目录
+## 已纳入
 
-- `raw/`：原论文代码，只读保留。
-- `adapted_baselines/`：统一适配入口和辅助代码。
-- `adapted_results/`：对比方法运行输出。
+- Softmax
+- OpenMax
+- HyperRSI
+- HyDRA
+- OpenRFI
+- ARPL
+
+## 不纳入主对比
+
+- `meta-open-master`
+- `NS-RFF-main`
+
+`meta-open-master` 更偏少样本元学习式开放集设定，和当前项目使用的标准已知类 / 未知类划分协议不一致，而且仓库里的 `openmany` 也没有完整实现。
+
+`NS-RFF-main` 是 ZigBee 开放集认证框架，主要输出 pairwise 特征距离的 ROC/AUC/EER，不直接对应当前多已知类分类 + 未知类拒识的总体准确率口径，因此不作为主表对比方法。
+
+## 适配原则
+
+1. 所有方法都统一接入 WiSig 和 Oracle 两个数据集。
+2. 训练、验证、测试划分沿用主项目已有协议。
+3. 对比表里的指标名与主方法保持一致。
+4. 根目录 `final_comparison_tables.md` 只保留最核心的拒识和细分指标。
+5. 没有原生未知类细分模块的方法，只进入拒识表，不强行补细分指标。
 
 ## 方法定位
 
-- HyperRSI：作为开放集拒识对比方法，采用 hypersphere embedding、类中心余弦相似度和验证集已知类分位阈值。
-- HyDRA：作为开放集拒识对比方法，采用原代码中的 CNN + Transformer 主体，并用 softmax 置信度阈值完成拒识。
-- OpenRFI：作为未知类细分对比方法，采用 OpenRFI 的原型分组思想，对未知样本特征进行 prototype grouping 和 spectral clustering。
+- Softmax：最基础的闭集 CNN + 阈值拒识。
+- OpenMax：经典 OpenMax / EVT 拒识。
+- HyperRSI：保留 paper-style 512 维 hypersphere / CosFace / GPD 模块，同时在当前 256 点协议主表中使用更稳定的紧凑适配版。
+- HyDRA：CNN + Transformer 风格拒识。
+- OpenRFI：保留 RoInformer 风格表示和原型分组细分。
+- ARPL：保留 reciprocal-point 训练，并用 EVT / OpenMax 风格校准 logits 做拒识。
 
-## 公平设置
+## 当前结果输出
 
-- 读取当前项目已经生成的 `data/processed/.../*.npz`，不重新定义数据划分。
-- WiSig 使用 `data/processed/wisig_singleday_osr_k16_u12`。
-- Oracle 使用 `data/processed/oracle_kri16_demod`。
-- 每个方法都使用相同的 `train_known`、`val_known`、`test_known`、`test_unknown`。
-- 拒识指标统一计算 overall accuracy、known accuracy、unknown recall、macro F1、AUROC、FPR95 等。
-- 细分指标统一计算 NMI、ARI、Purity、Hungarian Accuracy。
-
-## 执行方式
-
-运行入口为：
+统一通过：
 
 ```text
 Comparison method/adapted_baselines/run_comparison.py
 ```
 
-入口文件顶部提供中文注释参数。默认先运行 `smoke` 小样本流程检查代码能否跑通，正式实验时把 `RUN_MODE` 改为 `formal`。
+生成：
+
+- `Comparison method/adapted_results/...`
+- 项目根目录下的 `final_comparison_tables.md`

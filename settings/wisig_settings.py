@@ -55,6 +55,7 @@ def default_wisig_config(root: Path) -> dict:
         },
         "boundary": {
             "k": 5,
+            "beta": 1.0,
             "alpha": 0.5,
             "top_m": 50,
             "ordinary_edge_ratio": 0.15,
@@ -113,6 +114,9 @@ def default_wisig_config(root: Path) -> dict:
             "assignment_margin": 0.0,
             "known_reject_margin": -1.0,
             "overcluster_extra_clusters": 0,
+            "overcluster_extra_candidates": [0, 1, 2, 3],
+            "m_selection_mode": "offline_min_gain",
+            "m_selection_min_quality_gain": 0.01,
             "direct_confidence_quantile": 0.10,
             "direct_min_cluster_size": 160,
             "n_init": 30,

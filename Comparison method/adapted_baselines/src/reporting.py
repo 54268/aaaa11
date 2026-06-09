@@ -51,6 +51,7 @@ SUBDIVISION_METRIC_KEYS = [
     "ari",
     "purity",
     "hungarian_accuracy",
+    "coverage_of_total_test_unknown",
 ]
 
 SUBDIVISION_METADATA_KEYS = [
@@ -74,6 +75,7 @@ SUBDIVISION_METADATA_KEYS = [
     "num_evaluated_unknown",
     "num_true_unknown_classes",
     "num_predicted_clusters",
+    "confidence_threshold",
     "known_classes",
     "unknown_classes",
     "train_sample_count",

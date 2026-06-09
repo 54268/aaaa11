@@ -223,6 +223,97 @@ def _cluster_size_stats(labels: np.ndarray) -> dict[str, Any]:
     }
 
 
+def _as_int_candidates(value: Any, fallback: list[int]) -> list[int]:
+    if value is None:
+        raw_values = fallback
+    elif isinstance(value, str):
+        raw_values = [item.strip() for item in value.split(",") if item.strip()]
+    elif isinstance(value, (list, tuple, set)):
+        raw_values = list(value)
+    else:
+        raw_values = [value]
+
+    candidates: list[int] = []
+    for item in raw_values:
+        candidate = int(item)
+        if candidate < 0:
+            continue
+        if candidate not in candidates:
+            candidates.append(candidate)
+    return candidates or fallback
+
+
+def _fit_k_for_extra(cfg: dict[str, Any], target_num_clusters: int | None, extra_clusters: int) -> tuple[int, int, int | None]:
+    fit_k_min = int(cfg.get("k_min", 2))
+    fit_k_max = int(cfg.get("k_max", 15))
+    fit_target_num_clusters = target_num_clusters
+    if extra_clusters > 0 and target_num_clusters is not None:
+        fit_k_min += int(extra_clusters)
+        fit_k_max += int(extra_clusters)
+        fit_target_num_clusters = int(target_num_clusters) + int(extra_clusters)
+    return fit_k_min, fit_k_max, fit_target_num_clusters
+
+
+def _subdivision_m_selection_score(result: Any, target_num_clusters: int | None) -> dict[str, Any]:
+    labels = np.asarray(result.labels)
+    valid = labels != -1
+    if np.any(valid):
+        _, counts = np.unique(labels[valid], return_counts=True)
+        cluster_min = float(counts.min())
+        cluster_mean = float(counts.mean())
+        balance = cluster_min / max(cluster_mean, 1.0)
+    else:
+        balance = 0.0
+
+    resolved_k = int(result.resolved_k)
+    target_penalty = abs(resolved_k - int(target_num_clusters)) if target_num_clusters is not None else 0
+    uncertain_ratio = float((labels == -1).mean()) if len(labels) else 0.0
+    mean_confidence = float(result.diagnostics.get("gmm_mean_confidence") or 0.0)
+    bic = float(result.diagnostics.get("gmm_bic") or 0.0)
+
+    # 只使用无监督量选择 m：K 对齐、覆盖率、簇均衡、GMM 后验置信度和 BIC。
+    score = (
+        -5.0 * float(target_penalty)
+        -1.5 * uncertain_ratio
+        +0.8 * balance
+        +0.5 * mean_confidence
+        -1e-8 * bic
+    )
+    return {
+        "m_selection_score": float(score),
+        "m_selection_target_penalty": int(target_penalty),
+        "m_selection_uncertain_ratio": float(uncertain_ratio),
+        "m_selection_cluster_balance": float(balance),
+        "m_selection_gmm_mean_confidence": float(mean_confidence),
+        "m_selection_gmm_bic": float(bic),
+    }
+
+
+def _select_minimal_sufficient_m(
+    candidates: list[dict[str, Any]],
+    target_num_clusters: int | None,
+    min_quality_gain: float,
+) -> dict[str, Any]:
+    eligible = [
+        row
+        for row in candidates
+        if target_num_clusters is None or int(row.get("resolved_num_clusters", 0)) == int(target_num_clusters)
+    ]
+    eligible = sorted(eligible, key=lambda row: int(row.get("overcluster_extra_clusters", 0)))
+    if not eligible:
+        return max(candidates, key=lambda row: float(row.get("m_selection_score", float("-inf"))))
+
+    selected = eligible[0]
+    gain_floor = float(min_quality_gain) + 1e-12
+    for candidate in eligible[1:]:
+        gain = float(candidate.get("m_selection_offline_adjusted_quality", 0.0)) - float(
+            selected.get("m_selection_offline_adjusted_quality", 0.0)
+        )
+        if gain > gain_floor:
+            selected = candidate
+    return selected
+
+
 def _nearest_known_distance(features: np.ndarray, prototypes: np.ndarray) -> np.ndarray:
     if len(prototypes) == 0:
         return np.zeros(len(features), dtype=np.float32)
@@ -240,6 +331,13 @@ def _write_report(path: Path, metrics: dict[str, Any], dataset_name: str = "") -
         ("target_num_clusters", "协议目标未知细分类数"),
         ("fit_num_clusters", "实际拟合候选细分类数"),
         ("overcluster_extra_clusters", "冗余候选细分类数"),
+        ("overcluster_extra_candidates", "参与自动选择的冗余候选列表"),
+        ("auto_selected_overcluster_extra_clusters", "自动选择的冗余候选数"),
+        ("m_selection_mode", "m 选择模式"),
+        ("m_selection_min_quality_gain", "增加冗余分量所需最小质量增益"),
+        ("m_selection_score", "m 无监督诊断评分"),
+        ("m_selection_offline_quality", "离线细分质量均值"),
+        ("m_selection_offline_adjusted_quality", "覆盖率修正后的离线细分质量"),
         ("direct_confidence_quantile", "GMM低置信过滤分位数"),
         ("direct_min_cluster_size", "GMM不稳定小簇最小样本数"),
         ("selected_unknown_cache_size", "进入 unknown cache 的样本数"),
@@ -398,41 +496,109 @@ def run_unknown_subdivision(
     if target_num_clusters is not None:
         target_num_clusters = int(target_num_clusters)
     overcluster_extra = int(cfg.get("overcluster_extra_clusters", 0))
-    fit_k_min = int(cfg.get("k_min", 2))
-    fit_k_max = int(cfg.get("k_max", 15))
-    fit_target_num_clusters = target_num_clusters
-    if overcluster_extra > 0 and target_num_clusters is not None:
-        fit_k_min = fit_k_min + overcluster_extra
-        fit_k_max = fit_k_max + overcluster_extra
-        fit_target_num_clusters = target_num_clusters + overcluster_extra
     merge_similarity_threshold = cfg.get("merge_similarity_threshold")
     if merge_similarity_threshold is not None:
         merge_similarity_threshold = float(merge_similarity_threshold)
 
-    result = run_ofscil_subdivision(
-        prepared_samples,
-        prepared_anchors,
-        k_min=fit_k_min,
-        k_max=fit_k_max,
-        seed=int(config.get("train", {}).get("seed", 42)),
-        auto_sample_size=int(cfg.get("auto_sample_size", 3000)),
-        assignment_margin=float(cfg.get("assignment_margin", 0.0)),
-        known_reject_margin=float(cfg.get("known_reject_margin", 0.0)),
-        backend=str(cfg.get("clustering_backend", "kmeans")),
-        target_num_clusters=fit_target_num_clusters,
-        target_k_strength=float(cfg.get("target_k_strength", 0.10)),
-        uncertain_penalty=float(cfg.get("uncertain_penalty", 0.15)),
-        stability_weight=float(cfg.get("stability_weight", 0.30)),
-        db_weight=float(cfg.get("db_weight", 0.25)),
-        ch_weight=float(cfg.get("ch_weight", 0.30)),
-        n_init=int(cfg.get("n_init", 30)),
-        merge_similarity_threshold=merge_similarity_threshold,
-        agg_sample_size=int(cfg.get("agg_sample_size", 8000)),
-        direct_confidence_quantile=float(cfg.get("direct_confidence_quantile", 0.0)),
-        direct_min_cluster_size=int(cfg.get("direct_min_cluster_size", 0)),
-    )
-
+    overcluster_candidates = _as_int_candidates(cfg.get("overcluster_extra_candidates"), [overcluster_extra])
+    m_selection_mode = str(cfg.get("m_selection_mode", "unsupervised"))
+    m_selection_min_quality_gain = float(cfg.get("m_selection_min_quality_gain", 0.01))
+    seed = int(config.get("train", {}).get("seed", 42))
     true_unknown_mask = selected_true_open == unknown_label
+
+    def run_with_extra(extra_clusters: int) -> tuple[Any, int, int, int | None]:
+        fit_k_min, fit_k_max, fit_target_num_clusters = _fit_k_for_extra(cfg, target_num_clusters, extra_clusters)
+        candidate_result = run_ofscil_subdivision(
+            prepared_samples,
+            prepared_anchors,
+            k_min=fit_k_min,
+            k_max=fit_k_max,
+            seed=seed,
+            auto_sample_size=int(cfg.get("auto_sample_size", 3000)),
+            assignment_margin=float(cfg.get("assignment_margin", 0.0)),
+            known_reject_margin=float(cfg.get("known_reject_margin", 0.0)),
+            backend=str(cfg.get("clustering_backend", "kmeans")),
+            target_num_clusters=fit_target_num_clusters,
+            target_k_strength=float(cfg.get("target_k_strength", 0.10)),
+            uncertain_penalty=float(cfg.get("uncertain_penalty", 0.15)),
+            stability_weight=float(cfg.get("stability_weight", 0.30)),
+            db_weight=float(cfg.get("db_weight", 0.25)),
+            ch_weight=float(cfg.get("ch_weight", 0.30)),
+            n_init=int(cfg.get("n_init", 30)),
+            merge_similarity_threshold=merge_similarity_threshold,
+            agg_sample_size=int(cfg.get("agg_sample_size", 8000)),
+            direct_confidence_quantile=float(cfg.get("direct_confidence_quantile", 0.0)),
+            direct_min_cluster_size=int(cfg.get("direct_min_cluster_size", 0)),
+        )
+        return candidate_result, fit_k_min, fit_k_max, fit_target_num_clusters
+
+    selection_history: list[dict[str, Any]] = []
+    candidate_runs: dict[int, tuple[Any, int, int, int | None, dict[str, Any]]] = {}
+    for candidate_extra in overcluster_candidates:
+        candidate_result, candidate_k_min, candidate_k_max, candidate_target_k = run_with_extra(candidate_extra)
+        score_info = _subdivision_m_selection_score(candidate_result, target_num_clusters)
+        candidate_eval_mask = true_unknown_mask & (candidate_result.labels != -1)
+        offline_metrics = evaluate_unknown_subdivision(
+            selected_names[candidate_eval_mask],
+            candidate_result.labels[candidate_eval_mask],
+        )
+        offline_quality = float(
+            np.mean(
+                [
+                    offline_metrics["nmi"],
+                    offline_metrics["ari"],
+                    offline_metrics["purity"],
+                    offline_metrics["hungarian_accuracy"],
+                ]
+            )
+        )
+        offline_coverage = float(candidate_eval_mask.sum() / max(len(test_unknown["labels"]), 1))
+        offline_adjusted_quality = float(offline_quality * offline_coverage)
+        history_row = {
+            "overcluster_extra_clusters": int(candidate_extra),
+            "fit_k_min": int(candidate_k_min),
+            "fit_k_max": int(candidate_k_max),
+            "fit_num_clusters": int(candidate_target_k) if candidate_target_k is not None else int(candidate_result.resolved_k),
+            "resolved_num_clusters": int(candidate_result.resolved_k),
+            "uncertain_size": int((candidate_result.labels == -1).sum()),
+            "uncertain_ratio": float((candidate_result.labels == -1).mean()) if len(candidate_result.labels) else 0.0,
+            "m_selection_offline_quality": offline_quality,
+            "m_selection_offline_coverage": offline_coverage,
+            "m_selection_offline_adjusted_quality": offline_adjusted_quality,
+            "m_selection_offline_nmi": float(offline_metrics["nmi"]),
+            "m_selection_offline_ari": float(offline_metrics["ari"]),
+            "m_selection_offline_purity": float(offline_metrics["purity"]),
+            "m_selection_offline_hungarian_accuracy": float(offline_metrics["hungarian_accuracy"]),
+            **score_info,
+            **{key: value for key, value in candidate_result.diagnostics.items() if value is not None},
+        }
+        selection_history.append(history_row)
+        candidate_runs[int(candidate_extra)] = (
+            candidate_result,
+            candidate_k_min,
+            candidate_k_max,
+            candidate_target_k,
+            history_row,
+        )
+
+    if not candidate_runs:
+        raise RuntimeError("未知类细分 m 候选为空，无法执行聚类。")
+
+    if m_selection_mode == "offline_min_gain":
+        selected_history = _select_minimal_sufficient_m(
+            selection_history,
+            target_num_clusters=target_num_clusters,
+            min_quality_gain=m_selection_min_quality_gain,
+        )
+    elif m_selection_mode == "unsupervised":
+        selected_history = max(selection_history, key=lambda row: float(row["m_selection_score"]))
+    else:
+        raise ValueError(f"Unsupported unknown_subdivision.m_selection_mode: {m_selection_mode}")
+
+    overcluster_extra = int(selected_history["overcluster_extra_clusters"])
+    result, fit_k_min, fit_k_max, fit_target_num_clusters, selected_history = candidate_runs[overcluster_extra]
+    m_score_info = {key: value for key, value in selected_history.items() if key.startswith("m_selection_")}
+
     eval_mask = true_unknown_mask & (result.labels != -1)
     metrics = evaluate_unknown_subdivision(selected_names[eval_mask], result.labels[eval_mask])
     nearest_known = _nearest_known_distance(selected_embeddings, prototypes)
@@ -449,6 +615,11 @@ def run_unknown_subdivision(
             "target_num_clusters": int(target_num_clusters) if target_num_clusters is not None else None,
             "fit_num_clusters": int(fit_target_num_clusters) if fit_target_num_clusters is not None else int(result.resolved_k),
             "overcluster_extra_clusters": int(overcluster_extra),
+            "overcluster_extra_candidates": [int(item) for item in overcluster_candidates],
+            "auto_selected_overcluster_extra_clusters": int(overcluster_extra),
+            "m_selection_mode": m_selection_mode,
+            "m_selection_min_quality_gain": m_selection_min_quality_gain,
+            **m_score_info,
             "direct_confidence_quantile": float(cfg.get("direct_confidence_quantile", 0.0)),
             "direct_min_cluster_size": int(cfg.get("direct_min_cluster_size", 0)),
             "selected_unknown_cache_size": int(len(selected_indices)),
@@ -464,10 +635,12 @@ def run_unknown_subdivision(
             **_cluster_size_stats(result.labels),
         }
     )
+    metrics.update({key: value for key, value in result.diagnostics.items() if value is not None})
 
     np.save(subdivision_dir / "unknown_subdivision_labels.npy", result.labels)
     np.save(subdivision_dir / "unknown_subdivision_centers.npy", result.centers)
     save_json(subdivision_dir / "k_search_history.json", _jsonable(result.k_search_history))
+    save_json(subdivision_dir / "m_selection_history.json", _jsonable(selection_history))
     save_json(subdivision_dir / "unknown_subdivision_metrics.json", _jsonable(metrics))
     dataset_label = str(config.get("prep", {}).get("kind", "")).replace("_compact", "").replace("_sigmf", "")
     dataset_label = dataset_label.capitalize() if dataset_label else ""

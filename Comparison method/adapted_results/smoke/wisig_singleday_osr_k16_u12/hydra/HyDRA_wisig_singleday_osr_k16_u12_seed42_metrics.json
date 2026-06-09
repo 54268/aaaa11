@@ -5,7 +5,7 @@
   "seed": 42,
   "threshold_strategy_used": "softmax_val_known_quantile",
   "threshold_mode": "softmax_val_known_quantile",
-  "threshold": 0.06943017616868019,
+  "threshold": 0.06943046152591706,
   "threshold_quantile": 0.05,
   "number_of_tx": 28,
   "number_of_rx_used": 1,
@@ -54,8 +54,8 @@
   "split_file": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\data\\splits\\wisig\\single_day_rx1_eq0\\wisig_single_day_rx1_eq0_k16_u12_seed42.json",
   "output_dir": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\Comparison method\\adapted_results\\smoke\\wisig_singleday_osr_k16_u12\\hydra",
   "best_val_acc": 0.0625,
-  "best_epoch": 0,
-  "training_status": "reused_checkpoint",
+  "best_epoch": 1,
+  "training_status": "trained",
   "overall_accuracy": 0.06862745098039216,
   "macro_precision": 0.012118531623175586,
   "macro_recall": 0.06862745098039216,
@@ -66,7 +66,7 @@
   "unknown_recall": 0.16666666666666666,
   "known_fpr_as_unknown": 0.0625,
   "unknown_false_accept_rate": 0.8333333333333334,
-  "auroc": 0.6199544270833333,
+  "auroc": 0.6200086805555556,
   "fpr95": 0.7708333333333334,
-  "oscr": 0.057291666666666664
+  "oscr": 0.05702039930555555
 }
