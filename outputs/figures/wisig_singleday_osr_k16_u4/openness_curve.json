@@ -1,0 +1,34 @@
+[
+  {
+    "num_unknown_classes": 1.0,
+    "openness": 0.015268072165338098,
+    "known_accuracy": 0.960546875,
+    "macro_f1": 0.9773808193911596,
+    "auroc": 0.9992187499999999,
+    "known_fpr_as_unknown": 0.039453125
+  },
+  {
+    "num_unknown_classes": 2.0,
+    "openness": 0.029857499854668124,
+    "known_accuracy": 0.960546875,
+    "macro_f1": 0.9790737634089686,
+    "auroc": 0.9992187499999999,
+    "known_fpr_as_unknown": 0.039453125
+  },
+  {
+    "num_unknown_classes": 3.0,
+    "openness": 0.0438171125324851,
+    "known_accuracy": 0.960546875,
+    "macro_f1": 0.9796613369193325,
+    "auroc": 0.9992187499999999,
+    "known_fpr_as_unknown": 0.039453125
+  },
+  {
+    "num_unknown_classes": 4.0,
+    "openness": 0.057190958417936644,
+    "known_accuracy": 0.960546875,
+    "macro_f1": 0.9799596879665115,
+    "auroc": 0.99921826171875,
+    "known_fpr_as_unknown": 0.039453125
+  }
+]

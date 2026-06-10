@@ -1,0 +1,29 @@
+[
+  {
+    "overcluster_extra_clusters": 2,
+    "fit_k_min": 14,
+    "fit_k_max": 14,
+    "fit_num_clusters": 14,
+    "resolved_num_clusters": 14,
+    "uncertain_size": 83,
+    "uncertain_ratio": 0.008615320739049201,
+    "m_selection_offline_quality": 0.9633203539249398,
+    "m_selection_offline_coverage": 0.9913541666666666,
+    "m_selection_offline_adjusted_quality": 0.9549916466982971,
+    "m_selection_offline_nmi": 0.9764360874210143,
+    "m_selection_offline_ari": 0.9555465996878023,
+    "m_selection_offline_purity": 0.9993695492276978,
+    "m_selection_offline_hungarian_accuracy": 0.9219291793632447,
+    "m_selection_score": -9.089075359923093,
+    "m_selection_target_penalty": 2,
+    "m_selection_uncertain_ratio": 0.008615320739049201,
+    "m_selection_cluster_balance": 0.5115694691655325,
+    "m_selection_gmm_mean_confidence": 0.9999885689609666,
+    "m_selection_gmm_bic": -1459776.137257304,
+    "gmm_bic": -1459776.137257304,
+    "gmm_aic": -1937078.309310725,
+    "gmm_lower_bound": 107.43859516037867,
+    "gmm_mean_confidence": 0.9999885689609666,
+    "gmm_median_confidence": 1.0
+  }
+]

@@ -7,17 +7,6 @@ pytest-cache-files*/
 
 /data/
 
-/outputs/
-
-*.pt
-*.pth
-*.ckpt
-
-third_party/openmax/
-third_party/pytorch-ood/
-third_party/torchcvnn/
-third_party/prototypical-networks/
-
 # 临时探索/调参日志和缓存
 _explore_*.json
 _explore_*.log

@@ -1,0 +1,29 @@
+{
+  "fusion_lambda": 0.2,
+  "threshold": 0.94,
+  "thresholds_per_class": null,
+  "threshold_mode": "manual_global",
+  "threshold_quantile": null,
+  "fusion_mode": "linear",
+  "score_calibration": {
+    "mode": "none"
+  },
+  "known_rescue": {
+    "enabled": false
+  },
+  "metrics": {
+    "overall_accuracy": 0.47284644194756553,
+    "macro_precision": 0.40752955380727957,
+    "macro_recall": 0.944990563070148,
+    "macro_f1": 0.528480311500935,
+    "weighted_f1": 0.4418441752520812,
+    "known_accuracy": 0.98828125,
+    "unknown_precision": 0.9805194805194806,
+    "unknown_recall": 0.25233957219251335,
+    "known_fpr_as_unknown": 0.01171875,
+    "unknown_false_accept_rate": 0.7476604278074866,
+    "auroc": 0.9457018194351603,
+    "fpr95": 0.1703125,
+    "oscr": 0.9435452874331549
+  }
+}

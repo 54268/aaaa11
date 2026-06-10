@@ -1,0 +1,18 @@
+{
+  "figure_dir": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\wisig_singleday_osr_k16_u12\\figures",
+  "files": [
+    "confusion_label_map.csv",
+    "confusion_matrix.png",
+    "figures_index.json",
+    "openness_accuracy_f1_curve.png",
+    "openness_accuracy_f1_summary.md",
+    "openness_curve.json",
+    "openness_metric_curve.png",
+    "pr_curve.png",
+    "roc_curve.png",
+    "unknown_score_histogram.png"
+  ],
+  "notes": {
+    "confusion_label_map": "confusion_label_map.csv stores display label to raw class label mapping."
+  }
+}

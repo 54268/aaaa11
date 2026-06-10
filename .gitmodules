@@ -1,0 +1,13 @@
+[submodule "third_party/openmax"]
+	path = third_party/openmax
+	url = https://github.com/nikita-petrashen/openmax.git
+[submodule "third_party/prototypical-networks"]
+	path = third_party/prototypical-networks
+	url = https://github.com/orobix/Prototypical-Networks-for-Few-shot-Learning-PyTorch.git
+[submodule "third_party/pytorch-ood"]
+	path = third_party/pytorch-ood
+	url = https://github.com/kkirchheim/pytorch-ood.git
+	branch = dev
+[submodule "third_party/torchcvnn"]
+	path = third_party/torchcvnn
+	url = https://github.com/torchcvnn/torchcvnn.git

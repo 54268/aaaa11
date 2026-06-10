@@ -1,0 +1,12 @@
+﻿{
+    "figure_dir":  "E:\\learn_pytorch\\绗旇\\鏂规\\os_sei_code\\figures\\wisig_singleday_osr_k16_u4",
+    "files":  [
+                  "confusion_matrix.png",
+                  "figures_index.json",
+                  "openness_curve.json",
+                  "openness_metric_curve.png",
+                  "pr_curve.png",
+                  "roc_curve.png",
+                  "unknown_score_histogram.png"
+              ]
+}
