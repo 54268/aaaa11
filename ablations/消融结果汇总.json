@@ -445,11 +445,11 @@
     "variant": "OpenMax + 原型距离校准",
     "variant_slug": "ordinary_mbs_only",
     "output_dir": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\01_模块消融\\oracle\\ordinary_mbs_only",
-    "overall_accuracy": 0.9640625,
-    "known_accuracy": 0.873125,
+    "overall_accuracy": 0.96409375,
+    "known_accuracy": 0.87325,
     "unknown_recall": 0.994375,
-    "macro_f1": 0.9272654945522315,
-    "auroc": 0.9868361406250001
+    "macro_f1": 0.9273304768042105,
+    "auroc": 0.9868357109374999
   },
   {
     "category": "modules",
@@ -493,11 +493,11 @@
     "variant": "OpenMax + 原型距离校准",
     "variant_slug": "ordinary_mbs_only",
     "output_dir": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\01_模块消融\\wisig\\ordinary_mbs_only",
-    "overall_accuracy": 0.9787006578947368,
-    "known_accuracy": 0.898828125,
+    "overall_accuracy": 0.9782894736842105,
+    "known_accuracy": 0.896875,
     "unknown_recall": 1.0,
-    "macro_f1": 0.9486955306776733,
-    "auroc": 0.9959524943033854
+    "macro_f1": 0.9476661190465506,
+    "auroc": 0.9959491577148437
   },
   {
     "category": "modules",

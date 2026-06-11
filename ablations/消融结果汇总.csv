@@ -27,9 +27,9 @@
 ,True,,0.995305643717448,0.99921875,losses,True,,wisig,,,,0.88671875,0.9421592961041729,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\03_损失函数消融\wisig\full_embedding_learning,0.9761513157894737,True,,,,,1.0,Full embedding learning,full_embedding_learning
 ,,,0.9576900755208333,,modules,,,oracle,,,,0.97825,0.648883237690296,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\oracle\closed_set_only,0.2445625,,,,,,0.0,闭集原型分类,closed_set_only
 ,,,0.9006863124999999,,modules,,,oracle,,,,0.795875,0.8042557471842177,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\oracle\openmax_only,0.864,,,,,,0.8867083333333333,OpenMax 校准,openmax_only
-,,,0.9868361406250001,,modules,,,oracle,,,,0.873125,0.9272654945522315,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\oracle\ordinary_mbs_only,0.9640625,,,,,,0.994375,OpenMax + 原型距离校准,ordinary_mbs_only
+,,,0.9868357109374999,,modules,,,oracle,,,,0.87325,0.9273304768042105,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\oracle\ordinary_mbs_only,0.96409375,,,,,,0.994375,OpenMax + 原型距离校准,ordinary_mbs_only
 ,,,0.9868361406250001,,modules,,,oracle,,,,0.963625,0.9369046213998843,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\oracle\full_method,0.9661875,,,,,,0.9670416666666667,完整方法,full_method
 ,,,0.9832904866536458,,modules,,,wisig,,,,0.998046875,0.6120623391579579,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\wisig\closed_set_only,0.21011513157894737,,,,,,0.0,闭集原型分类,closed_set_only
 ,,,0.9884737752278646,,modules,,,wisig,,,,0.89921875,0.9286241048192656,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\wisig\openmax_only,0.9771381578947368,,,,,,0.9979166666666667,OpenMax 校准,openmax_only
-,,,0.9959524943033854,,modules,,,wisig,,,,0.898828125,0.9486955306776733,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\wisig\ordinary_mbs_only,0.9787006578947368,,,,,,1.0,OpenMax + 原型距离校准,ordinary_mbs_only
+,,,0.9959491577148437,,modules,,,wisig,,,,0.896875,0.9476661190465506,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\wisig\ordinary_mbs_only,0.9782894736842105,,,,,,1.0,OpenMax + 原型距离校准,ordinary_mbs_only
 ,,,0.9959524943033854,,modules,,,wisig,,,,0.98671875,0.9935536101681589,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\wisig\full_method,0.9972039473684211,,,,,,1.0,完整方法,full_method
