@@ -27,6 +27,7 @@ class FusionResult:
     threshold_mode: str
     threshold_quantile: float | None
     metrics: Dict[str, float]
+    score_calibration: dict[str, Any] | None = None
 
 
 def fuse_unknown_score(
@@ -192,12 +193,22 @@ def search_fusion_params(
     classwise_unknown_weight: float = 0.45,
     classwise_min_known_accept: float | None = None,
     fusion_mode: str = "linear",
+    score_calibration_mode: str | None = None,
 ) -> FusionResult:
     best_result = None
     best_relaxed = None
     known_mask = y_true != unknown_label
     for fusion_lambda in lambda_grid:
-        q_u = fuse_unknown_score(q_om, q_pd, fusion_lambda, mode=fusion_mode)
+        q_u_raw = fuse_unknown_score(q_om, q_pd, fusion_lambda, mode=fusion_mode)
+        score_calibration = None
+        if np.any(known_mask):
+            score_calibration = fit_score_calibration(
+                q_u_raw[known_mask],
+                known_pred[known_mask],
+                unknown_label,
+                score_calibration_mode,
+            )
+        q_u = apply_score_calibration(q_u_raw, known_pred, score_calibration)
         if threshold_mode == "classwise_quantile":
             quantiles = sorted({float(q) for q in (classwise_quantile_grid or [0.95])})
             if known_quantile_floor is not None:
@@ -228,6 +239,7 @@ def search_fusion_params(
                         threshold_mode="classwise_quantile",
                         threshold_quantile=float(quantile),
                         metrics=metrics,
+                        score_calibration=score_calibration,
                     ),
                 )
                 if best_relaxed is None or score > best_relaxed[0]:
@@ -289,6 +301,7 @@ def search_fusion_params(
                         threshold_mode="classwise_balanced",
                         threshold_quantile=None,
                         metrics=metrics,
+                        score_calibration=score_calibration,
                     ),
                 )
                 if best_relaxed is None or score > best_relaxed[0]:
@@ -320,6 +333,7 @@ def search_fusion_params(
                         threshold_mode="global",
                         threshold_quantile=None,
                         metrics=metrics,
+                        score_calibration=score_calibration,
                     ),
                 )
                 if best_relaxed is None or score > best_relaxed[0]:

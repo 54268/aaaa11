@@ -1,15 +1,35 @@
-﻿数据集,实验,总体准确率,已知类准确率,宏平均F1,AUROC,FPR95（越低越好）,未知类召回率,未知类精确率
-WiSig,主实验,0.987336,0.988672,0.977604,0.998414,0.001563,0.986979,0.996949
-WiSig,消融1：仅普通边缘样本外推,0.787089,0.983594,0.832034,0.987326,0.045703,0.734688,0.994501
-WiSig,消融2：去掉冲突保护,0.987336,0.988672,0.977604,0.998414,0.001563,0.986979,0.996949
-WiSig,消融3：无冲突保护+无原型校准,0.686924,0.983984,0.780238,0.983655,0.053516,0.607708,0.993529
-WiSig,消融4：保留冲突保护+无原型校准,0.686924,0.983984,0.780238,0.983655,0.053516,0.607708,0.993529
-WiSig,消融5：保留原型校准+去掉OpenMax,0.987336,0.988672,0.977604,0.998414,0.001563,0.986979,0.996949
-Oracle,主实验,0.918906,0.921000,0.878518,0.955255,0.143875,0.918208,0.981385
-Oracle,消融1：仅普通边缘样本外推,0.779656,0.930375,0.843565,0.955255,0.143875,0.729417,0.982104
-Oracle,消融2：去掉冲突保护,0.918875,0.920875,0.878452,0.955255,0.143875,0.918208,0.981341
-Oracle,消融3：无冲突保护+无原型校准,0.679750,0.943125,0.790817,0.952017,0.157250,0.591958,0.981282
-Oracle,消融4：保留冲突保护+无原型校准,0.679750,0.943125,0.790817,0.952017,0.157250,0.591958,0.981282
-Oracle,消融5：保留原型校准+去掉OpenMax,0.915219,0.918875,0.875109,0.956862,0.161625,0.914000,0.979942
-
-
+﻿adjusted_quality,angular_loss,ari,auroc,best_val_acc,category,classification_loss,coverage_of_total_test_unknown,dataset,feature_mode,filtering,hungarian_accuracy,known_accuracy,macro_f1,nmi,output_dir,overall_accuracy,prototype_loss,purity,resolved_num_clusters,selected_m,uncertain_ratio,unknown_recall,variant,variant_slug
+0.7458623486312729,,0.7687352841910334,,,km,,0.91425,oracle,,,0.8027982863913955,,,0.8889433899773285,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\02_KM簇数消融\oracle\m_0_1_2_3_auto,,,0.8027982863913955,5,0,0.05689352782649613,,m=0,m0
+0.8416554855839055,,0.8893706189273307,,,km,,0.909,oracle,,,0.9481573157315731,,,0.9179692516289089,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\02_KM簇数消融\oracle\m_0_1_2_3_auto,,,0.9481573157315731,6,1,0.061941224280275486,,m=1,m1
+0.8857411196272639,,0.9992634945241701,,,km,,0.8862916666666667,oracle,,,0.9997179258144893,,,0.9988159321232524,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\02_KM簇数消融\oracle\m_0_1_2_3_auto,,,0.9997179258144893,6,2,0.0864524960431193,,m=2,m2
+0.8647127558614602,,0.9601519029795248,,,km,,0.8955416666666667,oracle,,,0.9584981156655655,,,0.9590043135886687,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\02_KM簇数消融\oracle\m_0_1_2_3_auto,,,0.9846461638673056,7,3,0.07789707832484921,,m=3,m3
+0.8857411196272639,,0.9992634945241701,,,km,,0.8862916666666667,oracle,,,0.9997179258144893,,,0.9988159321232524,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\02_KM簇数消融\oracle\m_0_1_2_3_auto,,,0.9997179258144893,6,2,0.0864524960431193,,Auto,auto
+0.9988780599089989,,0.99863679139135,,,km,,1.0,wisig,,,0.999375,,,0.9981254482446456,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\02_KM簇数消融\wisig\m_0_1_2_3_auto,,,0.999375,12,0,0.0,,m=0,m0
+0.9756755079391478,,0.978829896809363,,,km,,0.9934375,wisig,,,0.9627765544720562,,,0.9875053768472664,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\02_KM簇数消融\wisig\m_0_1_2_3_auto,,,0.9993708713431897,13,1,0.00653933983807349,,m=1,m1
+0.9549916466982971,,0.9555465996878023,,,km,,0.9913541666666666,wisig,,,0.9219291793632447,,,0.9764360874210143,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\02_KM簇数消融\wisig\m_0_1_2_3_auto,,,0.9993695492276978,14,2,0.008615320739049201,,m=2,m2
+0.9142944965703321,,0.9551578565941921,,,km,,0.9492708333333333,wisig,,,0.922089322945243,,,0.976029312098967,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\02_KM簇数消融\wisig\m_0_1_2_3_auto,,,0.9993415999122133,14,3,0.05148432634419763,,m=3,m3
+0.9988780599089989,,0.99863679139135,,,km,,1.0,wisig,,,0.999375,,,0.9981254482446456,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\02_KM簇数消融\wisig\m_0_1_2_3_auto,,,0.999375,12,0,0.0,,Auto,auto
+,,,0.9815928619791667,,modules,,,oracle,,,,0.873375,0.927398783004464,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\oracle\prototype_boundary_modeling,0.964125,,,,,,0.994375,原型竞争边界建模,prototype_boundary_modeling
+,,,0.9786063984375,,modules,,,oracle,,,,0.875,0.929300623904365,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\oracle\prototype_distance_calibration,0.9651875,,,,,,0.99525,原型距离校准,prototype_distance_calibration
+,,,0.9861131067708334,,modules,,,oracle,,,,0.87175,0.9264492576046748,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\oracle\openmax_calibration,0.96365625,,,,,,0.9942916666666667,OpenMax 校准,openmax_calibration
+,,,0.9815928619791667,,modules,,,oracle,,,,0.873125,0.9272714044772733,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\oracle\full_method,0.9640625,,,,,,0.994375,完整方法,full_method
+,,,0.9959524943033854,,modules,,,wisig,,,,0.897265625,0.9478446673548533,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\wisig\prototype_boundary_modeling,0.9783717105263158,,,,,,1.0,原型竞争边界建模,prototype_boundary_modeling
+,,,0.987150146484375,,modules,,,wisig,,,,0.88984375,0.9437940495514459,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\wisig\prototype_distance_calibration,0.9768092105263158,,,,,,1.0,原型距离校准,prototype_distance_calibration
+,,,0.9989258829752604,,modules,,,wisig,,,,0.90078125,0.949684181592382,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\wisig\openmax_calibration,0.9791118421052631,,,,,,1.0,OpenMax 校准,openmax_calibration
+,,,0.9959524943033854,,modules,,,wisig,,,,0.899609375,0.9490932495817735,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\wisig\full_method,0.9788651315789474,,,,,,1.0,完整方法,full_method
+,,0.8299740824433606,,,subdivision,,0.9144583333333334,oracle,embedding,True,0.9133822390303914,,,0.8678196830591215,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\04_细分流程消融\oracle\embedding_only,,,0.9133822390303914,6,,0.058134063395645294,,Embedding only,embedding_only
+,,0.6140268960316684,,,subdivision,,0.9198333333333333,oracle,iq_stats,True,0.6875339735459323,,,0.7478712871317418,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\04_细分流程消融\oracle\iq_descriptors_only,,,0.6948722594672948,6,,0.050006416563288705,,I/Q descriptors only,iq_descriptors_only
+,,0.7668587201797183,,,subdivision,,0.9670416666666667,oracle,embedding_iq_stats,False,0.8030936274721013,,,0.878483792809707,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\04_细分流程消融\oracle\feature_fusion_wo_filtering,,,0.8083502089706579,6,,0.0,,Feature fusion w/o filtering,feature_fusion_wo_filtering
+,,0.9992634945241701,,,subdivision,,0.8862916666666667,oracle,embedding_iq_stats,True,0.9997179258144893,,,0.9988159321232524,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\04_细分流程消融\oracle\full_subdivision,,,0.9997179258144893,6,,0.0864524960431193,,Full subdivision,full_subdivision
+,,0.9984090694677217,,,subdivision,,0.9998958333333333,wisig,embedding,True,0.9992707573705595,,,0.9978030821764358,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\04_细分流程消融\wisig\embedding_only,,,0.9992707573705595,12,,0.00010379904504878556,,Embedding only,embedding_only
+,,0.7646222450544711,,,subdivision,,0.9540625,wisig,iq_stats,True,0.7530298067474616,,,0.8946277137102765,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\04_细分流程消融\wisig\iq_descriptors_only,,,0.8071841904138006,12,,0.04629437409175836,,I/Q descriptors only,iq_descriptors_only
+,,0.99863679139135,,,subdivision,,1.0,wisig,embedding_iq_stats,False,0.999375,,,0.9981254482446456,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\04_细分流程消融\wisig\feature_fusion_wo_filtering,,,0.999375,12,,0.0,,Feature fusion w/o filtering,feature_fusion_wo_filtering
+,,0.99863679139135,,,subdivision,,1.0,wisig,embedding_iq_stats,True,0.999375,,,0.9981254482446456,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\04_细分流程消融\wisig\full_subdivision,,,0.999375,12,,0.0,,Full subdivision,full_subdivision
+,False,,0.96148821875,0.989,losses,True,,oracle,,,,0.8835,0.8941170451119033,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\03_损失函数消融\oracle\ce_only,0.927375,False,,,,,0.942,CE only,ce_only
+,True,,0.9808420781249999,0.99025,losses,True,,oracle,,,,0.88275,0.9275947622577777,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\03_损失函数消融\oracle\ce_angular,0.96284375,False,,,,,0.9895416666666667,CE + Angular,ce_angular
+,False,,0.9679197578125,0.98775,losses,True,,oracle,,,,0.875375,0.8952109327557841,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\03_损失函数消融\oracle\ce_prototype,0.9381875,True,,,,,0.959125,CE + Prototype,ce_prototype
+,True,,0.9723091640625001,0.99025,losses,True,,oracle,,,,0.87975,0.920256548698283,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\03_损失函数消融\oracle\full_embedding_learning,0.9596875,True,,,,,0.9863333333333333,Full embedding learning,full_embedding_learning
+,False,,0.9963336181640625,0.99921875,losses,True,,wisig,,,,0.880859375,0.9390850940333604,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\03_损失函数消融\wisig\ce_only,0.9749177631578947,False,,,,,1.0,CE only,ce_only
+,True,,0.9950341186523437,0.99921875,losses,True,,wisig,,,,0.87890625,0.9380638554807824,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\03_损失函数消融\wisig\ce_angular,0.9745065789473685,False,,,,,1.0,CE + Angular,ce_angular
+,False,,0.9969965820312501,0.99921875,losses,True,,wisig,,,,0.883984375,0.9406992320065485,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\03_损失函数消融\wisig\ce_prototype,0.9755756578947369,True,,,,,1.0,CE + Prototype,ce_prototype
+,True,,0.995305643717448,0.99921875,losses,True,,wisig,,,,0.88671875,0.9421592961041729,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\03_损失函数消融\wisig\full_embedding_learning,0.9761513157894737,True,,,,,1.0,Full embedding learning,full_embedding_learning

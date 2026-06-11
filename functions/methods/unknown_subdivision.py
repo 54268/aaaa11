@@ -174,7 +174,7 @@ def _fit_centers_gmm(
         reg_covar=1e-3,
         random_state=seed,
     )
-    gmm.fit(features)
+    gmm.fit(np.asarray(features, dtype=np.float32))
     return l2_normalize(gmm.means_.astype(np.float64))
 
 
@@ -197,11 +197,12 @@ def _fit_labels_gmm_direct(
         reg_covar=1e-3,
         random_state=seed,
     )
-    labels = gmm.fit_predict(features).astype(np.int64)
-    confidence = gmm.predict_proba(features).max(axis=1).astype(np.float64)
+    features32 = np.asarray(features, dtype=np.float32)
+    labels = gmm.fit_predict(features32).astype(np.int64)
+    confidence = gmm.predict_proba(features32).max(axis=1).astype(np.float64)
     diagnostics = {
-        "gmm_bic": float(gmm.bic(features)),
-        "gmm_aic": float(gmm.aic(features)),
+        "gmm_bic": float(gmm.bic(features32)),
+        "gmm_aic": float(gmm.aic(features32)),
         "gmm_lower_bound": float(gmm.lower_bound_),
         "gmm_mean_confidence": float(confidence.mean()),
         "gmm_median_confidence": float(np.median(confidence)),
@@ -311,7 +312,7 @@ def prototype_guided_clustering(
     若 backend 属于 gmm_full_direct，则直接用 GMM 的预测作为标签，跳过余弦再分配，
     适合各簇方差差异较大、不在单位球面上的情形。
     """
-    features = np.asarray(features, dtype=np.float64)
+    features = np.asarray(features, dtype=np.float32)
     n_samples = len(features)
     if n_samples == 0:
         empty = np.zeros((0,), dtype=np.int64)

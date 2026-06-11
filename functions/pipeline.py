@@ -167,6 +167,7 @@ def generate_pseudo_unknown_artifacts(config_or_path: str | Path | dict[str, Any
         critical_variations=int(config["pseudo_unknown"]["critical_variations"]),
         jitter=float(config["pseudo_unknown"]["jitter"]),
         enable_conflict_protection=bool(config["pseudo_unknown"].get("enable_conflict_protection", True)),
+        use_critical_boundary=bool(config["pseudo_unknown"].get("use_critical_boundary", True)),
         seed=int(config["train"]["seed"]),
     )
     pseudo["embedding_space"] = str(boundary_file["embedding_space"]) if "embedding_space" in boundary_file.files else "original"
@@ -337,7 +338,9 @@ def calibrate_fusion_artifacts(
             classwise_unknown_weight=float(config["fusion"].get("classwise_unknown_weight", 0.45)),
             classwise_min_known_accept=config["fusion"].get("classwise_min_known_accept"),
             fusion_mode=fusion_mode,
+            score_calibration_mode=score_calibration_mode,
         )
+        score_calibration = result.score_calibration
     summary = {
         "fusion_lambda": result.fusion_lambda,
         "threshold": result.threshold,

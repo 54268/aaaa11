@@ -70,7 +70,8 @@ class ClosedSetTrainer:
         ).max(dim=1).values
         angle_margin = float(loss_cfg.get("angle_margin", 0.2))
         angle = F.relu(angle_margin - (pos - neg)).mean()
-        prototype = (1.0 - pos).mean()
+        target_prototypes = self.head.prototypes[labels]
+        prototype = F.mse_loss(embeddings, target_prototypes)
 
         total = (
             float(loss_cfg.get("lambda_basic", 1.0)) * basic

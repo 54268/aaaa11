@@ -24,6 +24,7 @@ def generate_hybrid_pseudo_unknown(
     critical_variations: int,
     jitter: float,
     enable_conflict_protection: bool = True,
+    use_critical_boundary: bool = True,
     seed: int = 42,
 ) -> Dict[str, np.ndarray]:
     rng = np.random.default_rng(seed)
@@ -55,6 +56,9 @@ def generate_hybrid_pseudo_unknown(
 
     critical_indices = np.where(boundary_result["critical_mask"])[0]
     ordinary_indices = np.where(boundary_result["ordinary_edge_mask"])[0]
+    if not use_critical_boundary:
+        ordinary_indices = np.unique(np.concatenate([ordinary_indices, critical_indices]))
+        critical_indices = np.asarray([], dtype=np.int64)
 
     for index in ordinary_indices:
         cls = int(labels[index])
@@ -94,7 +98,10 @@ def generate_hybrid_pseudo_unknown(
             variation_bonus=variation_bonus,
         )
 
-    pseudo_embeddings = np.asarray(pseudo_embeddings, dtype=np.float32)
+    pseudo_embeddings = np.asarray(pseudo_embeddings, dtype=np.float32).reshape(
+        -1,
+        embeddings.shape[1],
+    )
     pseudo_labels = np.asarray(pseudo_labels, dtype=np.int64)
     source_indices = np.asarray(source_indices, dtype=np.int64)
     source_classes = np.asarray(source_classes, dtype=np.int64)
@@ -104,6 +111,7 @@ def generate_hybrid_pseudo_unknown(
         "num_ordinary_pseudo": int(np.sum(pseudo_kind == "ordinary_edge")),
         "num_critical_pseudo": int(np.sum(pseudo_kind == "critical_boundary")),
         "num_total_pseudo": int(len(pseudo_kind)),
+        "use_critical_boundary": bool(use_critical_boundary),
     }
     return {
         "pseudo_embeddings": pseudo_embeddings,

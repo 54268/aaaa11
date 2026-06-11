@@ -1,0 +1,40 @@
+{
+  "fusion_lambda": 0.35,
+  "threshold": null,
+  "thresholds_per_class": [
+    0.3790201505241187,
+    0.3680608868598938,
+    0.40687745356041455,
+    0.36561052293881124,
+    0.46692719252213183,
+    0.4879322799651519,
+    0.4060960680246354,
+    0.4683192253112793,
+    0.38,
+    0.3643444541355838
+  ],
+  "threshold_mode": "classwise_balanced",
+  "threshold_quantile": null,
+  "fusion_mode": "linear",
+  "score_calibration": {
+    "mode": "none"
+  },
+  "known_rescue": {
+    "enabled": false
+  },
+  "metrics": {
+    "overall_accuracy": 0.6773521167253648,
+    "macro_precision": 0.5337473358397206,
+    "macro_recall": 0.8537075740762817,
+    "macro_f1": 0.6334891472265555,
+    "weighted_f1": 0.6962852794326302,
+    "known_accuracy": 0.8795,
+    "unknown_precision": 0.9268675455116133,
+    "unknown_recall": 0.5957833148391002,
+    "known_fpr_as_unknown": 0.1165,
+    "unknown_false_accept_rate": 0.4042166851608998,
+    "auroc": 0.8779706824372034,
+    "fpr95": 0.3825,
+    "oscr": 0.8397627610208815
+  }
+}

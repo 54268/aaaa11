@@ -1,0 +1,162 @@
+{
+  "dataset": "wisig",
+  "category": "losses",
+  "variant": "CE + Prototype",
+  "checkpoint": null,
+  "config": {
+    "_config_path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\run_wisig.py",
+    "_project_root": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code",
+    "project": {
+      "name": "wisig_losses_ce_prototype",
+      "output_dir": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\03_损失函数消融\\wisig\\ce_prototype"
+    },
+    "prep": {
+      "kind": "wisig_compact",
+      "raw_path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\data\\raw\\wisig\\SingleDay.pkl",
+      "split_file": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\data\\splits\\wisig\\single_day_rx1_eq0\\wisig_single_day_rx1_eq0_k16_u12_seed42.json",
+      "processed_root": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\data\\processed\\wisig_singleday_osr_k16_u12",
+      "train_ratio": 0.7,
+      "val_ratio": 0.1,
+      "deduplicate_exact": false
+    },
+    "data": {
+      "mode": "separate_npz",
+      "root": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\data\\processed\\wisig_singleday_osr_k16_u12",
+      "batch_size": 64,
+      "num_workers": 0,
+      "signal_length": 256,
+      "normalize": "per_sample"
+    },
+    "model": {
+      "backbone": "cvcnn_iq",
+      "embedding_dim": 128,
+      "hidden_dim": 64,
+      "dropout": 0.15,
+      "temperature": 1.0
+    },
+    "train": {
+      "seed": 42,
+      "device": "cuda",
+      "epochs": 20,
+      "lr": 0.001,
+      "weight_decay": 0.0001,
+      "prototype_momentum": 0.9,
+      "loss_ablation_training_version": 1
+    },
+    "loss": {
+      "lambda_basic": 1.0,
+      "lambda_angle": 0.0,
+      "lambda_prototype": 0.1,
+      "angle_margin": 0.15,
+      "prototype_loss_mode": "euclidean_mse"
+    },
+    "boundary": {
+      "k": 5,
+      "beta": 1.0,
+      "alpha": 0.5,
+      "top_m": 50,
+      "ordinary_edge_ratio": 0.15
+    },
+    "pseudo_unknown": {
+      "ordinary_eta": 1.0,
+      "critical_eta": 1.0,
+      "critical_beta": 0.7,
+      "ordinary_variations": 1,
+      "critical_variations": 2,
+      "jitter": 0.1
+    },
+    "openmax": {
+      "backend": "repo_openmax",
+      "alpha_rank": 3,
+      "tail_size": 25,
+      "distance_type": "eucl",
+      "euclid_weight": 1.0
+    },
+    "fusion": {
+      "lambda_grid": [
+        0.2
+      ],
+      "manual_fusion_lambda": 0.2,
+      "manual_threshold": null,
+      "threshold_grid": [
+        0.25,
+        0.3,
+        0.35,
+        0.4,
+        0.45,
+        0.5,
+        0.55,
+        0.6,
+        0.65,
+        0.7,
+        0.75,
+        0.8,
+        0.85,
+        0.9,
+        0.92,
+        0.94,
+        0.96,
+        0.97,
+        0.98,
+        0.99
+      ],
+      "selection_weights": {
+        "known_accuracy": 0.8,
+        "unknown_recall": 0.05,
+        "macro_f1": 0.1,
+        "auroc": 0.05
+      },
+      "known_quantile_floor": 0.995,
+      "min_known_accuracy": 0.98,
+      "manual_thresholds_per_class": null,
+      "score_calibration": "none",
+      "threshold_mode": "classwise_balanced",
+      "known_rescue": {
+        "enabled": false
+      },
+      "loss_ablation_calibration_version": 1
+    },
+    "eval": {
+      "save_predictions": true
+    },
+    "reporting": {
+      "write_root_summaries": false,
+      "write_figures_inside_output_dir": true
+    },
+    "unknown_subdivision": {
+      "enabled": true,
+      "method": "embedding_stats_gmm_full_direct",
+      "output_subdir": "unknown_subdivision",
+      "feature_mode": "embedding_stats",
+      "pca_dim": 96,
+      "k_min": 12,
+      "k_max": 12,
+      "clustering_backend": "gmm_full_direct",
+      "target_num_clusters": 12,
+      "target_k_strength": 1.0,
+      "auto_sample_size": 3000,
+      "use_known_prototype_anchors": false,
+      "known_anchor_fixed": true,
+      "suspected_known_policy": "uncertain",
+      "assignment_margin": 0.0,
+      "known_reject_margin": -1.0,
+      "overcluster_extra_clusters": 0,
+      "overcluster_extra_candidates": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "m_selection_mode": "offline_min_gain",
+      "m_selection_min_quality_gain": 0.01,
+      "direct_confidence_quantile": 0.1,
+      "direct_min_cluster_size": 160,
+      "n_init": 30,
+      "agg_sample_size": 8000,
+      "uncertain_penalty": 0.15,
+      "stability_weight": 0.3,
+      "db_weight": 0.25,
+      "ch_weight": 0.3
+    }
+  }
+}

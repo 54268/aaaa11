@@ -157,10 +157,9 @@ RESULT_ROOT = COMPARISON_ROOT / "adapted_results"
 METHOD_ORDER = ["Softmax", "OpenMax", "HyperRSI", "HyDRA", "OpenRFI", "ARPL", "PCBM (ours)"]
 FINAL_OPEN_SET_FIELDS = [
     "method",
-    "overall_accuracy",
+    "unknown_recall",
     "known_accuracy",
     "unknown_precision",
-    "unknown_recall",
     "macro_f1",
     "auroc",
     "fpr95",
@@ -170,7 +169,6 @@ FINAL_SUBDIVISION_FIELDS = [
     "method",
     "nmi",
     "ari",
-    "purity",
     "hungarian_accuracy",
     "coverage_of_total_test_unknown",
     "unknown_cache_precision",
@@ -180,7 +178,7 @@ FINAL_SUBDIVISION_FIELDS = [
 
 ROOT_FINAL_OPEN_SET_FIELDS = [
     "method",
-    "overall_accuracy",
+    "unknown_recall",
     "known_accuracy",
     "macro_f1",
     "auroc",
@@ -190,7 +188,7 @@ ROOT_FINAL_SUBDIVISION_FIELDS = [
     "method",
     "nmi",
     "ari",
-    "purity",
+    "hungarian_accuracy",
     "coverage_of_total_test_unknown",
 ]
 
@@ -281,7 +279,7 @@ def write_final_comparison_tables(
         "# 最终对比表",
         "",
         "本文件为项目根目录下的精简版最终汇总，只保留对比方法最核心的拒识与细分指标。",
-        "开放集拒识只保留 `overall_accuracy`、`known_accuracy`、`macro_f1`、`auroc`；未知类细分保留 `nmi`、`ari`、`purity` 与覆盖率 `coverage_of_total_test_unknown`。",
+        "开放集拒识重点汇总 `unknown_recall`、`known_accuracy`、`macro_f1`、`auroc`；未知类细分重点汇总 `nmi`、`ari`、`hungarian_accuracy` 与覆盖率 `coverage_of_total_test_unknown`。",
         "",
     ]
     # 只汇总本次实际运行的数据集，避免旧结果混入正式表。

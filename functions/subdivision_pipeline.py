@@ -136,6 +136,8 @@ def build_cluster_features(
 ) -> np.ndarray:
     if mode == "embedding":
         return embeddings
+    if mode in {"iq_stats", "iq_descriptors"}:
+        return build_iq_stat_features(signal_samples, len(embeddings))
     if mode in {"embedding_stats", "embedding_iq_stats"}:
         return np.concatenate([embeddings, build_iq_stat_features(signal_samples, len(embeddings))], axis=1)
     if mode == "embedding_distance":
@@ -154,6 +156,8 @@ def build_cluster_features(
 
 
 def _known_anchor_features(mode: str, prototypes: np.ndarray) -> np.ndarray:
+    if mode in {"iq_stats", "iq_descriptors"}:
+        raise ValueError("I/Q descriptor-only subdivision does not support known prototype anchors.")
     distances = np.sqrt(squared_euclidean(prototypes, prototypes))
     zeros = np.zeros(len(prototypes), dtype=np.float32)
     known_pred = np.arange(len(prototypes), dtype=np.int64)

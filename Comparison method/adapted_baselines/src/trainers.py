@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import json
 import random
 import sys
@@ -52,6 +53,32 @@ def choose_device(name: str = "auto") -> torch.device:
     if name == "auto":
         return torch.device("cuda" if torch.cuda.is_available() else "cpu")
     return torch.device(name)
+
+
+def _save_open_set_predictions(
+    path: Path,
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    unknown_score: np.ndarray,
+    unknown_label: int,
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=["y_true", "y_pred", "unknown_score", "is_unknown", "unknown_label"],
+        )
+        writer.writeheader()
+        for true_label, pred_label, score in zip(y_true, y_pred, unknown_score):
+            writer.writerow(
+                {
+                    "y_true": int(true_label),
+                    "y_pred": int(pred_label),
+                    "unknown_score": float(score),
+                    "is_unknown": int(int(true_label) == int(unknown_label)),
+                    "unknown_label": int(unknown_label),
+                }
+            )
 
 
 def loader(dataset: IQDataset, batch_size: int, shuffle: bool) -> DataLoader:
@@ -807,6 +834,13 @@ def run_open_set_baseline(
         raise ValueError(f"Unsupported score_mode: {score_mode}")
 
     metrics = evaluate_open_set(y_true, pred, unknown_score, unknown_label)
+    _save_open_set_predictions(
+        output_dir / f"{method_name}_{protocol.name}_seed{seed}_predictions.csv",
+        y_true=y_true,
+        y_pred=pred,
+        unknown_score=unknown_score,
+        unknown_label=unknown_label,
+    )
     result = {
         "dataset": protocol.name,
         "method": method_name,
