@@ -3,8 +3,10 @@ from __future__ import annotations
 import numpy as np
 
 from ablations.ablation_suite import (
+    MODULE_VARIANTS,
     ResultRow,
     _ablation_matrix_metric_table,
+    _module_metric_matrix_rows,
     _selected_loss_variants,
 )
 from functions.methods.pseudo_unknown import generate_hybrid_pseudo_unknown
@@ -106,3 +108,15 @@ def test_ablation_table_starts_with_switch_columns() -> None:
         "| Classification Loss | Angular Loss | Prototype Loss |"
     )
     assert table[2] == "| √ | X | X | 0.900000 |"
+
+
+def test_module_ablation_rows_are_cumulative_additions() -> None:
+    expected_rows = [
+        ("closed_set_only", [False, False, False]),
+        ("openmax_only", [False, False, True]),
+        ("ordinary_mbs_only", [False, True, True]),
+        ("full_method", [True, True, True]),
+    ]
+
+    assert _module_metric_matrix_rows() == expected_rows
+    assert [variant[0] for variant in MODULE_VARIANTS] == [slug for slug, _ in expected_rows]

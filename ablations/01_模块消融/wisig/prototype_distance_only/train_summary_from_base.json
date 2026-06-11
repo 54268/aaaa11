@@ -1,6 +1,0 @@
-{
-  "checkpoint_path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\wisig_singleday_osr_k16_u12\\best_closed_set.pt",
-  "best_val_acc": 0.99921875,
-  "num_known_classes": 16,
-  "signal_length": 256
-}

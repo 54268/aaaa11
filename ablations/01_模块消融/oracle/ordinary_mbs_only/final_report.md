@@ -8,24 +8,24 @@
 
 | 指标键 | 中文名 | 数值 | 说明 |
 | --- | --- | ---: | --- |
-| overall_accuracy | 总体准确率 | 0.964000 | 已知类分对且未知类拒识正确的总比例，越高越好。 |
-| known_accuracy | 已知类准确率 | 0.872625 | 只看真实已知类样本，被分到正确已知类别的比例，越高越好。 |
-| macro_f1 | 宏平均 F1 | 0.927115 | 每个类别 F1 的平均值，更关注类别均衡表现，越高越好。 |
-| auroc | 已知/未知区分 AUROC | 0.981593 | unknown score 区分已知与未知的整体能力，越接近 1 越好。 |
-| fpr95 | 95% 未知召回下的已知误拒率 | 0.047500 | 未知召回约 95% 时，已知样本被误拒为 unknown 的比例，越低越好。 |
-| unknown_recall | 未知类召回率 | 0.994458 | 真实未知类中被拒识为 unknown 的比例，越高越好。 |
+| overall_accuracy | 总体准确率 | 0.964063 | 已知类分对且未知类拒识正确的总比例，越高越好。 |
+| known_accuracy | 已知类准确率 | 0.873125 | 只看真实已知类样本，被分到正确已知类别的比例，越高越好。 |
+| macro_f1 | 宏平均 F1 | 0.927265 | 每个类别 F1 的平均值，更关注类别均衡表现，越高越好。 |
+| auroc | 已知/未知区分 AUROC | 0.986836 | unknown score 区分已知与未知的整体能力，越接近 1 越好。 |
+| fpr95 | 95% 未知召回下的已知误拒率 | 0.035375 | 未知召回约 95% 时，已知样本被误拒为 unknown 的比例，越低越好。 |
+| unknown_recall | 未知类召回率 | 0.994375 | 真实未知类中被拒识为 unknown 的比例，越高越好。 |
 
 ## 补充指标
 
 | 指标键 | 中文名 | 数值 | 说明 |
 | --- | --- | ---: | --- |
-| macro_precision | 宏平均精确率 | 0.977339 | 每个类别 precision 的平均值，越高越好。 |
-| macro_recall | 宏平均召回率 | 0.883701 | 每个类别 recall 的平均值，越高越好。 |
-| weighted_f1 | 加权 F1 | 0.963278 | 按类别样本数加权后的 F1，越高越好。 |
-| unknown_precision | 未知类精确率 | 0.960134 | 被拒识为 unknown 的样本中真实未知类占比，越高越好。 |
-| known_fpr_as_unknown | 已知类误拒率 | 0.123875 | 真实已知类被错误拒识成 unknown 的比例，越低越好。 |
-| unknown_false_accept_rate | 未知类误接收率 | 0.005542 | 真实未知类被错误接受为某个已知类的比例，越低越好。 |
-| oscr | 开放集分类识别曲线面积 | 0.870516 | 同时考虑已知类分类正确率和未知拒识能力的综合面积，越高越好。 |
+| macro_precision | 宏平均精确率 | 0.977139 | 每个类别 precision 的平均值，越高越好。 |
+| macro_recall | 宏平均召回率 | 0.884148 | 每个类别 recall 的平均值，越高越好。 |
+| weighted_f1 | 加权 F1 | 0.963347 | 按类别样本数加权后的 F1，越高越好。 |
+| unknown_precision | 未知类精确率 | 0.960285 | 被拒识为 unknown 的样本中真实未知类占比，越高越好。 |
+| known_fpr_as_unknown | 已知类误拒率 | 0.123375 | 真实已知类被错误拒识成 unknown 的比例，越低越好。 |
+| unknown_false_accept_rate | 未知类误接收率 | 0.005625 | 真实未知类被错误接受为某个已知类的比例，越低越好。 |
+| oscr | 开放集分类识别曲线面积 | 0.871853 | 同时考虑已知类分类正确率和未知拒识能力的综合面积，越高越好。 |
 
 ## 实验协议
 
@@ -33,7 +33,7 @@
 | --- | --- | --- |
 | threshold_strategy_used | 阈值策略 | `classwise_balanced` |
 | threshold_mode | 阈值模式 | `classwise_balanced` |
-| score_calibration_mode | 分数校准方式 | `none` |
+| score_calibration_mode | 分数校准方式 | `classwise_z` |
 | known_rescue_enabled | 已知类救回 | `False` |
 | number_of_tx | Tx 总数 | `16` |
 | number_of_rx_used | 使用 Rx 数 | `N/A` |

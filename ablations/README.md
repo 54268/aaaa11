@@ -13,7 +13,7 @@
 - `03_损失函数消融/`：Classification、Angular、Prototype 三项闭集表征损失开关。
 - `04_细分流程消融/`：embedding、I/Q 统计描述、特征融合和置信度过滤的流程贡献。
 
-模块消融和损失函数消融在汇总表中使用二值矩阵展示：每一列是一项模块或损失，每一行用 `X/√` 表示是否启用，并直接拼接 `overall_accuracy`、`known_accuracy`、`unknown_recall`、`macro_f1` 和 `auroc` 等指标。
+模块消融按逐步加入顺序展示：闭集原型分类、加入 OpenMax、加入原型距离校准、完整 PCBM。OpenMax 行复用正式对比实验结果，完整方法行复用正式 PCBM 结果，中间行在相同闭集检查点上关闭 PCBS 后重新运行。每一列用 `X/√` 表示模块是否启用，并直接拼接 `overall_accuracy`、`known_accuracy`、`unknown_recall`、`macro_f1` 和 `auroc` 等指标。
 
 损失函数消融中，Prototype Loss 已按原型距离空间改为欧氏紧致损失。实测结果显示 Angular Loss 是 Oracle 上更稳定的主要收益来源，Prototype Loss 在 WiSig 上有正向增益，但在 Oracle 联合开启时不是严格单调提升，因此论文中不宜把它单独表述为每加必涨的强贡献。
 

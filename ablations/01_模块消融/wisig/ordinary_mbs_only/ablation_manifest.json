@@ -1,7 +1,7 @@
 {
   "dataset": "wisig",
   "category": "modules",
-  "variant": "仅 MBS 外推",
+  "variant": "OpenMax + 原型距离校准",
   "checkpoint": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\wisig_singleday_osr_k16_u12\\best_closed_set.pt",
   "config": {
     "_config_path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\run_wisig.py",
@@ -36,7 +36,7 @@
     },
     "train": {
       "seed": 42,
-      "device": "auto",
+      "device": "cuda",
       "epochs": 20,
       "lr": 0.001,
       "weight_decay": 0.0001,
@@ -108,7 +108,6 @@
       "known_quantile_floor": 0.995,
       "min_known_accuracy": 0.98,
       "manual_thresholds_per_class": null,
-      "score_calibration": "none",
       "threshold_mode": "classwise_balanced",
       "known_rescue": {
         "enabled": false

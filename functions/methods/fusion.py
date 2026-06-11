@@ -250,7 +250,8 @@ def search_fusion_params(
                     best_result = candidate
         elif threshold_mode == "classwise_balanced":
             for fusion_lambda in [fusion_lambda]:
-                q_u = fuse_unknown_score(q_om, q_pd, fusion_lambda, mode=fusion_mode)
+                q_u_raw = fuse_unknown_score(q_om, q_pd, fusion_lambda, mode=fusion_mode)
+                q_u = apply_score_calibration(q_u_raw, known_pred, score_calibration)
                 thresholds = []
                 for cls in range(unknown_label):
                     cls_known = q_u[known_mask & (known_pred == cls)]

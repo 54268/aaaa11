@@ -1,0 +1,21 @@
+{
+  "overall_accuracy": 0.2445625,
+  "macro_precision": 0.6125781307162503,
+  "macro_recall": 0.8893181818181817,
+  "macro_f1": 0.648883237690296,
+  "weighted_f1": 0.17844289036483138,
+  "known_accuracy": 0.97825,
+  "unknown_precision": 0.0,
+  "unknown_recall": 0.0,
+  "known_fpr_as_unknown": 0.0,
+  "unknown_false_accept_rate": 1.0,
+  "auroc": 0.9576900755208333,
+  "fpr95": 0.094375,
+  "oscr": 0.9445714687500001,
+  "threshold_strategy_used": "none_closed_set",
+  "threshold_mode": "none",
+  "known_classes": 10,
+  "test_known_sample_count": 8000,
+  "test_unknown_sample_count": 24000,
+  "output_dir": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\01_模块消融\\oracle\\closed_set_only"
+}

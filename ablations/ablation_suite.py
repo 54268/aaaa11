@@ -21,6 +21,11 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from functions.common.io import ensure_dir, load_json, save_json
+from functions.common.metrics import evaluate_open_set, save_confusion_matrix, save_prediction_csv
+from functions.common.visualization import generate_open_set_figures
+from functions.data.data_build import build_data_module
+from functions.methods.prototype_utils import predict_with_prototypes
+from functions.model.closed_set import ClosedSetTrainer
 from functions.pipeline import run_osr_pipeline
 from run_oracle import build_config as build_oracle_config
 from run_wisig import build_config as build_wisig_config
@@ -36,21 +41,37 @@ GROUP_DIRS = {
 DATASETS = {
     "oracle": {
         "display": "Oracle",
+        "formal_name": "oracle_kri16_demod",
         "build_config": build_oracle_config,
         "checkpoint": PROJECT_ROOT / "outputs" / "oracle_kri16_demod_known_first" / "best_closed_set.pt",
+        "formal_output": PROJECT_ROOT / "outputs" / "oracle_kri16_demod_known_first",
     },
     "wisig": {
         "display": "WiSig",
+        "formal_name": "wisig_singleday_osr_k16_u12",
         "build_config": build_wisig_config,
         "checkpoint": PROJECT_ROOT / "outputs" / "wisig_singleday_osr_k16_u12" / "best_closed_set.pt",
+        "formal_output": PROJECT_ROOT / "outputs" / "wisig_singleday_osr_k16_u12",
     },
 }
 
 MODULE_VARIANTS = [
-    ("prototype_boundary_modeling", "原型竞争边界建模", {"use_critical_boundary": False, "fusion_lambda": None}),
-    ("prototype_distance_calibration", "原型距离校准", {"use_critical_boundary": True, "fusion_lambda": 1.0}),
-    ("openmax_calibration", "OpenMax 校准", {"use_critical_boundary": True, "fusion_lambda": 0.0}),
-    ("full_method", "完整方法", {"use_critical_boundary": True, "fusion_lambda": None}),
+    ("closed_set_only", "闭集原型分类", {"mode": "closed_set"}),
+    (
+        "openmax_only",
+        "OpenMax 校准",
+        {"mode": "formal_openmax"},
+    ),
+    (
+        "ordinary_mbs_only",
+        "OpenMax + 原型距离校准",
+        {"mode": "pipeline", "use_critical_boundary": False, "fusion_lambda": None},
+    ),
+    (
+        "full_method",
+        "完整方法",
+        {"mode": "formal_pcbm"},
+    ),
 ]
 
 LOSS_VARIANTS = [
@@ -188,11 +209,212 @@ def _run_pipeline_variant(
     return output_dir
 
 
+def _stable_softmax(logits: np.ndarray) -> np.ndarray:
+    shifted = logits - np.max(logits, axis=1, keepdims=True)
+    exp_logits = np.exp(shifted)
+    return exp_logits / np.maximum(exp_logits.sum(axis=1, keepdims=True), 1e-12)
+
+
+def _run_closed_set_module_baseline(dataset: str, variant_slug: str, variant_name: str) -> Path:
+    output_dir = _variant_dir("modules", dataset, variant_slug)
+    config = _base_config(dataset)
+    _configure_output(config, output_dir, f"{dataset}_modules_{variant_slug}")
+    config["train"]["device"] = "cuda"
+    checkpoint = Path(DATASETS[dataset]["checkpoint"])
+    ensure_dir(output_dir)
+    _prepare_checkpoint(output_dir, checkpoint)
+    _write_manifest(output_dir, dataset, "modules", variant_name, config, checkpoint)
+
+    datamodule = build_data_module(config)
+    trainer = ClosedSetTrainer(
+        config,
+        datamodule.bundle.num_known_classes,
+        datamodule.bundle.signal_length,
+    )
+    trainer.load_checkpoint(checkpoint)
+    test_known = trainer.extract_embeddings(datamodule.test_known_dataloader())
+    test_unknown = trainer.extract_embeddings(datamodule.test_unknown_dataloader())
+    all_embeddings = np.concatenate(
+        [test_known["embeddings"], test_unknown["embeddings"]],
+        axis=0,
+    )
+    unknown_label = datamodule.bundle.num_known_classes
+    all_labels = np.concatenate(
+        [
+            test_known["labels"],
+            np.full(len(test_unknown["labels"]), unknown_label, dtype=np.int64),
+        ]
+    )
+    known_pred, logits, distances = predict_with_prototypes(
+        all_embeddings,
+        test_known["prototypes"],
+        float(config["model"]["temperature"]),
+    )
+    unknown_score = 1.0 - _stable_softmax(logits).max(axis=1)
+    metrics = evaluate_open_set(all_labels, known_pred, unknown_score, unknown_label)
+    metrics.update(
+        {
+            "threshold_strategy_used": "none_closed_set",
+            "threshold_mode": "none",
+            "known_classes": int(unknown_label),
+            "test_known_sample_count": int(len(test_known["labels"])),
+            "test_unknown_sample_count": int(len(test_unknown["labels"])),
+            "output_dir": str(output_dir),
+        }
+    )
+    save_json(output_dir / "open_set_metrics.json", metrics)
+    save_confusion_matrix(
+        output_dir / "confusion_matrix.csv",
+        all_labels,
+        known_pred,
+        labels=list(range(unknown_label)) + [unknown_label],
+    )
+    unavailable = np.full_like(unknown_score, np.nan, dtype=np.float64)
+    d_min = distances[np.arange(len(distances)), known_pred]
+    save_prediction_csv(
+        output_dir / "open_set_predictions.csv",
+        all_labels,
+        known_pred,
+        unknown_score,
+        unavailable,
+        unavailable,
+        d_min,
+    )
+    generate_open_set_figures(
+        config=config,
+        output_dir=output_dir,
+        y_true=all_labels,
+        y_pred=known_pred,
+        unknown_score=unknown_score,
+        unknown_label=unknown_label,
+        threshold=None,
+    )
+    return output_dir
+
+
+def _run_formal_openmax_module_baseline(dataset: str, variant_slug: str, variant_name: str) -> Path:
+    output_dir = _variant_dir("modules", dataset, variant_slug)
+    config = _base_config(dataset)
+    _configure_output(config, output_dir, f"{dataset}_modules_{variant_slug}")
+    checkpoint = Path(DATASETS[dataset]["checkpoint"])
+    ensure_dir(output_dir)
+    _prepare_checkpoint(output_dir, checkpoint)
+
+    formal_name = str(DATASETS[dataset]["formal_name"])
+    source_dir = (
+        PROJECT_ROOT
+        / "Comparison method"
+        / "adapted_results"
+        / "formal"
+        / formal_name
+        / "openmax"
+    )
+    metrics_path = source_dir / f"OpenMax_{formal_name}_seed42_metrics.json"
+    predictions_path = source_dir / f"OpenMax_{formal_name}_seed42_predictions.csv"
+    if not metrics_path.exists():
+        raise FileNotFoundError(f"Missing formal OpenMax metrics: {metrics_path}")
+
+    metrics = load_json(metrics_path)
+    save_json(output_dir / "open_set_metrics.json", metrics)
+    if predictions_path.exists():
+        shutil.copy2(predictions_path, output_dir / "open_set_predictions.csv")
+    save_json(
+        output_dir / "ablation_manifest.json",
+        {
+            "dataset": dataset,
+            "category": "modules",
+            "variant": variant_name,
+            "checkpoint": str(checkpoint.resolve()),
+            "source_metrics": str(metrics_path.resolve()),
+            "source_predictions": str(predictions_path.resolve()) if predictions_path.exists() else None,
+            "config": config,
+        },
+    )
+    return output_dir
+
+
+def _run_formal_pcbm_module_result(dataset: str, variant_slug: str, variant_name: str) -> Path:
+    output_dir = _variant_dir("modules", dataset, variant_slug)
+    config = _base_config(dataset)
+    _configure_output(config, output_dir, f"{dataset}_modules_{variant_slug}")
+    checkpoint = Path(DATASETS[dataset]["checkpoint"])
+    ensure_dir(output_dir)
+    _prepare_checkpoint(output_dir, checkpoint)
+
+    source_dir = Path(DATASETS[dataset]["formal_output"])
+    metrics_path = source_dir / "open_set_metrics.json"
+    predictions_path = source_dir / "open_set_predictions.csv"
+    if not metrics_path.exists():
+        raise FileNotFoundError(f"Missing formal PCBM metrics: {metrics_path}")
+
+    metrics = load_json(metrics_path)
+    save_json(output_dir / "open_set_metrics.json", metrics)
+    if predictions_path.exists():
+        shutil.copy2(predictions_path, output_dir / "open_set_predictions.csv")
+    save_json(
+        output_dir / "ablation_manifest.json",
+        {
+            "dataset": dataset,
+            "category": "modules",
+            "variant": variant_name,
+            "checkpoint": str(checkpoint.resolve()),
+            "source_metrics": str(metrics_path.resolve()),
+            "source_predictions": str(predictions_path.resolve()) if predictions_path.exists() else None,
+            "config": config,
+        },
+    )
+    return output_dir
+
+
 def run_module_ablations(dataset: str) -> list[ResultRow]:
     rows: list[ResultRow] = []
     base_lambda = float(_base_config(dataset)["fusion"].get("manual_fusion_lambda", 0.5))
     for slug, name, overrides in MODULE_VARIANTS:
+        if overrides["mode"] == "closed_set":
+            output_dir = _run_closed_set_module_baseline(dataset, slug, name)
+            metrics = load_json(output_dir / "open_set_metrics.json")
+            rows.append(
+                ResultRow(
+                    category="modules",
+                    dataset=dataset,
+                    variant=name,
+                    variant_slug=slug,
+                    output_dir=str(output_dir),
+                    metrics={key: metrics.get(key) for key in CORE_OPEN_SET_KEYS},
+                )
+            )
+            continue
+        if overrides["mode"] == "formal_openmax":
+            output_dir = _run_formal_openmax_module_baseline(dataset, slug, name)
+            metrics = load_json(output_dir / "open_set_metrics.json")
+            rows.append(
+                ResultRow(
+                    category="modules",
+                    dataset=dataset,
+                    variant=name,
+                    variant_slug=slug,
+                    output_dir=str(output_dir),
+                    metrics={key: metrics.get(key) for key in CORE_OPEN_SET_KEYS},
+                )
+            )
+            continue
+        if overrides["mode"] == "formal_pcbm":
+            output_dir = _run_formal_pcbm_module_result(dataset, slug, name)
+            metrics = load_json(output_dir / "open_set_metrics.json")
+            rows.append(
+                ResultRow(
+                    category="modules",
+                    dataset=dataset,
+                    variant=name,
+                    variant_slug=slug,
+                    output_dir=str(output_dir),
+                    metrics={key: metrics.get(key) for key in CORE_OPEN_SET_KEYS},
+                )
+            )
+            continue
+
         def mutate(config: dict[str, Any], overrides=overrides) -> None:
+            config["train"]["device"] = "cuda"
             use_pcbs = bool(overrides["use_critical_boundary"])
             config["pseudo_unknown"]["use_critical_boundary"] = use_pcbs
             chosen_lambda = overrides["fusion_lambda"]
@@ -202,7 +424,6 @@ def run_module_ablations(dataset: str) -> list[ResultRow]:
             config["fusion"]["lambda_grid"] = [float(chosen_lambda)]
             config["fusion"]["manual_threshold"] = None
             config["fusion"]["manual_thresholds_per_class"] = None
-            config["fusion"]["score_calibration"] = "none"
             config["fusion"]["threshold_mode"] = "classwise_balanced"
             config["fusion"]["known_rescue"] = {"enabled": False}
             config["fusion"].setdefault("classwise_known_weight", 0.50)
@@ -659,16 +880,16 @@ def _matrix_figure(
 
 def _module_matrix_rows(module_rows: list[ResultRow]) -> list[tuple[str, list[bool]]]:
     order = [
-        "prototype_boundary_modeling",
-        "prototype_distance_calibration",
-        "openmax_calibration",
+        "closed_set_only",
+        "openmax_only",
+        "ordinary_mbs_only",
         "full_method",
     ]
     row_map = {row.variant_slug: row for row in module_rows}
     matrix = [
-        ("原型竞争边界建模", [False, True, True]),
-        ("原型距离校准", [True, False, True]),
-        ("OpenMax 校准", [True, True, False]),
+        ("闭集原型分类", [False, False, False]),
+        ("OpenMax 校准", [False, False, True]),
+        ("OpenMax + 原型距离校准", [False, True, True]),
         ("完整方法", [True, True, True]),
     ]
     result = []
@@ -680,9 +901,9 @@ def _module_matrix_rows(module_rows: list[ResultRow]) -> list[tuple[str, list[bo
 
 def _module_metric_matrix_rows() -> list[tuple[str, list[bool]]]:
     return [
-        ("prototype_boundary_modeling", [False, True, True]),
-        ("prototype_distance_calibration", [True, False, True]),
-        ("openmax_calibration", [True, True, False]),
+        ("closed_set_only", [False, False, False]),
+        ("openmax_only", [False, False, True]),
+        ("ordinary_mbs_only", [False, True, True]),
         ("full_method", [True, True, True]),
     ]
 
@@ -744,6 +965,13 @@ def _write_markdown(rows: list[ResultRow]) -> None:
                     ("auroc", "AUROC"),
                 ],
             )
+        )
+        lines.extend(
+            [
+                "",
+                "注：OpenMax 行使用正式对比实验结果；完整方法行使用正式 PCBM 结果；",
+                "中间行在同一闭集检查点上关闭 PCBS，仅保留 OpenMax 与原型距离校准。",
+            ]
         )
         lines.append("")
 

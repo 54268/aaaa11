@@ -1,7 +1,7 @@
 {
   "dataset": "oracle",
   "category": "modules",
-  "variant": "仅 MBS 外推",
+  "variant": "OpenMax + 原型距离校准",
   "checkpoint": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\oracle_kri16_demod_known_first\\best_closed_set.pt",
   "config": {
     "_config_path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\run_oracle.py",
@@ -33,7 +33,7 @@
     },
     "train": {
       "seed": 42,
-      "device": "auto",
+      "device": "cuda",
       "epochs": 35,
       "lr": 0.001,
       "weight_decay": 0.0001,
@@ -74,7 +74,7 @@
         0.35
       ],
       "manual_fusion_lambda": 0.35,
-      "score_calibration": "none",
+      "score_calibration": "classwise_z",
       "manual_thresholds_per_class": null,
       "known_rescue": {
         "enabled": false
@@ -159,7 +159,7 @@
       "suspected_known_policy": "uncertain",
       "assignment_margin": 0.0,
       "known_reject_margin": -1.0,
-      "direct_confidence_quantile": 0.1,
+      "direct_confidence_quantile": 0.05,
       "direct_min_cluster_size": 800,
       "n_init": 30,
       "agg_sample_size": 8000,
