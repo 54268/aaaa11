@@ -7,6 +7,7 @@ from ablations.ablation_suite import (
     LOSS_VARIANTS,
     MODULE_VARIANTS,
     ResultRow,
+    SUBDIVISION_VARIANTS,
     _ablation_matrix_metric_table,
     _module_metric_matrix_rows,
     _selected_loss_variants,
@@ -152,3 +153,12 @@ def test_module_ablation_rows_are_cumulative_additions() -> None:
 
     assert _module_metric_matrix_rows() == expected_rows
     assert [variant[0] for variant in MODULE_VARIANTS] == [slug for slug, _ in expected_rows]
+
+
+def test_single_feature_subdivision_variants_do_not_include_filtering() -> None:
+    variants = {slug: use_filtering for slug, _, _, use_filtering in SUBDIVISION_VARIANTS}
+
+    assert variants["iq_descriptors_only"] is False
+    assert variants["embedding_only"] is False
+    assert variants["feature_fusion_wo_filtering"] is False
+    assert variants["full_subdivision"] is True

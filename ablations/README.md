@@ -19,6 +19,8 @@
 
 K+M 自动选择会始终评估 `m=0,1,2,3`，只在调整后质量提升超过 1 个百分点时才接受更大的 `m`，避免为了很小收益引入冗余簇结构。
 
+细分流程消融中，`Embedding only` 和 `I/Q descriptors only` 不启用低置信过滤或小簇过滤，只检验单一特征本身；`Feature fusion w/o filtering` 使用融合特征但关闭过滤；`Full subdivision` 才同时启用融合特征和过滤。WiSig single-day/fixed-RX 协议中融合特征已经接近饱和，因此 Full 与 w/o filtering 可能相同；Oracle 上过滤模块仍能显著提升聚类质量，但会降低覆盖率。
+
 常用命令：
 
 ```powershell

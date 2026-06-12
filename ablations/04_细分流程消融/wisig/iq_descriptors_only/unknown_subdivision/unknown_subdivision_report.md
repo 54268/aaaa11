@@ -16,25 +16,25 @@
 | auto_selected_overcluster_extra_clusters | 自动选择的冗余候选数 | 0 |
 | m_selection_mode | m 选择模式 | offline_min_gain |
 | m_selection_min_quality_gain | 增加冗余分量所需最小质量增益 | 0.010000 |
-| m_selection_score | m 无监督诊断评分 | 0.623197 |
-| m_selection_offline_quality | 离线细分质量均值 | 0.804866 |
-| m_selection_offline_adjusted_quality | 覆盖率修正后的离线细分质量 | 0.767892 |
-| direct_confidence_quantile | GMM低置信过滤分位数 | 0.100000 |
-| direct_min_cluster_size | GMM不稳定小簇最小样本数 | 160 |
+| m_selection_score | m 无监督诊断评分 | 0.801225 |
+| m_selection_offline_quality | 离线细分质量均值 | 0.789281 |
+| m_selection_offline_adjusted_quality | 覆盖率修正后的离线细分质量 | 0.789281 |
+| direct_confidence_quantile | GMM低置信过滤分位数 | 0.000000 |
+| direct_min_cluster_size | GMM不稳定小簇最小样本数 | 0 |
 | selected_unknown_cache_size | 进入 unknown cache 的样本数 | 9634 |
-| uncertain_size | 未分配/不确定样本数 | 446 |
-| uncertain_ratio | 未分配/不确定样本比例 | 0.046294 |
-| cluster_size_min | 最小细分类样本数 | 186 |
-| cluster_size_max | 最大细分类样本数 | 1559 |
-| cluster_size_mean | 平均细分类样本数 | 765.666667 |
-| nearest_known_proto_distance_mean | 到最近已知原型的平均距离 | 0.378015 |
+| uncertain_size | 未分配/不确定样本数 | 0 |
+| uncertain_ratio | 未分配/不确定样本比例 | 0.000000 |
+| cluster_size_min | 最小细分类样本数 | 304 |
+| cluster_size_max | 最大细分类样本数 | 1582 |
+| cluster_size_mean | 平均细分类样本数 | 802.833333 |
+| nearest_known_proto_distance_mean | 到最近已知原型的平均距离 | 0.377671 |
 | nearest_known_proto_distance_min | 到最近已知原型的最小距离 | 0.040442 |
-| nmi | 归一化互信息，越高表示聚类与真实未知类越一致 | 0.894628 |
-| ari | 调整兰德指数，越高表示聚类与真实未知类越一致 | 0.764622 |
-| purity | 纯度，每个聚类中主导真实类的占比 | 0.807184 |
-| hungarian_accuracy | 匈牙利匹配后的聚类准确率 | 0.753030 |
+| nmi | 归一化互信息，越高表示聚类与真实未知类越一致 | 0.884918 |
+| ari | 调整兰德指数，越高表示聚类与真实未知类越一致 | 0.746998 |
+| purity | 纯度，每个聚类中主导真实类的占比 | 0.790625 |
+| hungarian_accuracy | 匈牙利匹配后的聚类准确率 | 0.734583 |
 | unknown_cache_precision | unknown cache 中真实未知样本占比 | 0.996471 |
 | unknown_cache_recall | 真实未知样本进入 unknown cache 的比例 | 1.000000 |
-| coverage_of_total_test_unknown | 完成细分的真实未知样本覆盖率 | 0.954063 |
+| coverage_of_total_test_unknown | 完成细分的真实未知样本覆盖率 | 1.000000 |
 
 真实未知标签只用于离线 NMI、ARI、纯度、匈牙利准确率和混淆分析，不参与训练或在线判别。

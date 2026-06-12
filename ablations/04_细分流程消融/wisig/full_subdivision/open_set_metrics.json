@@ -9,7 +9,7 @@
   "unknown_recall": 1.0,
   "known_fpr_as_unknown": 0.01328125,
   "unknown_false_accept_rate": 0.0,
-  "auroc": 0.9959524943033854,
+  "auroc": 0.9959491577148437,
   "fpr95": 0.0109375,
   "oscr": 0.9866844482421876,
   "threshold_strategy_used": "manual_global",

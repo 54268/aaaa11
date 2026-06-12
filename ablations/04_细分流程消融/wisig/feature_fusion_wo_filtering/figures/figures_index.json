@@ -3,6 +3,7 @@
   "files": [
     "confusion_label_map.csv",
     "confusion_matrix.png",
+    "figures_index.json",
     "openness_accuracy_f1_curve.png",
     "openness_accuracy_f1_summary.md",
     "openness_curve.json",

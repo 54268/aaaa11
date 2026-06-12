@@ -82,8 +82,8 @@ LOSS_VARIANTS = [
 ]
 
 SUBDIVISION_VARIANTS = [
-    ("embedding_only", "Embedding only", "embedding", True),
-    ("iq_descriptors_only", "I/Q descriptors only", "iq_stats", True),
+    ("embedding_only", "Embedding only", "embedding", False),
+    ("iq_descriptors_only", "I/Q descriptors only", "iq_stats", False),
     ("feature_fusion_wo_filtering", "Feature fusion w/o filtering", "embedding_iq_stats", False),
     ("full_subdivision", "Full subdivision", "embedding_iq_stats", True),
 ]

@@ -12,18 +12,18 @@
     "enabled": false
   },
   "metrics": {
-    "overall_accuracy": 0.47425093632958804,
-    "macro_precision": 0.4082924268139973,
-    "macro_recall": 0.9451085246932998,
-    "macro_f1": 0.5293454809433243,
-    "weighted_f1": 0.44385478605219586,
+    "overall_accuracy": 0.4737827715355805,
+    "macro_precision": 0.40727766133544385,
+    "macro_recall": 0.9450692041522492,
+    "macro_f1": 0.5286031762932959,
+    "weighted_f1": 0.44304069206168234,
     "known_accuracy": 0.98828125,
-    "unknown_precision": 0.9806701030927835,
-    "unknown_recall": 0.25434491978609625,
+    "unknown_precision": 0.9806201550387597,
+    "unknown_recall": 0.2536764705882353,
     "known_fpr_as_unknown": 0.01171875,
-    "unknown_false_accept_rate": 0.7456550802139037,
-    "auroc": 0.9457313252005347,
+    "unknown_false_accept_rate": 0.7463235294117647,
+    "auroc": 0.9457566531584225,
     "fpr95": 0.16875,
-    "oscr": 0.9435673514789438
+    "oscr": 0.9435834099264706
   }
 }

@@ -1,5 +1,13 @@
 # 对比方法指标异常检查说明
 
+## 本次异常复核结论
+
+WiSig 上 Softmax 的 `unknown_recall=0.906250` 不是由测试未知标签泄漏导致的。适配代码中的 Softmax 实际是开放集常用的 MSP 基线：先训练闭集 Softmax 分类器，再用验证集已知样本最大 Softmax 概率的低分位数设拒识阈值。WiSig 正式结果的阈值为 `0.159668`，对应 `known_fpr_as_unknown=0.046875`、`unknown_false_accept_rate=0.093750`、`fpr95=0.688672`。因此它能拒识大部分未知类，但分数排序并不稳健，论文中应把它表述为 “Softmax/MSP threshold baseline”，并同时报告 known accuracy、unknown recall、AUROC/FPR95 的权衡。
+
+同步检查 OpenMax、HyperRSI、HyDRA、OpenRFI 和 ARPL 后，未发现它们用测试未知标签调阈值。OpenMax/ARPL 使用训练已知样本拟合 EVT/OpenMax，再用验证集已知样本分位数设阈值；HyperRSI/HyDRA 使用训练已知类中心和验证集已知样本相似度分位数；OpenRFI 的拒识阈值同样来自验证集已知样本。已新增单元测试锁定这些阈值来源，避免后续误把测试未知样本混入校准。
+
+WiSig 的未知类细分消融已重新复核：`Embedding only` 和 `I/Q descriptors only` 现在不再带过滤，`I/Q descriptors only < Embedding only < Feature fusion w/o filtering` 的排序成立；但 `Full subdivision` 与 `Feature fusion w/o filtering` 在 WiSig 上仍相同，因为融合特征下 GMM 置信度已饱和，低置信过滤和小簇过滤没有可剔除样本。Oracle 上过滤模块仍有显著作用，因此 WiSig 表中不应强行宣称过滤模块带来额外增益。
+
 **Softmax。** 使用紧凑型 1D I/Q CNN 提取归一化特征并训练已知类 Softmax 分类器；测试时以验证集已知样本的最大 Softmax 概率分位数确定拒识阈值，低于阈值的样本判为未知类。
 
 **OpenMax。** 先训练与 Softmax 相同的闭集分类器，再用正确分类训练样本的激活向量拟合各类均值激活向量和 Weibull 尾部分布；测试时重标定已知类概率并分配未知类概率，最后依据验证集确定的阈值完成拒识。
