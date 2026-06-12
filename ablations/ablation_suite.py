@@ -78,7 +78,7 @@ LOSS_VARIANTS = [
     ("ce_only", "CE only", 0.0, 0.0),
     ("ce_angular", "CE + Angular", 0.15, 0.0),
     ("ce_prototype", "CE + Prototype", 0.0, 0.10),
-    ("full_embedding_learning", "Full embedding learning", 0.15, 0.01),
+    ("full_embedding_learning", "Full embedding learning", 0.15, 0.10),
 ]
 
 SUBDIVISION_VARIANTS = [
@@ -938,6 +938,15 @@ def _loss_metric_matrix_rows() -> list[tuple[str, list[bool]]]:
     ]
 
 
+def _loss_metric_fields() -> list[tuple[str, str]]:
+    return [
+        ("known_accuracy", "Known Acc."),
+        ("unknown_recall", "Unknown Recall"),
+        ("macro_f1", "Macro F1"),
+        ("auroc", "AUROC"),
+    ]
+
+
 def _write_markdown(rows: list[ResultRow]) -> None:
     lines = [
         "# 消融实验结果汇总",
@@ -1002,13 +1011,7 @@ def _write_markdown(rows: list[ResultRow]) -> None:
                 loss_rows,
                 _loss_metric_matrix_rows(),
                 ["Classification Loss", "Angular Loss", "Prototype Loss"],
-                [
-                    ("best_val_acc", "Val Acc."),
-                    ("overall_accuracy", "Overall Acc."),
-                    ("known_accuracy", "Known Acc."),
-                    ("macro_f1", "Macro F1"),
-                    ("auroc", "AUROC"),
-                ],
+                _loss_metric_fields(),
             )
         )
         lines.append("")
@@ -1038,9 +1041,7 @@ def _write_markdown(rows: list[ResultRow]) -> None:
         [
             "## 汇总图",
             "",
-            "- `模块消融.png`（表格版）",
             "- `KM簇数敏感性.png`",
-            "- `损失函数消融.png`",
             "- `细分流程消融.png`",
             "",
             "Auto 的规则是：在 `m=0,1,2,3` 中选择满足目标簇数、且覆盖率修正质量提升超过 1 个百分点的最小 m。",
@@ -1174,30 +1175,14 @@ def _plot_km(rows: list[ResultRow]) -> None:
 
 
 def write_summary(rows: list[ResultRow]) -> None:
+    for deprecated_name in ["模块消融.png", "损失函数消融.png"]:
+        deprecated_path = ABLATION_ROOT / deprecated_name
+        if deprecated_path.exists():
+            deprecated_path.unlink()
     _write_csv(rows)
     _write_markdown(rows)
-    if any(row.category == "modules" for row in rows):
-        module_rows = _module_matrix_rows([row for row in rows if row.category == "modules"])
-        _matrix_figure(
-            module_rows,
-            [
-                "原型竞争边界建模",
-                "原型距离校准",
-                "OpenMax 校准",
-            ],
-            "模块消融.png",
-            "模块消融配置矩阵",
-        )
     if any(row.category == "km" for row in rows):
         _plot_km(rows)
-    if any(row.category == "losses" for row in rows):
-        loss_rows = _loss_matrix_rows([row for row in rows if row.category == "losses"])
-        _matrix_figure(
-            loss_rows,
-            ["Classification Loss", "Angular Loss", "Prototype Loss"],
-            "损失函数消融.png",
-            "闭集表征学习损失消融配置矩阵",
-        )
     if any(row.category == "subdivision" for row in rows):
         _plot_bar_category(
             rows,

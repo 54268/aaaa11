@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import numpy as np
 
+import ablations.ablation_suite as ablation_suite
 from ablations.ablation_suite import (
+    LOSS_VARIANTS,
     MODULE_VARIANTS,
     ResultRow,
     _ablation_matrix_metric_table,
     _module_metric_matrix_rows,
     _selected_loss_variants,
+    write_summary,
 )
 from functions.methods.pseudo_unknown import generate_hybrid_pseudo_unknown
 from functions.subdivision_pipeline import build_cluster_features
@@ -85,6 +88,35 @@ def test_loss_ablation_can_select_one_resumable_variant() -> None:
 
     assert [variant[0] for variant in selected] == ["ce_angular"]
     assert len(_selected_loss_variants("all")) == 4
+
+
+def test_loss_ablation_uses_consistent_component_weights() -> None:
+    variants = {slug: (angle, prototype) for slug, _, angle, prototype in LOSS_VARIANTS}
+
+    assert variants["full_embedding_learning"][0] == variants["ce_angular"][0]
+    assert variants["full_embedding_learning"][1] == variants["ce_prototype"][1]
+
+
+def test_loss_summary_uses_open_set_task_metrics_only() -> None:
+    fields = getattr(ablation_suite, "_loss_metric_fields", lambda: [])()
+
+    assert [key for key, _ in fields] == [
+        "known_accuracy",
+        "unknown_recall",
+        "macro_f1",
+        "auroc",
+    ]
+
+
+def test_summary_removes_deprecated_config_only_figures(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(ablation_suite, "ABLATION_ROOT", tmp_path)
+    deprecated = [tmp_path / "模块消融.png", tmp_path / "损失函数消融.png"]
+    for path in deprecated:
+        path.write_bytes(b"stale")
+
+    write_summary([])
+
+    assert all(not path.exists() for path in deprecated)
 
 
 def test_ablation_table_starts_with_switch_columns() -> None:

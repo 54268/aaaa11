@@ -43,7 +43,7 @@
     "loss": {
       "lambda_basic": 1.0,
       "lambda_angle": 0.15,
-      "lambda_prototype": 0.01,
+      "lambda_prototype": 0.1,
       "angle_margin": 0.15,
       "prototype_loss_mode": "euclidean_mse"
     },

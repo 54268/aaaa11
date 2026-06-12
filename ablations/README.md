@@ -15,7 +15,7 @@
 
 模块消融按逐步加入顺序展示：闭集原型分类、加入 OpenMax、加入原型距离校准、完整 PCBM。OpenMax 行复用正式对比实验结果，完整方法行复用正式 PCBM 结果，中间行在相同闭集检查点上关闭 PCBS 后重新运行。每一列用 `X/√` 表示模块是否启用，并直接拼接 `overall_accuracy`、`known_accuracy`、`unknown_recall`、`macro_f1` 和 `auroc` 等指标。
 
-损失函数消融中，Prototype Loss 已按原型距离空间改为欧氏紧致损失。实测结果显示 Angular Loss 是 Oracle 上更稳定的主要收益来源，Prototype Loss 在 WiSig 上有正向增益，但在 Oracle 联合开启时不是严格单调提升，因此论文中不宜把它单独表述为每加必涨的强贡献。
+损失函数消融已按一致权重复核：`CE + Prototype` 和 `Full embedding learning` 中的 Prototype Loss 均使用 `lambda_prototype=0.10`。结果显示，Oracle 上 `CE + Angular` 的 Macro F1 和 AUROC 更高，加入 Prototype Loss 后反而下降；WiSig 上 Prototype Loss 只带来很小的 Known Acc./Macro F1 变化，且 Full 组合的 AUROC 下降。因此论文中不应把 Prototype Loss 写成必要贡献。更稳妥的表述是：原型距离分类头已经通过 `-||z-p_c||^2` logits 隐式提供原型约束，额外欧氏紧致项可能与角度间隔目标重叠，适合放在消融诊断或附录中说明。
 
 K+M 自动选择会始终评估 `m=0,1,2,3`，只在调整后质量提升超过 1 个百分点时才接受更大的 `m`，避免为了很小收益引入冗余簇结构。
 
