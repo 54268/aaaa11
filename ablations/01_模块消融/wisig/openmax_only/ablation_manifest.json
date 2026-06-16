@@ -3,8 +3,6 @@
   "category": "modules",
   "variant": "OpenMax 校准",
   "checkpoint": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\wisig_singleday_osr_k16_u12\\best_closed_set.pt",
-  "source_metrics": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\Comparison method\\adapted_results\\formal\\wisig_singleday_osr_k16_u12\\openmax\\OpenMax_wisig_singleday_osr_k16_u12_seed42_metrics.json",
-  "source_predictions": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\Comparison method\\adapted_results\\formal\\wisig_singleday_osr_k16_u12\\openmax\\OpenMax_wisig_singleday_osr_k16_u12_seed42_predictions.csv",
   "config": {
     "_config_path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\run_wisig.py",
     "_project_root": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code",
@@ -38,7 +36,7 @@
     },
     "train": {
       "seed": 42,
-      "device": "auto",
+      "device": "cuda",
       "epochs": 20,
       "lr": 0.001,
       "weight_decay": 0.0001,
@@ -63,7 +61,8 @@
       "critical_beta": 0.7,
       "ordinary_variations": 1,
       "critical_variations": 2,
-      "jitter": 0.1
+      "jitter": 0.1,
+      "use_critical_boundary": false
     },
     "openmax": {
       "backend": "repo_openmax",
@@ -74,10 +73,10 @@
     },
     "fusion": {
       "lambda_grid": [
-        0.2
+        1.0
       ],
-      "manual_fusion_lambda": 0.2,
-      "manual_threshold": 0.94,
+      "manual_fusion_lambda": 1.0,
+      "manual_threshold": null,
       "threshold_grid": [
         0.25,
         0.3,
@@ -107,7 +106,16 @@
         "auroc": 0.05
       },
       "known_quantile_floor": 0.995,
-      "min_known_accuracy": 0.98
+      "min_known_accuracy": 0.98,
+      "manual_thresholds_per_class": null,
+      "threshold_mode": "classwise_balanced",
+      "known_rescue": {
+        "enabled": false
+      },
+      "score_calibration": "none",
+      "classwise_known_weight": 0.5,
+      "classwise_unknown_weight": 0.5,
+      "classwise_min_known_accept": 0.88
     },
     "eval": {
       "save_predictions": true

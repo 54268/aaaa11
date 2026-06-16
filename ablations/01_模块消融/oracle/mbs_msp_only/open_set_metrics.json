@@ -1,0 +1,33 @@
+{
+  "overall_accuracy": 0.964625,
+  "macro_precision": 0.9793471377251547,
+  "macro_recall": 0.8838863636363636,
+  "macro_f1": 0.9281582063301365,
+  "weighted_f1": 0.9638673712141487,
+  "known_accuracy": 0.87275,
+  "unknown_precision": 0.9602026049204052,
+  "unknown_recall": 0.99525,
+  "known_fpr_as_unknown": 0.12375,
+  "unknown_false_accept_rate": 0.00475,
+  "auroc": 0.957690078125,
+  "fpr95": 0.094375,
+  "oscr": 0.8596058020833334,
+  "threshold_strategy_used": "mbs_msp_validation_pseudo",
+  "threshold_mode": "classwise_balanced",
+  "thresholds_per_class": [
+    0.5122145781050558,
+    0.5185303926467896,
+    0.5269341655399489,
+    0.4982190380277841,
+    0.5286386811214945,
+    0.548507616960484,
+    0.5162639141082763,
+    0.5208510339260102,
+    0.5127860026515049,
+    0.4970293981873471
+  ],
+  "known_classes": 10,
+  "test_known_sample_count": 8000,
+  "test_unknown_sample_count": 24000,
+  "output_dir": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\01_模块消融\\oracle\\mbs_msp_only"
+}

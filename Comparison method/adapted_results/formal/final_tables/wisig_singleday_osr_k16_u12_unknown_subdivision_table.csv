@@ -1,3 +1,5 @@
-method,nmi,ari,hungarian_accuracy,coverage_of_total_test_unknown,unknown_cache_precision,unknown_cache_recall,resolved_num_clusters
-OpenRFI,0.9810905955570282,0.9676196807960361,0.9622535211267605,0.9244791666666666,,,
-PCBM (ours),0.9981254482446456,0.99863679139135,0.999375,1.0,0.9964708324683413,1.0,12
+method,nmi,ari,hungarian_accuracy,coverage_of_total_test_unknown
+K-means,0.998125,0.998637,0.999375,1.000000
+HDBSCAN,0.999088,0.999316,0.999686,0.994687
+OpenRFI,0.981091,0.967620,0.962254,0.924479
+PCBM (ours),0.998125,0.998637,0.999375,1.000000

@@ -1,7 +1,7 @@
 {
   "dataset": "oracle",
   "category": "modules",
-  "variant": "闭集原型分类",
+  "variant": "普通 MBS（基础拒识）",
   "checkpoint": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\oracle_kri16_demod_known_first\\best_closed_set.pt",
   "config": {
     "_config_path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\run_oracle.py",
@@ -58,7 +58,8 @@
       "critical_beta": 0.7,
       "ordinary_variations": 2,
       "critical_variations": 3,
-      "jitter": 0.1
+      "jitter": 0.1,
+      "use_critical_boundary": false
     },
     "openmax": {
       "backend": "repo_openmax",

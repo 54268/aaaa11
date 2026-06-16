@@ -16,7 +16,7 @@ warnings.filterwarnings(
 
 import numpy as np
 from scipy.optimize import linear_sum_assignment
-from sklearn.cluster import AgglomerativeClustering, KMeans
+from sklearn.cluster import AgglomerativeClustering, HDBSCAN, KMeans
 from sklearn.decomposition import PCA
 from sklearn.metrics import (
     adjusted_rand_score,
@@ -237,6 +237,43 @@ def _build_initial_centers(
 
 
 _DIRECT_GMM_BACKENDS = {"gmm_full_direct", "gmm_direct"}
+_DENSITY_BACKENDS = {"hdbscan", "density_hdbscan"}
+
+
+def _fit_labels_hdbscan(
+    features: np.ndarray,
+    min_cluster_size: int,
+    min_samples: int | None,
+    cluster_selection_epsilon: float,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict[str, Any]]:
+    model = HDBSCAN(
+        min_cluster_size=max(2, int(min_cluster_size)),
+        min_samples=None if min_samples is None else max(1, int(min_samples)),
+        cluster_selection_epsilon=max(0.0, float(cluster_selection_epsilon)),
+        metric="euclidean",
+        cluster_selection_method="eom",
+        n_jobs=-1,
+    )
+    labels = model.fit_predict(np.asarray(features, dtype=np.float64)).astype(np.int64)
+    cluster_ids = sorted(int(label) for label in np.unique(labels) if int(label) != -1)
+    remap = {cluster_id: new_id for new_id, cluster_id in enumerate(cluster_ids)}
+    labels = np.asarray([remap.get(int(label), -1) for label in labels], dtype=np.int64)
+    centers = np.asarray(
+        [features[labels == cluster_id].mean(axis=0) for cluster_id in range(len(cluster_ids))],
+        dtype=np.float64,
+    )
+    probabilities = np.asarray(getattr(model, "probabilities_", np.ones(len(labels))), dtype=np.float64)
+    diagnostics = {
+        "density_backend": "hdbscan",
+        "density_min_cluster_size": int(min_cluster_size),
+        "density_min_samples": None if min_samples is None else int(min_samples),
+        "density_cluster_selection_epsilon": float(cluster_selection_epsilon),
+        "density_noise_ratio": float((labels == -1).mean()) if len(labels) else 0.0,
+        "density_mean_membership_probability": float(probabilities[labels != -1].mean())
+        if np.any(labels != -1)
+        else 0.0,
+    }
+    return labels, centers, probabilities, diagnostics
 
 
 def _merge_close_centers(
@@ -306,6 +343,9 @@ def prototype_guided_clustering(
     merge_similarity_threshold: float | None = None,
     direct_confidence_quantile: float = 0.0,
     direct_min_cluster_size: int = 0,
+    density_min_cluster_size: int = 20,
+    density_min_samples: int | None = None,
+    density_cluster_selection_epsilon: float = 0.0,
 ) -> OfscilSubdivisionResult:
     """通用入口：先用指定后端拟合初始中心，然后做带原型约束的迭代再分配。
 
@@ -319,6 +359,23 @@ def prototype_guided_clustering(
         return OfscilSubdivisionResult(empty, np.zeros((0, features.shape[1])), 0, empty.astype(bool), [], {})
 
     k = max(1, min(int(num_clusters), n_samples))
+
+    if str(backend).lower() in _DENSITY_BACKENDS:
+        labels, density_means, _, diagnostics = _fit_labels_hdbscan(
+            features,
+            min_cluster_size=density_min_cluster_size,
+            min_samples=density_min_samples,
+            cluster_selection_epsilon=density_cluster_selection_epsilon,
+        )
+        noise_mask = labels == -1
+        return OfscilSubdivisionResult(
+            labels=labels,
+            centers=l2_normalize(density_means) if len(density_means) else density_means,
+            resolved_k=int(len(np.unique(labels[labels != -1]))),
+            suspected_known_mask=noise_mask,
+            k_search_history=[],
+            diagnostics=diagnostics,
+        )
 
     if str(backend).lower() in _DIRECT_GMM_BACKENDS:
         labels, gmm_means, confidence, diagnostics = _fit_labels_gmm_direct(features, k, seed=seed, n_init=n_init, covariance_type="full")
@@ -602,6 +659,9 @@ def run_ofscil_subdivision(
     agg_sample_size: int = 8000,
     direct_confidence_quantile: float = 0.0,
     direct_min_cluster_size: int = 0,
+    density_min_cluster_size: int = 20,
+    density_min_samples: int | None = None,
+    density_cluster_selection_epsilon: float = 0.0,
 ) -> OfscilSubdivisionResult:
     if target_num_clusters is not None and int(target_num_clusters) > 0 and k_min == k_max:
         selected_k = int(target_num_clusters)
@@ -640,6 +700,9 @@ def run_ofscil_subdivision(
         merge_similarity_threshold=merge_similarity_threshold,
         direct_confidence_quantile=direct_confidence_quantile,
         direct_min_cluster_size=direct_min_cluster_size,
+        density_min_cluster_size=density_min_cluster_size,
+        density_min_samples=density_min_samples,
+        density_cluster_selection_epsilon=density_cluster_selection_epsilon,
     )
     result.k_search_history.extend(history)
     return result

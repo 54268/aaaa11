@@ -57,7 +57,11 @@ def generate_hybrid_pseudo_unknown(
     critical_indices = np.where(boundary_result["critical_mask"])[0]
     ordinary_indices = np.where(boundary_result["ordinary_edge_mask"])[0]
     if not use_critical_boundary:
-        ordinary_indices = np.unique(np.concatenate([ordinary_indices, critical_indices]))
+        marginal_mask = boundary_result.get("marginal_mask")
+        if marginal_mask is not None:
+            ordinary_indices = np.where(np.asarray(marginal_mask, dtype=bool))[0]
+        else:
+            ordinary_indices = np.unique(np.concatenate([ordinary_indices, critical_indices]))
         critical_indices = np.asarray([], dtype=np.int64)
 
     for index in ordinary_indices:

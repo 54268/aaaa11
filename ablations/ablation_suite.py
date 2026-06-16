@@ -26,7 +26,7 @@ from functions.common.visualization import generate_open_set_figures
 from functions.data.data_build import build_data_module
 from functions.methods.prototype_utils import predict_with_prototypes
 from functions.model.closed_set import ClosedSetTrainer
-from functions.pipeline import run_osr_pipeline
+from functions.pipeline import generate_pseudo_unknown_artifacts, mine_boundary_artifacts, run_osr_pipeline
 from run_oracle import build_config as build_oracle_config
 from run_wisig import build_config as build_wisig_config
 
@@ -56,11 +56,16 @@ DATASETS = {
 }
 
 MODULE_VARIANTS = [
-    ("closed_set_only", "闭集原型分类", {"mode": "closed_set"}),
+    ("closed_set_only", "普通 MBS（基础拒识）", {"mode": "confidence_rejection"}),
     (
         "openmax_only",
         "OpenMax 校准",
-        {"mode": "formal_openmax"},
+        {
+            "mode": "pipeline",
+            "use_critical_boundary": False,
+            "fusion_lambda": 1.0,
+            "score_calibration": "none",
+        },
     ),
     (
         "ordinary_mbs_only",
@@ -73,6 +78,24 @@ MODULE_VARIANTS = [
         {"mode": "formal_pcbm"},
     ),
 ]
+
+BASE_CONFIDENCE_REJECTION_QUANTILE = 0.85
+
+MODULE_PIPELINE_OVERRIDES = {
+    ("oracle", "ordinary_mbs_only"): {
+        "fusion_lambda_grid": [0.1, 0.3, 0.5, 0.7, 0.9],
+        "classwise_known_weight": 0.75,
+        "classwise_unknown_weight": 0.25,
+        "classwise_min_known_accept": 0.90,
+        "selection_weights": {
+            "known_accuracy": 0.30,
+            "unknown_recall": 0.20,
+            "macro_f1": 0.20,
+            "oscr": 0.20,
+            "auroc": 0.10,
+        },
+    }
+}
 
 LOSS_VARIANTS = [
     ("ce_only", "CE only", 0.0, 0.0),
@@ -93,6 +116,17 @@ CORE_OPEN_SET_KEYS = [
     "known_accuracy",
     "unknown_recall",
     "macro_f1",
+    "auroc",
+]
+
+MODULE_OPEN_SET_KEYS = [
+    "overall_accuracy",
+    "known_accuracy",
+    "unknown_recall",
+    "unknown_precision",
+    "known_fpr_as_unknown",
+    "macro_f1",
+    "oscr",
     "auroc",
 ]
 
@@ -215,15 +249,27 @@ def _stable_softmax(logits: np.ndarray) -> np.ndarray:
     return exp_logits / np.maximum(exp_logits.sum(axis=1, keepdims=True), 1e-12)
 
 
-def _run_closed_set_module_baseline(dataset: str, variant_slug: str, variant_name: str) -> Path:
+def _confidence_unknown_score(logits: np.ndarray) -> np.ndarray:
+    return 1.0 - _stable_softmax(logits).max(axis=1)
+
+
+def _global_known_quantile_threshold(scores: np.ndarray, quantile: float) -> float:
+    return float(np.quantile(np.asarray(scores, dtype=np.float64), float(quantile)))
+
+
+def _run_basic_confidence_rejection_module_baseline(dataset: str, variant_slug: str, variant_name: str) -> Path:
     output_dir = _variant_dir("modules", dataset, variant_slug)
     config = _base_config(dataset)
     _configure_output(config, output_dir, f"{dataset}_modules_{variant_slug}")
     config["train"]["device"] = "cuda"
+    config["pseudo_unknown"]["use_critical_boundary"] = False
     checkpoint = Path(DATASETS[dataset]["checkpoint"])
     ensure_dir(output_dir)
     _prepare_checkpoint(output_dir, checkpoint)
     _write_manifest(output_dir, dataset, "modules", variant_name, config, checkpoint)
+
+    mine_boundary_artifacts(config, ckpt_path=checkpoint)
+    generate_pseudo_unknown_artifacts(config)
 
     datamodule = build_data_module(config)
     trainer = ClosedSetTrainer(
@@ -232,8 +278,14 @@ def _run_closed_set_module_baseline(dataset: str, variant_slug: str, variant_nam
         datamodule.bundle.signal_length,
     )
     trainer.load_checkpoint(checkpoint)
+    val_known = trainer.extract_embeddings(datamodule.val_known_dataloader())
     test_known = trainer.extract_embeddings(datamodule.test_known_dataloader())
     test_unknown = trainer.extract_embeddings(datamodule.test_unknown_dataloader())
+    _, val_logits, _ = predict_with_prototypes(
+        val_known["embeddings"],
+        val_known["prototypes"],
+        float(config["model"]["temperature"]),
+    )
     all_embeddings = np.concatenate(
         [test_known["embeddings"], test_unknown["embeddings"]],
         axis=0,
@@ -250,13 +302,23 @@ def _run_closed_set_module_baseline(dataset: str, variant_slug: str, variant_nam
         test_known["prototypes"],
         float(config["model"]["temperature"]),
     )
-    unknown_score = 1.0 - _stable_softmax(logits).max(axis=1)
-    metrics = evaluate_open_set(all_labels, known_pred, unknown_score, unknown_label)
+    val_unknown_score = _confidence_unknown_score(val_logits)
+    threshold = _global_known_quantile_threshold(
+        val_unknown_score,
+        BASE_CONFIDENCE_REJECTION_QUANTILE,
+    )
+    unknown_score = _confidence_unknown_score(logits)
+    y_pred = known_pred.copy()
+    y_pred[unknown_score > threshold] = unknown_label
+    metrics = evaluate_open_set(all_labels, y_pred, unknown_score, unknown_label)
     metrics.update(
         {
-            "threshold_strategy_used": "none_closed_set",
-            "threshold_mode": "none",
+            "threshold_strategy_used": "global_confidence_known_quantile",
+            "threshold_mode": "global_confidence_known_quantile",
+            "threshold": threshold,
+            "threshold_quantile": BASE_CONFIDENCE_REJECTION_QUANTILE,
             "known_classes": int(unknown_label),
+            "known_val_sample_count": int(len(val_known["labels"])),
             "test_known_sample_count": int(len(test_known["labels"])),
             "test_unknown_sample_count": int(len(test_unknown["labels"])),
             "output_dir": str(output_dir),
@@ -266,7 +328,7 @@ def _run_closed_set_module_baseline(dataset: str, variant_slug: str, variant_nam
     save_confusion_matrix(
         output_dir / "confusion_matrix.csv",
         all_labels,
-        known_pred,
+        y_pred,
         labels=list(range(unknown_label)) + [unknown_label],
     )
     unavailable = np.full_like(unknown_score, np.nan, dtype=np.float64)
@@ -274,7 +336,7 @@ def _run_closed_set_module_baseline(dataset: str, variant_slug: str, variant_nam
     save_prediction_csv(
         output_dir / "open_set_predictions.csv",
         all_labels,
-        known_pred,
+        y_pred,
         unknown_score,
         unavailable,
         unavailable,
@@ -284,10 +346,10 @@ def _run_closed_set_module_baseline(dataset: str, variant_slug: str, variant_nam
         config=config,
         output_dir=output_dir,
         y_true=all_labels,
-        y_pred=known_pred,
+        y_pred=y_pred,
         unknown_score=unknown_score,
         unknown_label=unknown_label,
-        threshold=None,
+        threshold=threshold,
     )
     return output_dir
 
@@ -366,12 +428,57 @@ def _run_formal_pcbm_module_result(dataset: str, variant_slug: str, variant_name
     return output_dir
 
 
+def _configure_module_pipeline_fusion(
+    config: dict[str, Any],
+    dataset: str,
+    slug: str,
+    overrides: dict[str, Any],
+    base_lambda: float,
+) -> None:
+    config["train"]["device"] = "cuda"
+    config["pseudo_unknown"]["use_critical_boundary"] = bool(overrides["use_critical_boundary"])
+    profile = MODULE_PIPELINE_OVERRIDES.get((dataset, slug), {})
+
+    lambda_grid = profile.get("fusion_lambda_grid")
+    if lambda_grid:
+        chosen_grid = [float(value) for value in lambda_grid]
+        config["fusion"]["lambda_grid"] = chosen_grid
+        config["fusion"]["manual_fusion_lambda"] = chosen_grid[0]
+    else:
+        chosen_lambda = profile.get("fusion_lambda", overrides["fusion_lambda"])
+        if chosen_lambda is None:
+            chosen_lambda = base_lambda
+        config["fusion"]["manual_fusion_lambda"] = float(chosen_lambda)
+        config["fusion"]["lambda_grid"] = [float(chosen_lambda)]
+
+    config["fusion"]["manual_threshold"] = None
+    config["fusion"]["manual_thresholds_per_class"] = None
+    config["fusion"]["threshold_mode"] = "classwise_balanced"
+    config["fusion"]["known_rescue"] = {"enabled": False}
+    if "score_calibration" in overrides:
+        config["fusion"]["score_calibration"] = str(overrides["score_calibration"])
+    config["fusion"]["classwise_known_weight"] = float(
+        profile.get("classwise_known_weight", config["fusion"].get("classwise_known_weight", 0.50))
+    )
+    config["fusion"]["classwise_unknown_weight"] = float(
+        profile.get("classwise_unknown_weight", config["fusion"].get("classwise_unknown_weight", 0.50))
+    )
+    config["fusion"]["classwise_min_known_accept"] = float(
+        profile.get(
+            "classwise_min_known_accept",
+            config["fusion"].get("classwise_min_known_accept", 0.88),
+        )
+    )
+    if "selection_weights" in profile:
+        config["fusion"]["selection_weights"] = dict(profile["selection_weights"])
+
+
 def run_module_ablations(dataset: str) -> list[ResultRow]:
     rows: list[ResultRow] = []
     base_lambda = float(_base_config(dataset)["fusion"].get("manual_fusion_lambda", 0.5))
     for slug, name, overrides in MODULE_VARIANTS:
-        if overrides["mode"] == "closed_set":
-            output_dir = _run_closed_set_module_baseline(dataset, slug, name)
+        if overrides["mode"] == "confidence_rejection":
+            output_dir = _run_basic_confidence_rejection_module_baseline(dataset, slug, name)
             metrics = load_json(output_dir / "open_set_metrics.json")
             rows.append(
                 ResultRow(
@@ -380,7 +487,7 @@ def run_module_ablations(dataset: str) -> list[ResultRow]:
                     variant=name,
                     variant_slug=slug,
                     output_dir=str(output_dir),
-                    metrics={key: metrics.get(key) for key in CORE_OPEN_SET_KEYS},
+                    metrics={key: metrics.get(key) for key in MODULE_OPEN_SET_KEYS},
                 )
             )
             continue
@@ -394,7 +501,7 @@ def run_module_ablations(dataset: str) -> list[ResultRow]:
                     variant=name,
                     variant_slug=slug,
                     output_dir=str(output_dir),
-                    metrics={key: metrics.get(key) for key in CORE_OPEN_SET_KEYS},
+                    metrics={key: metrics.get(key) for key in MODULE_OPEN_SET_KEYS},
                 )
             )
             continue
@@ -408,27 +515,19 @@ def run_module_ablations(dataset: str) -> list[ResultRow]:
                     variant=name,
                     variant_slug=slug,
                     output_dir=str(output_dir),
-                    metrics={key: metrics.get(key) for key in CORE_OPEN_SET_KEYS},
+                    metrics={key: metrics.get(key) for key in MODULE_OPEN_SET_KEYS},
                 )
             )
             continue
 
-        def mutate(config: dict[str, Any], overrides=overrides) -> None:
-            config["train"]["device"] = "cuda"
-            use_pcbs = bool(overrides["use_critical_boundary"])
-            config["pseudo_unknown"]["use_critical_boundary"] = use_pcbs
-            chosen_lambda = overrides["fusion_lambda"]
-            if chosen_lambda is None:
-                chosen_lambda = base_lambda
-            config["fusion"]["manual_fusion_lambda"] = float(chosen_lambda)
-            config["fusion"]["lambda_grid"] = [float(chosen_lambda)]
-            config["fusion"]["manual_threshold"] = None
-            config["fusion"]["manual_thresholds_per_class"] = None
-            config["fusion"]["threshold_mode"] = "classwise_balanced"
-            config["fusion"]["known_rescue"] = {"enabled": False}
-            config["fusion"].setdefault("classwise_known_weight", 0.50)
-            config["fusion"].setdefault("classwise_unknown_weight", 0.50)
-            config["fusion"].setdefault("classwise_min_known_accept", 0.88)
+        def mutate(config: dict[str, Any], overrides=overrides, slug=slug) -> None:
+            _configure_module_pipeline_fusion(
+                config,
+                dataset=dataset,
+                slug=slug,
+                overrides=overrides,
+                base_lambda=base_lambda,
+            )
 
         output_dir = _run_pipeline_variant(
             dataset=dataset,
@@ -447,7 +546,7 @@ def run_module_ablations(dataset: str) -> list[ResultRow]:
                 variant=name,
                 variant_slug=slug,
                 output_dir=str(output_dir),
-                metrics={key: metrics.get(key) for key in CORE_OPEN_SET_KEYS},
+                metrics={key: metrics.get(key) for key in MODULE_OPEN_SET_KEYS},
             )
         )
     return rows
@@ -887,7 +986,7 @@ def _module_matrix_rows(module_rows: list[ResultRow]) -> list[tuple[str, list[bo
     ]
     row_map = {row.variant_slug: row for row in module_rows}
     matrix = [
-        ("闭集原型分类", [False, False, False]),
+        ("普通 MBS（基础拒识）", [False, False, False]),
         ("OpenMax 校准", [False, False, True]),
         ("OpenMax + 原型距离校准", [False, True, True]),
         ("完整方法", [True, True, True]),
@@ -947,6 +1046,19 @@ def _loss_metric_fields() -> list[tuple[str, str]]:
     ]
 
 
+def _module_metric_fields() -> list[tuple[str, str]]:
+    return [
+        ("overall_accuracy", "Overall Acc."),
+        ("known_accuracy", "Known Acc."),
+        ("unknown_recall", "Unknown Recall"),
+        ("unknown_precision", "Unknown Precision"),
+        ("known_fpr_as_unknown", "Known FPR↓"),
+        ("macro_f1", "Macro F1"),
+        ("oscr", "OSCR"),
+        ("auroc", "AUROC"),
+    ]
+
+
 def _write_markdown(rows: list[ResultRow]) -> None:
     lines = [
         "# 消融实验结果汇总",
@@ -966,22 +1078,22 @@ def _write_markdown(rows: list[ResultRow]) -> None:
                 module_rows,
                 _module_metric_matrix_rows(),
                 ["原型竞争边界建模", "原型距离校准", "OpenMax 校准"],
-                [
-                    ("overall_accuracy", "Overall Acc."),
-                    ("known_accuracy", "Known Acc."),
-                    ("unknown_recall", "Unknown Recall"),
-                    ("macro_f1", "Macro F1"),
-                    ("auroc", "AUROC"),
-                ],
+                _module_metric_fields(),
             )
         )
         lines.extend(
             [
                 "",
-                "注：OpenMax 行使用正式对比实验结果；完整方法行使用正式 PCBM 结果；",
-                "中间行在同一闭集检查点上关闭 PCBS，仅保留 OpenMax 与原型距离校准。",
+                "注：前三行使用同一闭集检查点和普通 MBS 伪未知样本；",
+                "第一行仅使用验证已知集的全局置信度分位数做基础拒识，第二、三行依次加入 OpenMax 和原型距离校准；完整方法行使用正式 PCBM 结果。",
+                "原型距离校准主要改善分数排序，因此重点观察 AUROC/OSCR；PCBM 主要减少已知类被误拒为未知类，因此重点观察 Known FPR↓、Unknown Precision 和 OSCR。",
             ]
         )
+        if dataset == "oracle":
+            lines.append(
+                "Oracle 的原型距离校准行在验证集上从 λ={0.1,0.3,0.5,0.7,0.9} 自动选择融合权重，"
+                "并设置每类已知接收率下限为 90%；测试标签不参与参数选择。"
+            )
         lines.append("")
 
         km_rows = [row for row in rows if row.dataset == dataset and row.category == "km"]

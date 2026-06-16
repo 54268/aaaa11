@@ -71,9 +71,13 @@
     "fusion": {
       "mode": "linear",
       "lambda_grid": [
-        0.35
+        0.1,
+        0.3,
+        0.5,
+        0.7,
+        0.9
       ],
-      "manual_fusion_lambda": 0.35,
+      "manual_fusion_lambda": 0.1,
       "score_calibration": "classwise_z",
       "manual_thresholds_per_class": null,
       "known_rescue": {
@@ -113,14 +117,15 @@
         0.98,
         0.99
       ],
-      "classwise_known_weight": 0.45,
-      "classwise_unknown_weight": 0.55,
-      "classwise_min_known_accept": 0.88,
+      "classwise_known_weight": 0.75,
+      "classwise_unknown_weight": 0.25,
+      "classwise_min_known_accept": 0.9,
       "selection_weights": {
-        "known_accuracy": 0.45,
-        "unknown_recall": 0.35,
-        "macro_f1": 0.15,
-        "auroc": 0.05
+        "known_accuracy": 0.3,
+        "unknown_recall": 0.2,
+        "macro_f1": 0.2,
+        "oscr": 0.2,
+        "auroc": 0.1
       },
       "known_quantile_floor": 0.95,
       "min_known_accuracy": 0.91,

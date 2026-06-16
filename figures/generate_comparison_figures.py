@@ -109,6 +109,14 @@ def _prediction_sets(dataset_key: str) -> list[tuple[str, str, PredictionData]]:
     return rows
 
 
+def confusion_output_paths(output_dir: str | Path = FIGURE_ROOT) -> dict[str, Path]:
+    output_dir = Path(output_dir)
+    return {
+        dataset_key: output_dir / f"confusion_matrix_{dataset_key}.png"
+        for dataset_key in DATASETS
+    }
+
+
 def _style_axis(ax: plt.Axes) -> None:
     ax.grid(True, color="#D9D9D9", linewidth=0.65, alpha=0.55)
     ax.spines["top"].set_visible(False)
@@ -161,13 +169,18 @@ def _draw_confusion(ax: plt.Axes, data: PredictionData, title: str) -> tuple[np.
     )
     image = ax.imshow(normalized, cmap="Blues", vmin=0.0, vmax=1.0, interpolation="nearest")
     display_labels = [f"K{i + 1}" for i in range(data.unknown_label)] + ["U"]
+    compact = len(display_labels) <= 12
+    tick_fontsize = 9.0 if compact else 7.5
+    diagonal_fontsize = 8.7 if compact else 7.7
+    off_diagonal_fontsize = 8.0 if compact else 7.0
     ax.set_xticks(range(len(display_labels)))
     ax.set_yticks(range(len(display_labels)))
-    ax.set_xticklabels(display_labels, rotation=45, ha="right", fontsize=7.5)
-    ax.set_yticklabels(display_labels, fontsize=7.5)
+    ax.set_xticklabels(display_labels, rotation=45, ha="right", fontsize=tick_fontsize)
+    ax.set_yticklabels(display_labels, fontsize=tick_fontsize)
     ax.set_xlabel("Predicted class")
     ax.set_ylabel("True class")
-    ax.set_title(title, fontsize=13, pad=9)
+    ax.set_title(title, fontsize=14, pad=10)
+    ax.set_aspect("equal")
     ax.tick_params(length=0)
     ax.set_xticks(np.arange(-0.5, len(display_labels), 1), minor=True)
     ax.set_yticks(np.arange(-0.5, len(display_labels), 1), minor=True)
@@ -191,39 +204,41 @@ def _draw_confusion(ax: plt.Axes, data: PredictionData, title: str) -> tuple[np.
                     text,
                     ha="center",
                     va="center",
-                    fontsize=7.7 if is_diag else 7.0,
+                    fontsize=diagonal_fontsize if is_diag else off_diagonal_fontsize,
                     color="white" if is_diag and value >= 0.52 else ("#b22222" if not is_diag else "#222222"),
                     fontweight="bold" if is_diag else "normal",
                 )
     return image, matrix, display_labels
 
 
-def plot_confusion_comparison(output_path: str | Path) -> Path:
+def plot_confusion_matrix(dataset_key: str, output_path: str | Path) -> Path:
+    if dataset_key not in DATASETS:
+        raise ValueError(f"Unsupported dataset: {dataset_key}")
     output_path = Path(output_path)
-    fig, axes = plt.subplots(
-        1,
-        2,
-        figsize=(14.2, 5.8),
-        gridspec_kw={"width_ratios": [11, 17]},
+    spec = DATASETS[dataset_key]
+    data = load_prediction_csv(
+        spec["ours"],
+        fallback_unknown_label=int(spec["unknown_label"]),
     )
-    images = []
-    for panel_index, (dataset_key, ax) in enumerate(zip(["oracle", "wisig"], axes)):
-        spec = DATASETS[dataset_key]
-        data = load_prediction_csv(spec["ours"], fallback_unknown_label=int(spec["unknown_label"]))
-        image, _, _ = _draw_confusion(
-            ax,
-            data,
-            f"({chr(97 + panel_index)}) {spec['display']}",
-        )
-        images.append(image)
-    fig.subplots_adjust(left=0.05, right=0.88, bottom=0.13, top=0.92, wspace=0.18)
-    colorbar_ax = fig.add_axes([0.91, 0.18, 0.018, 0.66])
-    colorbar = fig.colorbar(images[-1], cax=colorbar_ax)
+    class_count = data.unknown_label + 1
+    figsize = (7.4, 6.5) if class_count <= 12 else (9.4, 8.2)
+    fig, ax = plt.subplots(figsize=figsize)
+    image, _, _ = _draw_confusion(ax, data, f"{spec['display']} confusion matrix")
+    colorbar = fig.colorbar(image, ax=ax, fraction=0.046, pad=0.04)
     colorbar.set_label("Row-normalized rate")
+    fig.tight_layout()
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=320, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     return output_path
+
+
+def plot_confusion_matrices(output_dir: str | Path = FIGURE_ROOT) -> dict[str, Path]:
+    paths = confusion_output_paths(output_dir)
+    return {
+        dataset_key: plot_confusion_matrix(dataset_key, output_path)
+        for dataset_key, output_path in paths.items()
+    }
 
 
 def parse_args() -> argparse.Namespace:
@@ -234,9 +249,9 @@ def parse_args() -> argparse.Namespace:
         default=FIGURE_ROOT / "roc_comparison_oracle_wisig.png",
     )
     parser.add_argument(
-        "--confusion-output",
+        "--confusion-dir",
         type=Path,
-        default=FIGURE_ROOT / "confusion_matrix_oracle_wisig.png",
+        default=FIGURE_ROOT,
     )
     return parser.parse_args()
 
@@ -244,7 +259,8 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     print(f"ROC figure: {plot_roc_comparison(args.roc_output)}")
-    print(f"Confusion figure: {plot_confusion_comparison(args.confusion_output)}")
+    for dataset_key, output_path in plot_confusion_matrices(args.confusion_dir).items():
+        print(f"{DATASETS[dataset_key]['display']} confusion figure: {output_path}")
 
 
 if __name__ == "__main__":

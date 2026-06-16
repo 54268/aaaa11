@@ -364,7 +364,7 @@ def _write_report(path: Path, metrics: dict[str, Any], dataset_name: str = "") -
     lines = [
         f"# {title_suffix}未知类细分结果",
         "",
-        "当前协议：unknown cache 细分聚类（支持 KMeans / Agglomerative / GMM 后端；GMM-full-direct 直接由 GMM 输出候选标签，再通过 GMM 后验置信度和不稳定小簇规则标记不确定样本）。",
+        "当前协议：unknown cache 细分聚类（支持 KMeans / Agglomerative / HDBSCAN / GMM 后端；GMM-full-direct 直接由 GMM 输出候选标签，再通过 GMM 后验置信度和不稳定小簇规则标记不确定样本）。",
         "",
         "| 指标键 | 中文说明 | 数值 |",
         "| --- | --- | ---: |",
@@ -533,6 +533,11 @@ def run_unknown_subdivision(
             agg_sample_size=int(cfg.get("agg_sample_size", 8000)),
             direct_confidence_quantile=float(cfg.get("direct_confidence_quantile", 0.0)),
             direct_min_cluster_size=int(cfg.get("direct_min_cluster_size", 0)),
+            density_min_cluster_size=int(cfg.get("density_min_cluster_size", 20)),
+            density_min_samples=(
+                None if cfg.get("density_min_samples") is None else int(cfg.get("density_min_samples"))
+            ),
+            density_cluster_selection_epsilon=float(cfg.get("density_cluster_selection_epsilon", 0.0)),
         )
         return candidate_result, fit_k_min, fit_k_max, fit_target_num_clusters
 
@@ -626,6 +631,11 @@ def run_unknown_subdivision(
             **m_score_info,
             "direct_confidence_quantile": float(cfg.get("direct_confidence_quantile", 0.0)),
             "direct_min_cluster_size": int(cfg.get("direct_min_cluster_size", 0)),
+            "density_min_cluster_size": int(cfg.get("density_min_cluster_size", 20)),
+            "density_min_samples": (
+                None if cfg.get("density_min_samples") is None else int(cfg.get("density_min_samples"))
+            ),
+            "density_cluster_selection_epsilon": float(cfg.get("density_cluster_selection_epsilon", 0.0)),
             "selected_unknown_cache_size": int(len(selected_indices)),
             "uncertain_size": int((result.labels == -1).sum()),
             "uncertain_ratio": float((result.labels == -1).mean()) if len(result.labels) else 0.0,

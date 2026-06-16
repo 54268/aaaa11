@@ -195,7 +195,6 @@ def plot_global_tsne(
     points_2d: np.ndarray,
     prototypes_2d: np.ndarray,
     y_true: np.ndarray,
-    y_pred: np.ndarray,
     unknown_label: int,
     save_path: Path,
 ) -> None:
@@ -206,11 +205,11 @@ def plot_global_tsne(
     fig.subplots_adjust(left=0.07, right=0.98, top=0.91, bottom=0.16)
     ax.set_facecolor("#FAFAFA")
 
-    unknown_correct = (y_true == unknown_label) & (y_pred == unknown_label)
-    if np.any(unknown_correct):
+    unknown_mask = y_true == unknown_label
+    if np.any(unknown_mask):
         ax.scatter(
-            points_2d[unknown_correct, 0],
-            points_2d[unknown_correct, 1],
+            points_2d[unknown_mask, 0],
+            points_2d[unknown_mask, 1],
             s=8,
             c="lightgray",
             alpha=0.34,
@@ -223,14 +222,11 @@ def plot_global_tsne(
     for class_id in range(unknown_label):
         color = class_colors[class_id]
         class_mask = y_true == class_id
-        correct_mask = class_mask & (y_pred == class_id)
-        rejected_mask = class_mask & (y_pred == unknown_label)
-        confused_mask = class_mask & (y_pred != class_id) & (y_pred != unknown_label)
 
-        if np.any(correct_mask):
+        if np.any(class_mask):
             ax.scatter(
-                points_2d[correct_mask, 0],
-                points_2d[correct_mask, 1],
+                points_2d[class_mask, 0],
+                points_2d[class_mask, 1],
                 s=POINT_SIZE,
                 c=[color],
                 alpha=0.66,
@@ -239,47 +235,6 @@ def plot_global_tsne(
                 zorder=2,
                 rasterized=True,
             )
-
-        if np.any(rejected_mask):
-            ax.scatter(
-                points_2d[rejected_mask, 0],
-                points_2d[rejected_mask, 1],
-                s=34,
-                c=[color],
-                alpha=0.95,
-                marker="x",
-                linewidths=1.25,
-                zorder=4,
-                rasterized=True,
-            )
-
-        if np.any(confused_mask):
-            ax.scatter(
-                points_2d[confused_mask, 0],
-                points_2d[confused_mask, 1],
-                s=35,
-                facecolors="none",
-                edgecolors=[color],
-                alpha=0.95,
-                marker="s",
-                linewidths=1.15,
-                zorder=4,
-                rasterized=True,
-            )
-
-    unknown_accepted = (y_true == unknown_label) & (y_pred != unknown_label)
-    if np.any(unknown_accepted):
-        ax.scatter(
-            points_2d[unknown_accepted, 0],
-            points_2d[unknown_accepted, 1],
-            s=34,
-            c="black",
-            alpha=0.88,
-            marker="^",
-            linewidths=0,
-            zorder=5,
-            rasterized=True,
-        )
 
     for class_id in range(unknown_label):
         x, y = prototypes_2d[class_id]
@@ -321,18 +276,15 @@ def plot_global_tsne(
     ax.spines["right"].set_visible(False)
 
     legend_handles = [
-        Line2D([0], [0], marker="o", linestyle="None", markerfacecolor="gray", markeredgecolor="none", markersize=7, label="Known correct"),
-        Line2D([0], [0], marker="x", linestyle="None", color="gray", markersize=7, label="Known rejected"),
-        Line2D([0], [0], marker="s", linestyle="None", markerfacecolor="none", markeredgecolor="gray", markersize=7, label="Known confused"),
-        Line2D([0], [0], marker="o", linestyle="None", markerfacecolor="lightgray", markeredgecolor="none", markersize=7, label="Unknown correct"),
-        Line2D([0], [0], marker="^", linestyle="None", color="black", markersize=7, label="Unknown accepted"),
+        Line2D([0], [0], marker="o", linestyle="None", markerfacecolor="gray", markeredgecolor="none", markersize=7, label="Known samples (true label color)"),
+        Line2D([0], [0], marker="o", linestyle="None", markerfacecolor="lightgray", markeredgecolor="none", markersize=7, label="Unknown samples"),
         Line2D([0], [0], marker="*", linestyle="None", markerfacecolor="white", markeredgecolor="black", markersize=12, label="Known prototype"),
     ]
     ax.legend(
         handles=legend_handles,
         loc="upper center",
         bbox_to_anchor=(0.5, -0.105),
-        ncol=6,
+        ncol=3,
         frameon=False,
         fontsize=8.5,
         columnspacing=1.15,
@@ -390,7 +342,7 @@ def main() -> None:
     print(f"t-SNE sample count: {len(sampled_embeddings)}")
 
     points_2d, prototypes_2d = reduce_with_tsne(sampled_embeddings, prototypes)
-    plot_global_tsne(points_2d, prototypes_2d, sampled_true, sampled_pred, unknown_label, save_path)
+    plot_global_tsne(points_2d, prototypes_2d, sampled_true, unknown_label, save_path)
 
     print(f"\nSaved figure: {save_path}")
 

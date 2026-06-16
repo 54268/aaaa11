@@ -152,6 +152,7 @@ def generate_pseudo_unknown_artifacts(config_or_path: str | Path | dict[str, Any
         "scores": boundary_file["scores"],
         "local_scale": boundary_file["local_scale"],
         "nearest_foreign": boundary_file["nearest_foreign"],
+        "marginal_mask": boundary_file["marginal_mask"].astype(bool),
         "critical_mask": boundary_file["critical_mask"].astype(bool),
         "ordinary_edge_mask": boundary_file["ordinary_edge_mask"].astype(bool),
     }

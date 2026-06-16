@@ -1,0 +1,30 @@
+[
+  {
+    "overcluster_extra_clusters": 0,
+    "fit_k_min": 12,
+    "fit_k_max": 12,
+    "fit_num_clusters": 12,
+    "resolved_num_clusters": 12,
+    "uncertain_size": 75,
+    "uncertain_ratio": 0.007784928378658917,
+    "m_selection_offline_quality": 0.999443739931441,
+    "m_selection_offline_coverage": 0.9946875,
+    "m_selection_offline_adjusted_quality": 0.9941341950630551,
+    "m_selection_offline_nmi": 0.999087713183647,
+    "m_selection_offline_ari": 0.9993155845879855,
+    "m_selection_offline_purity": 0.9996858309770656,
+    "m_selection_offline_hungarian_accuracy": 0.9996858309770656,
+    "m_selection_score": 0.7736767239713985,
+    "m_selection_target_penalty": 0,
+    "m_selection_uncertain_ratio": 0.007784928378658917,
+    "m_selection_cluster_balance": 0.9816926456742336,
+    "m_selection_gmm_mean_confidence": 0.0,
+    "m_selection_gmm_bic": 0.0,
+    "density_backend": "hdbscan",
+    "density_min_cluster_size": 40,
+    "density_min_samples": 10,
+    "density_cluster_selection_epsilon": 0.0,
+    "density_noise_ratio": 0.007784928378658917,
+    "density_mean_membership_probability": 0.9050060284407422
+  }
+]

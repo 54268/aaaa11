@@ -1,0 +1,86 @@
+{
+  "oracle": [
+    {
+      "method": "K-means",
+      "nmi": 0.8524342079672304,
+      "ari": 0.8322073178588413,
+      "purity": 0.9218440327445067,
+      "hungarian_accuracy": 0.9218440327445067,
+      "coverage_of_total_test_unknown": 0.9670833333333333,
+      "resolved_num_clusters": 6,
+      "uncertain_size": 0
+    },
+    {
+      "method": "HDBSCAN",
+      "nmi": 0.6848197368752628,
+      "ari": 0.4258851320399191,
+      "purity": 0.48748510131108463,
+      "hungarian_accuracy": 0.48748510131108463,
+      "coverage_of_total_test_unknown": 0.6991666666666667,
+      "resolved_num_clusters": 3,
+      "uncertain_size": 6591
+    },
+    {
+      "method": "GMM-full-direct",
+      "nmi": 0.9048834153410797,
+      "ari": 0.7876607856789165,
+      "purity": 0.8319689788884101,
+      "hungarian_accuracy": 0.8016372253339078,
+      "coverage_of_total_test_unknown": 0.9670833333333333,
+      "resolved_num_clusters": 6,
+      "uncertain_size": 0
+    },
+    {
+      "method": "Full GMM subdivision (ours)",
+      "nmi": 0.9988159321232524,
+      "ari": 0.9992634945241701,
+      "purity": 0.9997179258144893,
+      "hungarian_accuracy": 0.9997179258144893,
+      "coverage_of_total_test_unknown": 0.8862916666666667,
+      "resolved_num_clusters": 6,
+      "uncertain_size": 2021
+    }
+  ],
+  "wisig": [
+    {
+      "method": "K-means",
+      "nmi": 0.9981254482446456,
+      "ari": 0.99863679139135,
+      "purity": 0.999375,
+      "hungarian_accuracy": 0.999375,
+      "coverage_of_total_test_unknown": 1.0,
+      "resolved_num_clusters": 12,
+      "uncertain_size": 0
+    },
+    {
+      "method": "HDBSCAN",
+      "nmi": 0.999087713183647,
+      "ari": 0.9993155845879855,
+      "purity": 0.9996858309770656,
+      "hungarian_accuracy": 0.9996858309770656,
+      "coverage_of_total_test_unknown": 0.9946875,
+      "resolved_num_clusters": 12,
+      "uncertain_size": 75
+    },
+    {
+      "method": "GMM-full-direct",
+      "nmi": 0.9981254482446456,
+      "ari": 0.99863679139135,
+      "purity": 0.999375,
+      "hungarian_accuracy": 0.999375,
+      "coverage_of_total_test_unknown": 1.0,
+      "resolved_num_clusters": 12,
+      "uncertain_size": 0
+    },
+    {
+      "method": "Full GMM subdivision (ours)",
+      "nmi": 0.9981254482446456,
+      "ari": 0.99863679139135,
+      "purity": 0.999375,
+      "hungarian_accuracy": 0.999375,
+      "coverage_of_total_test_unknown": 1.0,
+      "resolved_num_clusters": 12,
+      "uncertain_size": 0
+    }
+  ]
+}
