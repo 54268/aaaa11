@@ -1,0 +1,100 @@
+{
+  "fusion_lambda": 0.0,
+  "threshold": null,
+  "thresholds_per_class": [
+    0.9876000737001502,
+    0.9777885371287635,
+    0.973998541060628,
+    0.9877839040399007,
+    0.963375579890312,
+    0.9622332451083382,
+    0.9858630380797222,
+    0.9680561407849504,
+    0.9825984947331406,
+    0.988771454789514
+  ],
+  "threshold_mode": "leave_class_out_quantile_transfer",
+  "threshold_quantile": null,
+  "threshold_quantiles_per_class": [
+    0.9849812030075188,
+    0.9849812030075188,
+    0.9849812030075188,
+    0.9849812030075188,
+    0.9849812030075188,
+    0.9849812030075188,
+    0.9849812030075188,
+    0.9849812030075188,
+    0.9849812030075188,
+    0.9849812030075188
+  ],
+  "fusion_mode": "linear",
+  "score_calibration": {
+    "mode": "classwise_z",
+    "means": [
+      0.47521552443504333,
+      0.48385411500930786,
+      0.4847669005393982,
+      0.4844553470611572,
+      0.5012966394424438,
+      0.47894608974456787,
+      0.489692747592926,
+      0.5000622272491455,
+      0.4909589886665344,
+      0.47553086280822754
+    ],
+    "sigmas": [
+      0.11810608370399475,
+      0.13515399558639526,
+      0.1398940698633194,
+      0.055682537836790086,
+      0.15236212475395203,
+      0.15739149017429352,
+      0.11896131349897385,
+      0.1463785783777237,
+      0.08516018999910355,
+      0.11404240293598175
+    ],
+    "counts": [
+      382,
+      396,
+      404,
+      400,
+      403,
+      378,
+      415,
+      418,
+      404,
+      400
+    ],
+    "fallback_mean": 0.4866597354412079,
+    "fallback_sigma": 0.1261851505765915
+  },
+  "known_rescue": {
+    "enabled": false
+  },
+  "metrics": {
+    "overall_accuracy": 0.72325,
+    "macro_precision": 0.7642668247550317,
+    "macro_recall": 0.888875,
+    "macro_f1": 0.7843278711506172,
+    "weighted_f1": 0.6773607846204497,
+    "known_accuracy": 0.9716875,
+    "unknown_precision": 0.8739107908761167,
+    "unknown_recall": 0.226375,
+    "known_fpr_as_unknown": 0.0155,
+    "unknown_false_accept_rate": 0.773625,
+    "auroc": 0.917260859375,
+    "fpr95": 0.2950625,
+    "oscr": 0.907355234375,
+    "heldout_unknown_recall": 0.22749999999999998,
+    "pseudo_unknown_recall": 0.22525,
+    "selection_score": 0.6151208300838118
+  },
+  "calibration_provenance": {
+    "num_folds": 5,
+    "aggregation_mode": "global_median",
+    "uses_real_unknown_for_calibration": false,
+    "simulated_unknown_source": "held-out classes from val_known",
+    "pseudo_unknown_source": "feature-level boundary extrapolation"
+  }
+}

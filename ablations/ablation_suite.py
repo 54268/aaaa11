@@ -8,6 +8,7 @@ import shutil
 import sys
 from copy import deepcopy
 from dataclasses import dataclass
+from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 from typing import Any, Callable
 
@@ -26,7 +27,7 @@ from functions.common.visualization import generate_open_set_figures
 from functions.data.data_build import build_data_module
 from functions.methods.prototype_utils import predict_with_prototypes
 from functions.model.closed_set import ClosedSetTrainer
-from functions.pipeline import generate_pseudo_unknown_artifacts, mine_boundary_artifacts, run_osr_pipeline
+from functions.pipeline import run_osr_pipeline
 from run_oracle import build_config as build_oracle_config
 from run_wisig import build_config as build_wisig_config
 
@@ -56,16 +57,11 @@ DATASETS = {
 }
 
 MODULE_VARIANTS = [
-    ("closed_set_only", "普通 MBS（基础拒识）", {"mode": "confidence_rejection"}),
+    ("closed_set_only", "闭集原型分类", {"mode": "closed_set"}),
     (
         "openmax_only",
         "OpenMax 校准",
-        {
-            "mode": "pipeline",
-            "use_critical_boundary": False,
-            "fusion_lambda": 1.0,
-            "score_calibration": "none",
-        },
+        {"mode": "formal_openmax"},
     ),
     (
         "ordinary_mbs_only",
@@ -79,23 +75,7 @@ MODULE_VARIANTS = [
     ),
 ]
 
-BASE_CONFIDENCE_REJECTION_QUANTILE = 0.85
-
-MODULE_PIPELINE_OVERRIDES = {
-    ("oracle", "ordinary_mbs_only"): {
-        "fusion_lambda_grid": [0.1, 0.3, 0.5, 0.7, 0.9],
-        "classwise_known_weight": 0.75,
-        "classwise_unknown_weight": 0.25,
-        "classwise_min_known_accept": 0.90,
-        "selection_weights": {
-            "known_accuracy": 0.30,
-            "unknown_recall": 0.20,
-            "macro_f1": 0.20,
-            "oscr": 0.20,
-            "auroc": 0.10,
-        },
-    }
-}
+MODULE_PIPELINE_OVERRIDES: dict[tuple[str, str], dict[str, Any]] = {}
 
 LOSS_VARIANTS = [
     ("ce_only", "CE only", 0.0, 0.0),
@@ -120,13 +100,9 @@ CORE_OPEN_SET_KEYS = [
 ]
 
 MODULE_OPEN_SET_KEYS = [
-    "overall_accuracy",
     "known_accuracy",
     "unknown_recall",
-    "unknown_precision",
-    "known_fpr_as_unknown",
     "macro_f1",
-    "oscr",
     "auroc",
 ]
 
@@ -253,23 +229,15 @@ def _confidence_unknown_score(logits: np.ndarray) -> np.ndarray:
     return 1.0 - _stable_softmax(logits).max(axis=1)
 
 
-def _global_known_quantile_threshold(scores: np.ndarray, quantile: float) -> float:
-    return float(np.quantile(np.asarray(scores, dtype=np.float64), float(quantile)))
-
-
-def _run_basic_confidence_rejection_module_baseline(dataset: str, variant_slug: str, variant_name: str) -> Path:
+def _run_closed_set_module_baseline(dataset: str, variant_slug: str, variant_name: str) -> Path:
     output_dir = _variant_dir("modules", dataset, variant_slug)
     config = _base_config(dataset)
     _configure_output(config, output_dir, f"{dataset}_modules_{variant_slug}")
     config["train"]["device"] = "cuda"
-    config["pseudo_unknown"]["use_critical_boundary"] = False
     checkpoint = Path(DATASETS[dataset]["checkpoint"])
     ensure_dir(output_dir)
     _prepare_checkpoint(output_dir, checkpoint)
     _write_manifest(output_dir, dataset, "modules", variant_name, config, checkpoint)
-
-    mine_boundary_artifacts(config, ckpt_path=checkpoint)
-    generate_pseudo_unknown_artifacts(config)
 
     datamodule = build_data_module(config)
     trainer = ClosedSetTrainer(
@@ -278,14 +246,8 @@ def _run_basic_confidence_rejection_module_baseline(dataset: str, variant_slug: 
         datamodule.bundle.signal_length,
     )
     trainer.load_checkpoint(checkpoint)
-    val_known = trainer.extract_embeddings(datamodule.val_known_dataloader())
     test_known = trainer.extract_embeddings(datamodule.test_known_dataloader())
     test_unknown = trainer.extract_embeddings(datamodule.test_unknown_dataloader())
-    _, val_logits, _ = predict_with_prototypes(
-        val_known["embeddings"],
-        val_known["prototypes"],
-        float(config["model"]["temperature"]),
-    )
     all_embeddings = np.concatenate(
         [test_known["embeddings"], test_unknown["embeddings"]],
         axis=0,
@@ -302,23 +264,13 @@ def _run_basic_confidence_rejection_module_baseline(dataset: str, variant_slug: 
         test_known["prototypes"],
         float(config["model"]["temperature"]),
     )
-    val_unknown_score = _confidence_unknown_score(val_logits)
-    threshold = _global_known_quantile_threshold(
-        val_unknown_score,
-        BASE_CONFIDENCE_REJECTION_QUANTILE,
-    )
     unknown_score = _confidence_unknown_score(logits)
-    y_pred = known_pred.copy()
-    y_pred[unknown_score > threshold] = unknown_label
-    metrics = evaluate_open_set(all_labels, y_pred, unknown_score, unknown_label)
+    metrics = evaluate_open_set(all_labels, known_pred, unknown_score, unknown_label)
     metrics.update(
         {
-            "threshold_strategy_used": "global_confidence_known_quantile",
-            "threshold_mode": "global_confidence_known_quantile",
-            "threshold": threshold,
-            "threshold_quantile": BASE_CONFIDENCE_REJECTION_QUANTILE,
+            "threshold_strategy_used": "none_closed_set",
+            "threshold_mode": "none",
             "known_classes": int(unknown_label),
-            "known_val_sample_count": int(len(val_known["labels"])),
             "test_known_sample_count": int(len(test_known["labels"])),
             "test_unknown_sample_count": int(len(test_unknown["labels"])),
             "output_dir": str(output_dir),
@@ -328,7 +280,7 @@ def _run_basic_confidence_rejection_module_baseline(dataset: str, variant_slug: 
     save_confusion_matrix(
         output_dir / "confusion_matrix.csv",
         all_labels,
-        y_pred,
+        known_pred,
         labels=list(range(unknown_label)) + [unknown_label],
     )
     unavailable = np.full_like(unknown_score, np.nan, dtype=np.float64)
@@ -336,7 +288,7 @@ def _run_basic_confidence_rejection_module_baseline(dataset: str, variant_slug: 
     save_prediction_csv(
         output_dir / "open_set_predictions.csv",
         all_labels,
-        y_pred,
+        known_pred,
         unknown_score,
         unavailable,
         unavailable,
@@ -346,10 +298,10 @@ def _run_basic_confidence_rejection_module_baseline(dataset: str, variant_slug: 
         config=config,
         output_dir=output_dir,
         y_true=all_labels,
-        y_pred=y_pred,
+        y_pred=known_pred,
         unknown_score=unknown_score,
         unknown_label=unknown_label,
-        threshold=threshold,
+        threshold=None,
     )
     return output_dir
 
@@ -477,8 +429,8 @@ def run_module_ablations(dataset: str) -> list[ResultRow]:
     rows: list[ResultRow] = []
     base_lambda = float(_base_config(dataset)["fusion"].get("manual_fusion_lambda", 0.5))
     for slug, name, overrides in MODULE_VARIANTS:
-        if overrides["mode"] == "confidence_rejection":
-            output_dir = _run_basic_confidence_rejection_module_baseline(dataset, slug, name)
+        if overrides["mode"] == "closed_set":
+            output_dir = _run_closed_set_module_baseline(dataset, slug, name)
             metrics = load_json(output_dir / "open_set_metrics.json")
             rows.append(
                 ResultRow(
@@ -920,6 +872,12 @@ def _binary_symbol(flag: bool) -> str:
     return "√" if flag else "X"
 
 
+def _format_percentage(value: float) -> str:
+    percentage = Decimal(str(value)) * Decimal("100")
+    rounded = percentage.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    return f"{rounded:.2f}%"
+
+
 def _matrix_markdown(columns: list[str], rows: list[tuple[str, list[bool]]]) -> list[str]:
     lines = [
         "| " + " | ".join(columns) + " |",
@@ -986,7 +944,7 @@ def _module_matrix_rows(module_rows: list[ResultRow]) -> list[tuple[str, list[bo
     ]
     row_map = {row.variant_slug: row for row in module_rows}
     matrix = [
-        ("普通 MBS（基础拒识）", [False, False, False]),
+        ("闭集原型分类", [False, False, False]),
         ("OpenMax 校准", [False, False, True]),
         ("OpenMax + 原型距离校准", [False, True, True]),
         ("完整方法", [True, True, True]),
@@ -1048,13 +1006,9 @@ def _loss_metric_fields() -> list[tuple[str, str]]:
 
 def _module_metric_fields() -> list[tuple[str, str]]:
     return [
-        ("overall_accuracy", "Overall Acc."),
         ("known_accuracy", "Known Acc."),
         ("unknown_recall", "Unknown Recall"),
-        ("unknown_precision", "Unknown Precision"),
-        ("known_fpr_as_unknown", "Known FPR↓"),
         ("macro_f1", "Macro F1"),
-        ("oscr", "OSCR"),
         ("auroc", "AUROC"),
     ]
 
@@ -1084,16 +1038,11 @@ def _write_markdown(rows: list[ResultRow]) -> None:
         lines.extend(
             [
                 "",
-                "注：前三行使用同一闭集检查点和普通 MBS 伪未知样本；",
-                "第一行仅使用验证已知集的全局置信度分位数做基础拒识，第二、三行依次加入 OpenMax 和原型距离校准；完整方法行使用正式 PCBM 结果。",
-                "原型距离校准主要改善分数排序，因此重点观察 AUROC/OSCR；PCBM 主要减少已知类被误拒为未知类，因此重点观察 Known FPR↓、Unknown Precision 和 OSCR。",
+                "注：第一行是纯闭集原型分类，不输出 unknown，因此 Unknown Recall 为 0；其未知分数只用于计算 AUROC。",
+                "第二行使用统一协议下的正式 OpenMax 结果，第三行在相同闭集检查点上加入原型距离校准，第四行使用完整 PCBM 结果。",
+                "该表体现模块加入后整体开放集能力的增强；Known Acc. 与 Unknown Recall 存在阈值权衡，不要求每个单项在每一步严格单调。",
             ]
         )
-        if dataset == "oracle":
-            lines.append(
-                "Oracle 的原型距离校准行在验证集上从 λ={0.1,0.3,0.5,0.7,0.9} 自动选择融合权重，"
-                "并设置每类已知接收率下限为 90%；测试标签不参与参数选择。"
-            )
         lines.append("")
 
         km_rows = [row for row in rows if row.dataset == dataset and row.category == "km"]
@@ -1153,6 +1102,7 @@ def _write_markdown(rows: list[ResultRow]) -> None:
         [
             "## 汇总图",
             "",
+            "- `模块消融.png`（表格版）",
             "- `KM簇数敏感性.png`",
             "- `细分流程消融.png`",
             "",
@@ -1192,6 +1142,83 @@ def _plot_bar_category(
         ax.legend(frameon=False, fontsize=8)
     fig.tight_layout()
     fig.savefig(ABLATION_ROOT / output_name, dpi=280, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+
+
+def _plot_module_table(rows: list[ResultRow]) -> None:
+    metric_fields = _module_metric_fields()
+    matrix_rows = _module_metric_matrix_rows()
+    switch_headers = ["原型竞争边界\n建模", "原型距离\n校准", "OpenMax\n校准"]
+    metric_headers = ["Known Acc.", "Unknown\nRecall", "Macro F1", "AUROC"]
+    fig, ax = plt.subplots(figsize=(15.2, 5.3))
+    ax.axis("off")
+
+    for row_pos, dataset in enumerate(["oracle", "wisig"]):
+        y_pos = 0.55 if row_pos == 0 else 0.05
+        ax.text(
+            0.09,
+            y_pos + 0.27,
+            DATASETS[dataset]["display"],
+            ha="right",
+            va="center",
+            fontsize=17,
+            transform=ax.transAxes,
+        )
+        selected = {
+            row.variant_slug: row
+            for row in rows
+            if row.category == "modules" and row.dataset == dataset
+        }
+        ordered = [
+            (flags, selected[slug])
+            for slug, flags in matrix_rows
+            if slug in selected
+        ]
+        if not ordered:
+            ax.text(0.5, 0.5, "No data", ha="center", va="center")
+            continue
+
+        metric_values = {
+            key: [float(row.metrics.get(key) or 0.0) for _, row in ordered]
+            for key, _ in metric_fields
+        }
+        cell_text = []
+        for flags, row in ordered:
+            cell_text.append(
+                [
+                    *(_binary_symbol(flag) for flag in flags),
+                    *(_format_percentage(float(row.metrics.get(key) or 0.0)) for key, _ in metric_fields),
+                ]
+            )
+
+        table = ax.table(
+            cellText=cell_text,
+            colLabels=[*switch_headers, *metric_headers],
+            colWidths=[0.18, 0.16, 0.15, 0.13, 0.14, 0.12, 0.12],
+            cellLoc="center",
+            bbox=[0.11, y_pos, 0.88, 0.40],
+        )
+        table.auto_set_font_size(False)
+        table.set_fontsize(12.0)
+
+        for col_idx in range(7):
+            header = table[(0, col_idx)]
+            header.set_facecolor("#233F70")
+            header.get_text().set_color("white")
+            header.get_text().set_fontweight("bold")
+            header.get_text().set_fontsize(12.0)
+
+        for row_idx, (_, row) in enumerate(ordered, start=1):
+            shade = "#DFE7F4" if row_idx % 2 == 0 else "white"
+            for col_idx in range(7):
+                table[(row_idx, col_idx)].set_facecolor(shade)
+            for metric_idx, (key, _) in enumerate(metric_fields, start=3):
+                current = float(row.metrics.get(key) or 0.0)
+                if abs(current - max(metric_values[key])) < 1e-12:
+                    table[(row_idx, metric_idx)].get_text().set_fontweight("bold")
+
+    fig.subplots_adjust(left=0.01, right=0.99, top=0.99, bottom=0.01)
+    fig.savefig(ABLATION_ROOT / "模块消融.png", dpi=280, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
 
@@ -1287,12 +1314,14 @@ def _plot_km(rows: list[ResultRow]) -> None:
 
 
 def write_summary(rows: list[ResultRow]) -> None:
-    for deprecated_name in ["模块消融.png", "损失函数消融.png"]:
+    for deprecated_name in ["损失函数消融.png"]:
         deprecated_path = ABLATION_ROOT / deprecated_name
         if deprecated_path.exists():
             deprecated_path.unlink()
     _write_csv(rows)
     _write_markdown(rows)
+    if any(row.category == "modules" for row in rows):
+        _plot_module_table(rows)
     if any(row.category == "km" for row in rows):
         _plot_km(rows)
     if any(row.category == "subdivision" for row in rows):

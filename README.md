@@ -2,11 +2,12 @@
 
 项目已经整理成少量入口加函数目录的结构，不再使用 YAML 和命令行参数。
 
-更完整的方案背景、数据流和方法细节见 `项目详细说明.md`。拒识后未知类细分的独立流程说明见 `未知类细分流程说明.md`。当前 WiSig 与 Oracle 的拒识、细分结果汇总见 `当前方法结果汇总.md`。
+更完整的方案背景、数据流和方法细节见 `项目详细说明.md`。新增的伪未知监督双重校准器及其框架位置见 `伪未知监督双重校准流程说明.md`。拒识后未知类细分的独立流程说明见 `未知类细分流程说明.md`。当前 WiSig 与 Oracle 的拒识、细分结果汇总见 `当前方法结果汇总.md`。
 
 ## 主要入口
 
 - `run_oracle.py`：Oracle 拒识主入口，默认连带做未知类细分。
+- `run_oracle_supervised_calibrator.py`：Oracle伪未知监督双重校准实验入口；复用闭集编码器和五折留类模型，自动选择外推尺度、融合权重、训练轮数、随机种子和按类别阈值。
 - `run_wisig.py`：WiSig 拒识主入口，默认连带做未知类细分。
 - `run_oracle_subdivision.py`：基于已有 Oracle 闭集模型，刷新开放集拒识中间结果后单独刷新未知类细分。
 - `run_wisig_subdivision.py`：基于已有 WiSig 闭集模型，刷新开放集拒识中间结果后单独刷新未知类细分。
@@ -31,12 +32,10 @@
 - `EPOCHS`：训练轮数。
 - `LEARNING_RATE`：学习率。
 - `BATCH_SIZE`：批大小。
-- `FUSION_LAMBDA_GRID`：OpenMax 分数和原型距离分数的融合权重。
+- `FUSION_LAMBDA_GRID`：OpenMax 分数和原型距离分数的候选融合权重；当前由已知验证集和伪未知集自动选择。
 - `THRESHOLD_GRID`：拒识阈值搜索范围。
-- `MANUAL_GLOBAL_THRESHOLD`：手动全局拒识阈值；WiSig 当前使用 `0.94` 来提高未知类召回率。
 - `MIN_KNOWN_ACCURACY`：阈值搜索时要求的已知类准确率下限。
-- Oracle 当前在 `settings/oracle_settings.py` 中启用了 `score_calibration = "classwise_z"`，用于按已知预测类别校准 unknown score。
-- Oracle 当前在 `settings/oracle_settings.py` 中启用了 `known_rescue`，用于把少量距离已知原型很近、原型间隔较大的误拒样本救回已知类。
+- Oracle当前正式采用伪未知监督双重校准器：保留OpenMax与原型距离的线性融合公式，并使用已知验证样本和特征层伪未知监督训练 `3→8→1` 校准器。五折自动选择结果为外推尺度1.5、`\lambda=1.0`、250轮、种子43和阈值分位点0.96；详细流程见 `伪未知监督双重校准流程说明.md`。
 - `SUBDIVISION_FEATURE_MODE`：未知类细分特征，可选 `embedding` / `embedding_stats` / `embedding_distance` / `embedding_score_distance` / `prototype_residual` / `residual_distance` / `score_distance`。
 - `SUBDIVISION_PCA_DIM`：细分前的 PCA 维度。
 - `SUBDIVISION_K_MIN` / `SUBDIVISION_K_MAX`：未知细分类数搜索范围；二者相同表示固定类别数。
@@ -68,7 +67,7 @@
 - `auroc`：已知/未知区分能力，越高越好。
 - `fpr95`：未知召回约 95% 时的已知类误拒率，越低越好。
 - `oscr`：开放集分类-拒识综合曲线面积，越高越好。
-- `score_calibration_mode`：unknown score 的校准方式；`classwise_z` 表示按已知预测类别做 z-score 校准。
+- `score_calibration_mode`：unknown score 的校准方式；`classwise_z` 表示按已知预测类别做 z-score 校准，`supervised_calibrator` 表示由已知验证样本和伪未知监督训练校准器。
 - `known_rescue_enabled`：是否启用已知类救回规则，用于降低已知类误拒。
 - `nmi`：归一化互信息，衡量未知细分聚类和真实未知类别的一致性。
 - `ari`：调整兰德指数，衡量聚类划分和真实类别的一致性。

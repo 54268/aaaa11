@@ -4,7 +4,7 @@
 
 **Goal:** 取消最终实验中的手动开放集参数，使 Oracle 和 WiSig 仅利用已知验证集与特征层伪未知集自动搜索融合权重和拒识阈值。
 
-**Architecture:** 复用现有 `search_fusion_params`，通过正式配置与运行入口移除手动分支。Oracle 使用按类平衡阈值，WiSig 使用全局阈值；两者共享固定融合网格、选择权重和已知准确率约束。复用已有闭集检查点，仅刷新边界、伪未知、OpenMax、融合、开放集评估和未知类细分。
+**Architecture:** 扩展现有 `search_fusion_params`，通过正式配置与运行入口移除手动分支。Oracle 在全局已知准确率约束下联合选择各类别阈值，WiSig 使用全局阈值；两者共享固定融合网格、选择权重和可行性检查。复用已有闭集检查点，仅刷新边界、伪未知、OpenMax、融合、开放集评估和未知类细分。
 
 **Tech Stack:** Python、NumPy、PyTorch、pytest。
 
@@ -35,7 +35,7 @@ def _assert_shared_auto_search(config: dict) -> None:
         "macro_f1": 0.15,
         "auroc": 0.05,
     }
-    assert fusion["min_known_accuracy"] == 0.95
+    assert fusion["require_feasible"] is True
 
 
 def test_oracle_uses_pseudo_unknown_auto_calibration() -> None:
@@ -43,7 +43,8 @@ def test_oracle_uses_pseudo_unknown_auto_calibration() -> None:
     _assert_shared_auto_search(config)
     assert config["fusion"]["threshold_mode"] == "classwise_balanced"
     assert config["fusion"]["score_calibration"] == "classwise_z"
-    assert config["fusion"]["classwise_min_known_accept"] == 0.90
+    assert config["fusion"]["classwise_min_known_accept"] == 0.99
+    assert config["fusion"]["min_known_accuracy"] == 0.96
 
 
 def test_wisig_uses_pseudo_unknown_auto_calibration() -> None:
@@ -51,6 +52,7 @@ def test_wisig_uses_pseudo_unknown_auto_calibration() -> None:
     _assert_shared_auto_search(config)
     assert config["fusion"]["threshold_mode"] == "global"
     assert config["fusion"].get("score_calibration", "none") == "none"
+    assert config["fusion"]["min_known_accuracy"] == 0.985
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -85,7 +87,7 @@ selection_weights = {
 min_known_accuracy = 0.95
 ```
 
-Oracle additionally uses `threshold_mode="classwise_balanced"`, `score_calibration="classwise_z"`, and `classwise_min_known_accept=0.90`. WiSig uses `threshold_mode="global"` and `score_calibration="none"`.
+Oracle additionally uses `threshold_mode="classwise_joint"` and `score_calibration="classwise_z"`，在全局已知准确率约束下联合选择各类别阈值。WiSig uses `threshold_mode="global"` and `score_calibration="none"`.
 
 - [ ] **Step 2: Run focused tests**
 

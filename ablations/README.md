@@ -15,7 +15,7 @@
 - `03_损失函数消融/`：Classification、Angular、Prototype 三项闭集表征损失开关。
 - `04_细分流程消融/`：embedding、I/Q 统计描述、特征融合和置信度过滤的流程贡献。
 
-模块消融按逐步加入顺序展示：普通 MBS（基础拒识）、OpenMax、OpenMax/原型距离双重校准、完整 PCBM。前三行使用同一闭集检查点；第一行保留基于最大 softmax 的全局置信度拒识，阈值由验证已知集分位数确定，但不使用 OpenMax、原型距离校准或 PCBM。完整方法行复用正式 PCBM 结果。每一列用 `X/√` 表示 PCBM、原型距离校准和 OpenMax 校准是否启用，并展示总体准确率、已知类准确率、未知类召回率、未知类精确率、已知类误拒率、Macro F1、OSCR 和 AUROC。原型距离校准重点观察 AUROC/OSCR，PCBM 重点观察已知类误拒率、未知类精确率和 OSCR。Oracle 的原型距离校准行在验证集上搜索 `λ∈{0.1,0.3,0.5,0.7,0.9}`，并要求每类验证已知接收率不低于 90%，测试标签不参与参数选择。
+模块消融按逐步加入顺序展示：纯闭集原型分类、OpenMax、OpenMax/原型距离双重校准、完整 PCBM。第一行不执行未知拒识，因此未知类召回率为 0；最大 Softmax 不确定度只用于计算 AUROC。第二行使用统一协议下的正式 OpenMax 结果，第三行在相同闭集检查点上加入原型距离校准，完整方法行复用正式 PCBM 结果。每一列用 `X/√` 表示原型竞争边界建模、原型距离校准和 OpenMax 校准是否启用，指标只展示已知类准确率、未知类召回率、Macro F1 和 AUROC。该表用于说明模块加入后整体开放集能力增强；已知类准确率与未知类召回率存在阈值权衡，不要求每个单项在每一步严格单调。
 
 损失函数消融已按一致权重复核：`CE + Prototype` 和 `Full embedding learning` 中的 Prototype Loss 均使用 `lambda_prototype=0.10`。结果显示，Oracle 上 `CE + Angular` 的 Macro F1 和 AUROC 更高，加入 Prototype Loss 后反而下降；WiSig 上 Prototype Loss 只带来很小的 Known Acc./Macro F1 变化，且 Full 组合的 AUROC 下降。因此论文中不应把 Prototype Loss 写成必要贡献。更稳妥的表述是：原型距离分类头已经通过类别 logit
 

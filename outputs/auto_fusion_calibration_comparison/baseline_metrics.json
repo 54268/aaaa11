@@ -1,0 +1,29 @@
+{
+  "oracle": {
+    "strategy": "manual_classwise",
+    "fusion_lambda": 0.35,
+    "overall_accuracy": 0.9661875,
+    "known_accuracy": 0.963625,
+    "unknown_precision": 0.9928134491166531,
+    "unknown_recall": 0.9670416666666667,
+    "known_fpr_as_unknown": 0.021,
+    "macro_f1": 0.9369046213998843,
+    "auroc": 0.9868361406250001,
+    "fpr95": 0.035375,
+    "oscr": 0.9574822630208333
+  },
+  "wisig": {
+    "strategy": "manual_global",
+    "fusion_lambda": 0.2,
+    "threshold": 0.94,
+    "overall_accuracy": 0.9972039473684211,
+    "known_accuracy": 0.98671875,
+    "unknown_precision": 0.9964708324683413,
+    "unknown_recall": 1.0,
+    "known_fpr_as_unknown": 0.01328125,
+    "macro_f1": 0.9935536101681589,
+    "auroc": 0.9959524943033854,
+    "fpr95": 0.0109375,
+    "oscr": 0.9866844482421876
+  }
+}

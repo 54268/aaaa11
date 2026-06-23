@@ -6,6 +6,7 @@ pytest-cache-files*/
 .vscode/
 
 /data/
+/outputs/oracle_leave_class_out_calibration/folds/*/data/
 
 # 临时探索/调参日志和缓存
 _explore_*.json

@@ -4,14 +4,12 @@ import numpy as np
 
 import ablations.ablation_suite as ablation_suite
 from ablations.ablation_suite import (
-    BASE_CONFIDENCE_REJECTION_QUANTILE,
     LOSS_VARIANTS,
     MODULE_PIPELINE_OVERRIDES,
     MODULE_VARIANTS,
     ResultRow,
     SUBDIVISION_VARIANTS,
     _ablation_matrix_metric_table,
-    _global_known_quantile_threshold,
     _module_metric_matrix_rows,
     _selected_loss_variants,
     write_summary,
@@ -117,13 +115,9 @@ def test_module_summary_exposes_module_sensitive_open_set_metrics() -> None:
     fields = getattr(ablation_suite, "_module_metric_fields", lambda: [])()
 
     assert fields == [
-        ("overall_accuracy", "Overall Acc."),
         ("known_accuracy", "Known Acc."),
         ("unknown_recall", "Unknown Recall"),
-        ("unknown_precision", "Unknown Precision"),
-        ("known_fpr_as_unknown", "Known FPR↓"),
         ("macro_f1", "Macro F1"),
-        ("oscr", "OSCR"),
         ("auroc", "AUROC"),
     ]
     assert getattr(ablation_suite, "MODULE_OPEN_SET_KEYS", []) == [
@@ -131,22 +125,42 @@ def test_module_summary_exposes_module_sensitive_open_set_metrics() -> None:
     ]
 
 
-def test_basic_module_baseline_keeps_confidence_rejection() -> None:
-    scores = np.asarray([0.10, 0.20, 0.30, 0.40], dtype=np.float32)
-
-    assert BASE_CONFIDENCE_REJECTION_QUANTILE == 0.85
-    assert _global_known_quantile_threshold(scores, 0.75) == np.quantile(scores, 0.75)
+def test_module_table_uses_conventional_half_up_percentage_rounding() -> None:
+    assert ablation_suite._format_percentage(0.97825) == "97.83%"
 
 
-def test_summary_removes_deprecated_config_only_figures(tmp_path, monkeypatch) -> None:
+def test_summary_generates_four_metric_module_table_and_figure(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(ablation_suite, "ABLATION_ROOT", tmp_path)
-    deprecated = [tmp_path / "模块消融.png", tmp_path / "损失函数消融.png"]
-    for path in deprecated:
-        path.write_bytes(b"stale")
+    rows = []
+    values = {
+        "closed_set_only": (0.98, 0.0, 0.65, 0.96),
+        "openmax_only": (0.80, 0.89, 0.80, 0.90),
+        "ordinary_mbs_only": (0.87, 0.99, 0.93, 0.99),
+        "full_method": (0.96, 0.97, 0.94, 0.99),
+    }
+    variants = {slug: name for slug, name, _ in MODULE_VARIANTS}
+    for dataset in ["oracle", "wisig"]:
+        for slug, metrics in values.items():
+            rows.append(
+                ResultRow(
+                    category="modules",
+                    dataset=dataset,
+                    variant=variants[slug],
+                    variant_slug=slug,
+                    output_dir="unused",
+                    metrics=dict(zip(ablation_suite.MODULE_OPEN_SET_KEYS, metrics)),
+                )
+            )
 
-    write_summary([])
+    write_summary(rows)
 
-    assert all(not path.exists() for path in deprecated)
+    markdown = (tmp_path / "消融结果汇总.md").read_text(encoding="utf-8")
+    assert (tmp_path / "模块消融.png").exists()
+    assert "| Known Acc. | Unknown Recall | Macro F1 | AUROC |" in markdown
+    assert "Overall Acc." not in markdown
+    assert "Unknown Precision" not in markdown
+    assert "Known FPR" not in markdown
+    assert "OSCR" not in markdown
 
 
 def test_ablation_table_starts_with_switch_columns() -> None:
@@ -183,29 +197,14 @@ def test_module_ablation_rows_are_cumulative_additions() -> None:
 
     assert _module_metric_matrix_rows() == expected_rows
     assert [variant[0] for variant in MODULE_VARIANTS] == [slug for slug, _ in expected_rows]
-    assert variant_map["closed_set_only"]["mode"] == "confidence_rejection"
-    assert variant_map["openmax_only"]["mode"] == "pipeline"
-    assert variant_map["openmax_only"]["fusion_lambda"] == 1.0
-    assert variant_map["openmax_only"]["score_calibration"] == "none"
-    assert variant_map["openmax_only"]["use_critical_boundary"] is False
+    assert variant_map["closed_set_only"]["mode"] == "closed_set"
+    assert variant_map["openmax_only"]["mode"] == "formal_openmax"
     assert variant_map["ordinary_mbs_only"]["use_critical_boundary"] is False
     assert variant_map["full_method"]["mode"] == "formal_pcbm"
-    assert MODULE_PIPELINE_OVERRIDES[("oracle", "ordinary_mbs_only")] == {
-        "fusion_lambda_grid": [0.1, 0.3, 0.5, 0.7, 0.9],
-        "classwise_known_weight": 0.75,
-        "classwise_unknown_weight": 0.25,
-        "classwise_min_known_accept": 0.90,
-        "selection_weights": {
-            "known_accuracy": 0.30,
-            "unknown_recall": 0.20,
-            "macro_f1": 0.20,
-            "oscr": 0.20,
-            "auroc": 0.10,
-        },
-    }
+    assert MODULE_PIPELINE_OVERRIDES == {}
 
 
-def test_oracle_distance_module_profile_uses_lambda_grid_and_known_acceptance() -> None:
+def test_distance_module_uses_shared_fusion_settings_without_dataset_tuning() -> None:
     config = {
         "train": {},
         "pseudo_unknown": {},
@@ -226,12 +225,12 @@ def test_oracle_distance_module_profile_uses_lambda_grid_and_known_acceptance() 
         base_lambda=0.35,
     )
 
-    assert config["fusion"]["lambda_grid"] == [0.1, 0.3, 0.5, 0.7, 0.9]
-    assert config["fusion"]["manual_fusion_lambda"] == 0.1
-    assert config["fusion"]["classwise_known_weight"] == 0.75
-    assert config["fusion"]["classwise_unknown_weight"] == 0.25
-    assert config["fusion"]["classwise_min_known_accept"] == 0.90
-    assert config["fusion"]["selection_weights"]["oscr"] == 0.20
+    assert config["fusion"]["lambda_grid"] == [0.35]
+    assert config["fusion"]["manual_fusion_lambda"] == 0.35
+    assert config["fusion"]["classwise_known_weight"] == 0.45
+    assert config["fusion"]["classwise_unknown_weight"] == 0.55
+    assert config["fusion"]["classwise_min_known_accept"] == 0.88
+    assert config["fusion"]["selection_weights"] == {"macro_f1": 1.0}
 
 
 def test_single_feature_subdivision_variants_do_not_include_filtering() -> None:

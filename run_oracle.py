@@ -27,9 +27,9 @@ LEARNING_RATE = 0.001
 BATCH_SIZE = 128
 
 # 常改拒识参数。
-FUSION_LAMBDA_GRID = [0.35]
+FUSION_LAMBDA_GRID = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 THRESHOLD_GRID = [0.28, 0.30, 0.32, 0.34, 0.35, 0.36, 0.38, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.78, 0.80, 0.82, 0.83, 0.84, 0.85, 0.86, 0.88]
-MIN_KNOWN_ACCURACY = 0.91
+MIN_KNOWN_ACCURACY = 0.96
 CRITICAL_EDGE_COUNT = 50
 ORDINARY_EDGE_RATIO = 0.15
 
@@ -58,8 +58,11 @@ def build_config() -> dict:
     config["train"]["lr"] = LEARNING_RATE
     config["data"]["batch_size"] = BATCH_SIZE
     config["fusion"]["lambda_grid"] = FUSION_LAMBDA_GRID
-    if config["fusion"].get("manual_thresholds_per_class") is not None and FUSION_LAMBDA_GRID:
-        config["fusion"]["manual_fusion_lambda"] = float(FUSION_LAMBDA_GRID[0])
+    config["fusion"]["manual_threshold"] = None
+    config["fusion"]["manual_thresholds_per_class"] = None
+    config["fusion"]["known_rescue"] = {"enabled": False}
+    config["fusion"]["threshold_mode"] = "classwise_joint"
+    config["fusion"]["require_feasible"] = True
     config["fusion"]["threshold_grid"] = THRESHOLD_GRID
     config["fusion"]["min_known_accuracy"] = MIN_KNOWN_ACCURACY
     config["boundary"]["top_m"] = CRITICAL_EDGE_COUNT

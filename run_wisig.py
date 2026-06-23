@@ -27,11 +27,9 @@ LEARNING_RATE = 0.001
 BATCH_SIZE = 128
 
 # 常改拒识参数。
-FUSION_LAMBDA_GRID = [0.2]
+FUSION_LAMBDA_GRID = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 THRESHOLD_GRID = [0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.92, 0.94, 0.96, 0.97, 0.98, 0.99]
-# 手动全局拒识阈值；0.94 在当前 WiSig 测试集上可把 unknown_recall 提到 0.95 以上。
-MANUAL_GLOBAL_THRESHOLD = 0.94
-MIN_KNOWN_ACCURACY = 0.98
+MIN_KNOWN_ACCURACY = 0.985
 CRITICAL_EDGE_COUNT = 50
 ORDINARY_EDGE_RATIO = 0.15
 
@@ -62,8 +60,11 @@ def build_config() -> dict:
     config["train"]["lr"] = LEARNING_RATE
     config["data"]["batch_size"] = BATCH_SIZE
     config["fusion"]["lambda_grid"] = FUSION_LAMBDA_GRID
-    config["fusion"]["manual_fusion_lambda"] = FUSION_LAMBDA_GRID[0]
-    config["fusion"]["manual_threshold"] = MANUAL_GLOBAL_THRESHOLD
+    config["fusion"]["manual_threshold"] = None
+    config["fusion"]["manual_thresholds_per_class"] = None
+    config["fusion"]["known_rescue"] = {"enabled": False}
+    config["fusion"]["threshold_mode"] = "global"
+    config["fusion"]["require_feasible"] = True
     config["fusion"]["threshold_grid"] = THRESHOLD_GRID
     config["fusion"]["min_known_accuracy"] = MIN_KNOWN_ACCURACY
     config["boundary"]["top_m"] = CRITICAL_EDGE_COUNT

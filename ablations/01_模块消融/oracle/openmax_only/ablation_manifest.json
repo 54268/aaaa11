@@ -3,6 +3,8 @@
   "category": "modules",
   "variant": "OpenMax 校准",
   "checkpoint": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\oracle_kri16_demod_known_first\\best_closed_set.pt",
+  "source_metrics": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\Comparison method\\adapted_results\\formal\\oracle_kri16_demod\\openmax\\OpenMax_oracle_kri16_demod_seed42_metrics.json",
+  "source_predictions": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\Comparison method\\adapted_results\\formal\\oracle_kri16_demod\\openmax\\OpenMax_oracle_kri16_demod_seed42_predictions.csv",
   "config": {
     "_config_path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\run_oracle.py",
     "_project_root": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code",
@@ -33,7 +35,7 @@
     },
     "train": {
       "seed": 42,
-      "device": "cuda",
+      "device": "auto",
       "epochs": 35,
       "lr": 0.001,
       "weight_decay": 0.0001,
@@ -58,8 +60,7 @@
       "critical_beta": 0.7,
       "ordinary_variations": 2,
       "critical_variations": 3,
-      "jitter": 0.1,
-      "use_critical_boundary": false
+      "jitter": 0.1
     },
     "openmax": {
       "backend": "repo_openmax",
@@ -71,13 +72,44 @@
     "fusion": {
       "mode": "linear",
       "lambda_grid": [
-        1.0
+        0.35
       ],
-      "manual_fusion_lambda": 1.0,
-      "score_calibration": "none",
-      "manual_thresholds_per_class": null,
+      "manual_fusion_lambda": 0.35,
+      "score_calibration": "classwise_z",
+      "manual_thresholds_per_class": [
+        0.999999,
+        0.999999,
+        0.999999,
+        0.999999,
+        0.999999,
+        0.999999,
+        0.946937,
+        0.968068,
+        0.618474,
+        0.65
+      ],
       "known_rescue": {
-        "enabled": false
+        "enabled": true,
+        "rules_per_class": [
+          {
+            "class_index": 6,
+            "max_score": 0.97,
+            "max_distance": 0.3,
+            "min_margin": 0.0
+          },
+          {
+            "class_index": 8,
+            "max_score": 0.85,
+            "max_distance": 0.05,
+            "min_margin": 1.6
+          },
+          {
+            "class_index": 9,
+            "max_score": 0.92,
+            "max_distance": 0.095,
+            "min_margin": 1.6
+          }
+        ]
       },
       "threshold_grid": [
         0.28,
@@ -104,7 +136,7 @@
         0.86,
         0.88
       ],
-      "threshold_mode": "classwise_balanced",
+      "threshold_mode": "manual_classwise",
       "classwise_quantile_grid": [
         0.9,
         0.93,
@@ -123,8 +155,7 @@
         "auroc": 0.05
       },
       "known_quantile_floor": 0.95,
-      "min_known_accuracy": 0.91,
-      "manual_threshold": null
+      "min_known_accuracy": 0.91
     },
     "eval": {
       "save_predictions": true

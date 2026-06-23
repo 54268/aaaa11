@@ -21,6 +21,7 @@ from functions.data.prep_oracle import prepare_oracle_sigmf
 from functions.data.prep_wisig import prepare_wisig_compact
 from functions.methods.boundary_mining import mine_boundary_samples
 from functions.methods.pseudo_unknown import generate_hybrid_pseudo_unknown
+from functions.methods.supervised_calibrator import apply_supervised_calibrator_score
 from functions.methods.prototype_utils import activations_from_distances, collect_distance_stats, predict_with_prototypes
 from functions.model.closed_set import ClosedSetTrainer
 from functions.common.io import ensure_dir, load_json, load_pickle, save_json, save_npz, save_pickle
@@ -338,8 +339,10 @@ def calibrate_fusion_artifacts(
             classwise_known_weight=float(config["fusion"].get("classwise_known_weight", 0.55)),
             classwise_unknown_weight=float(config["fusion"].get("classwise_unknown_weight", 0.45)),
             classwise_min_known_accept=config["fusion"].get("classwise_min_known_accept"),
+            classwise_known_penalty_grid=config["fusion"].get("classwise_known_penalty_grid"),
             fusion_mode=fusion_mode,
             score_calibration_mode=score_calibration_mode,
+            require_feasible=bool(config["fusion"].get("require_feasible", False)),
         )
         score_calibration = result.score_calibration
     summary = {
@@ -461,13 +464,22 @@ def evaluate_open_set_artifacts(
     openmax_out = openmax.predict(activations_from_distances(distances))
     q_om = openmax_out["unknown_prob"]
     q_pd = prototype_distance_unknown_score(distances, known_pred, stats_file["mu"], stats_file["sigma"])
-    q_u = fuse_unknown_score(
-        q_om,
-        q_pd,
-        float(fusion_cfg["fusion_lambda"]),
-        mode=str(fusion_cfg.get("fusion_mode", config["fusion"].get("mode", "linear"))),
-    )
-    q_u = apply_score_calibration(q_u, known_pred, fusion_cfg.get("score_calibration"))
+    score_calibration_cfg = fusion_cfg.get("score_calibration") or {}
+    if score_calibration_cfg.get("mode") == "supervised_calibrator":
+        q_u = apply_supervised_calibrator_score(
+            q_om=q_om,
+            q_pd=q_pd,
+            fusion_lambda=float(fusion_cfg["fusion_lambda"]),
+            calibrator_path=score_calibration_cfg["path"],
+        )
+    else:
+        q_u = fuse_unknown_score(
+            q_om,
+            q_pd,
+            float(fusion_cfg["fusion_lambda"]),
+            mode=str(fusion_cfg.get("fusion_mode", config["fusion"].get("mode", "linear"))),
+        )
+        q_u = apply_score_calibration(q_u, known_pred, score_calibration_cfg)
     y_pred = apply_unknown_rejection(
         known_pred=known_pred,
         q_u=q_u,

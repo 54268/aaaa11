@@ -1,0 +1,6 @@
+{
+  "num_ordinary_pseudo": 6720,
+  "num_critical_pseudo": 1216,
+  "num_total_pseudo": 7936,
+  "use_critical_boundary": true
+}

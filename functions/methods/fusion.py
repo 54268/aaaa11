@@ -192,8 +192,10 @@ def search_fusion_params(
     classwise_known_weight: float = 0.55,
     classwise_unknown_weight: float = 0.45,
     classwise_min_known_accept: float | None = None,
+    classwise_known_penalty_grid: Iterable[float] | None = None,
     fusion_mode: str = "linear",
     score_calibration_mode: str | None = None,
+    require_feasible: bool = False,
 ) -> FusionResult:
     best_result = None
     best_relaxed = None
@@ -238,6 +240,75 @@ def search_fusion_params(
                         thresholds_per_class=thresholds,
                         threshold_mode="classwise_quantile",
                         threshold_quantile=float(quantile),
+                        metrics=metrics,
+                        score_calibration=score_calibration,
+                    ),
+                )
+                if best_relaxed is None or score > best_relaxed[0]:
+                    best_relaxed = candidate
+                if min_known_accuracy is not None and float(metrics.get("known_accuracy", 0.0)) < min_known_accuracy:
+                    continue
+                if best_result is None or score > best_result[0]:
+                    best_result = candidate
+        elif threshold_mode == "classwise_joint":
+            total_known = max(int(known_mask.sum()), 1)
+            total_unknown = max(int((~known_mask).sum()), 1)
+            known_weight = float((selection_weights or {}).get("known_accuracy", 0.5))
+            unknown_weight = float((selection_weights or {}).get("unknown_recall", 0.5))
+            penalties = [
+                float(value)
+                for value in (
+                    classwise_known_penalty_grid
+                    or [0.0, 0.05, 0.10, 0.20, 0.35, 0.50, 0.75, 1.0, 1.5, 2.0, 3.0, 5.0, 8.0]
+                )
+            ]
+            for known_penalty in penalties:
+                thresholds = []
+                for cls in range(unknown_label):
+                    cls_known_correct = known_mask & (known_pred == cls) & (y_true == cls)
+                    cls_unknown = (~known_mask) & (known_pred == cls)
+                    cls_scores = q_u[(known_pred == cls)]
+                    candidates = set(float(t) for t in threshold_grid)
+                    if len(cls_scores):
+                        for quantile in np.linspace(0.05, 0.995, 40):
+                            candidates.add(float(np.quantile(cls_scores, quantile)))
+                        candidates.add(float(np.max(cls_scores) + 1e-9))
+                    else:
+                        candidates.add(float(np.max(q_u) + 1e-9))
+
+                    best_cls: tuple[float, float] | None = None
+                    for threshold in sorted(candidates):
+                        known_correct_accept = int(
+                            np.sum(cls_known_correct & (q_u <= threshold))
+                        )
+                        unknown_reject = int(np.sum(cls_unknown & (q_u > threshold)))
+                        utility = (
+                            (known_weight + known_penalty)
+                            * known_correct_accept
+                            / total_known
+                            + unknown_weight * unknown_reject / total_unknown
+                        )
+                        candidate_cls = (float(utility), float(threshold))
+                        if best_cls is None or candidate_cls > best_cls:
+                            best_cls = candidate_cls
+                    thresholds.append(best_cls[1])
+
+                y_pred = apply_unknown_rejection(
+                    known_pred=known_pred,
+                    q_u=q_u,
+                    unknown_label=unknown_label,
+                    thresholds_per_class=thresholds,
+                )
+                metrics = evaluate_open_set(y_true, y_pred, q_u, unknown_label)
+                score = fusion_selection_score(metrics, selection_weights)
+                candidate = (
+                    score,
+                    FusionResult(
+                        fusion_lambda=float(fusion_lambda),
+                        threshold=None,
+                        thresholds_per_class=thresholds,
+                        threshold_mode="classwise_joint",
+                        threshold_quantile=None,
                         metrics=metrics,
                         score_calibration=score_calibration,
                     ),
@@ -343,7 +414,13 @@ def search_fusion_params(
                     continue
                 if best_result is None or score > best_result[0]:
                     best_result = candidate
+    if best_result is None and require_feasible:
+        raise RuntimeError(
+            "No fusion candidate satisfies the configured known-accuracy constraints."
+        )
     chosen = best_result if best_result is not None else best_relaxed
+    if chosen is None:
+        raise RuntimeError("No fusion candidate was generated from the configured grids.")
     return chosen[1]
 
 

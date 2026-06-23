@@ -1,0 +1,305 @@
+{
+  "selected_lambda": 0.0,
+  "aggregation_mode": "global_median",
+  "mean_fold_metrics": {
+    "overall_accuracy": 0.72325,
+    "macro_precision": 0.7642668247550317,
+    "macro_recall": 0.888875,
+    "macro_f1": 0.7843278711506172,
+    "weighted_f1": 0.6773607846204497,
+    "known_accuracy": 0.9716875,
+    "unknown_precision": 0.8739107908761167,
+    "unknown_recall": 0.226375,
+    "known_fpr_as_unknown": 0.0155,
+    "unknown_false_accept_rate": 0.773625,
+    "auroc": 0.917260859375,
+    "fpr95": 0.2950625,
+    "oscr": 0.907355234375,
+    "heldout_unknown_recall": 0.22749999999999998,
+    "pseudo_unknown_recall": 0.22525,
+    "selection_score": 0.6151208300838118
+  },
+  "all_folds_feasible": true,
+  "feasible_fold_count": 5,
+  "class_quantiles": [
+    0.9849812030075188,
+    0.9849812030075188,
+    0.9849812030075188,
+    0.9849812030075188,
+    0.9849812030075188,
+    0.9849812030075188,
+    0.9849812030075188,
+    0.9849812030075188,
+    0.9849812030075188,
+    0.9849812030075188
+  ],
+  "quantile_rows": [
+    {
+      "fold_index": 0,
+      "local_class": 0,
+      "global_class": 2,
+      "quantile": 0.9265822784810127
+    },
+    {
+      "fold_index": 0,
+      "local_class": 1,
+      "global_class": 3,
+      "quantile": 0.9949748743718593
+    },
+    {
+      "fold_index": 0,
+      "local_class": 2,
+      "global_class": 4,
+      "quantile": 0.8475452196382429
+    },
+    {
+      "fold_index": 0,
+      "local_class": 3,
+      "global_class": 5,
+      "quantile": 0.9799498746867168
+    },
+    {
+      "fold_index": 0,
+      "local_class": 4,
+      "global_class": 6,
+      "quantile": 0.9849624060150376
+    },
+    {
+      "fold_index": 0,
+      "local_class": 5,
+      "global_class": 7,
+      "quantile": 0.9516908212560387
+    },
+    {
+      "fold_index": 0,
+      "local_class": 6,
+      "global_class": 8,
+      "quantile": 0.9729064039408867
+    },
+    {
+      "fold_index": 0,
+      "local_class": 7,
+      "global_class": 9,
+      "quantile": 0.9875621890547264
+    },
+    {
+      "fold_index": 1,
+      "local_class": 0,
+      "global_class": 0,
+      "quantile": 0.8883495145631068
+    },
+    {
+      "fold_index": 1,
+      "local_class": 1,
+      "global_class": 1,
+      "quantile": 0.96
+    },
+    {
+      "fold_index": 1,
+      "local_class": 2,
+      "global_class": 4,
+      "quantile": 1.0
+    },
+    {
+      "fold_index": 1,
+      "local_class": 3,
+      "global_class": 5,
+      "quantile": 0.9900744416873449
+    },
+    {
+      "fold_index": 1,
+      "local_class": 4,
+      "global_class": 6,
+      "quantile": 1.0
+    },
+    {
+      "fold_index": 1,
+      "local_class": 5,
+      "global_class": 7,
+      "quantile": 1.0
+    },
+    {
+      "fold_index": 1,
+      "local_class": 6,
+      "global_class": 8,
+      "quantile": 0.9974874371859297
+    },
+    {
+      "fold_index": 1,
+      "local_class": 7,
+      "global_class": 9,
+      "quantile": 0.9975
+    },
+    {
+      "fold_index": 2,
+      "local_class": 0,
+      "global_class": 0,
+      "quantile": 0.9436274509803921
+    },
+    {
+      "fold_index": 2,
+      "local_class": 1,
+      "global_class": 1,
+      "quantile": 0.9665809768637532
+    },
+    {
+      "fold_index": 2,
+      "local_class": 2,
+      "global_class": 2,
+      "quantile": 0.9373433583959899
+    },
+    {
+      "fold_index": 2,
+      "local_class": 3,
+      "global_class": 3,
+      "quantile": 1.0
+    },
+    {
+      "fold_index": 2,
+      "local_class": 4,
+      "global_class": 6,
+      "quantile": 0.8980099502487562
+    },
+    {
+      "fold_index": 2,
+      "local_class": 5,
+      "global_class": 7,
+      "quantile": 0.93
+    },
+    {
+      "fold_index": 2,
+      "local_class": 6,
+      "global_class": 8,
+      "quantile": 0.9776119402985075
+    },
+    {
+      "fold_index": 2,
+      "local_class": 7,
+      "global_class": 9,
+      "quantile": 0.9850746268656716
+    },
+    {
+      "fold_index": 3,
+      "local_class": 0,
+      "global_class": 0,
+      "quantile": 1.0
+    },
+    {
+      "fold_index": 3,
+      "local_class": 1,
+      "global_class": 1,
+      "quantile": 1.0
+    },
+    {
+      "fold_index": 3,
+      "local_class": 2,
+      "global_class": 2,
+      "quantile": 1.0
+    },
+    {
+      "fold_index": 3,
+      "local_class": 3,
+      "global_class": 3,
+      "quantile": 0.985
+    },
+    {
+      "fold_index": 3,
+      "local_class": 4,
+      "global_class": 4,
+      "quantile": 0.8980582524271845
+    },
+    {
+      "fold_index": 3,
+      "local_class": 5,
+      "global_class": 5,
+      "quantile": 0.8125
+    },
+    {
+      "fold_index": 3,
+      "local_class": 6,
+      "global_class": 8,
+      "quantile": 0.9900249376558603
+    },
+    {
+      "fold_index": 3,
+      "local_class": 7,
+      "global_class": 9,
+      "quantile": 0.995
+    },
+    {
+      "fold_index": 4,
+      "local_class": 0,
+      "global_class": 0,
+      "quantile": 1.0
+    },
+    {
+      "fold_index": 4,
+      "local_class": 1,
+      "global_class": 1,
+      "quantile": 0.9976019184652278
+    },
+    {
+      "fold_index": 4,
+      "local_class": 2,
+      "global_class": 2,
+      "quantile": 1.0
+    },
+    {
+      "fold_index": 4,
+      "local_class": 3,
+      "global_class": 3,
+      "quantile": 1.0
+    },
+    {
+      "fold_index": 4,
+      "local_class": 4,
+      "global_class": 4,
+      "quantile": 0.9844155844155844
+    },
+    {
+      "fold_index": 4,
+      "local_class": 5,
+      "global_class": 5,
+      "quantile": 0.9661016949152542
+    },
+    {
+      "fold_index": 4,
+      "local_class": 6,
+      "global_class": 6,
+      "quantile": 0.964735516372796
+    },
+    {
+      "fold_index": 4,
+      "local_class": 7,
+      "global_class": 7,
+      "quantile": 0.8952380952380953
+    }
+  ],
+  "coverage": {
+    "held_out_counts": {
+      "0": 1,
+      "1": 1,
+      "2": 1,
+      "3": 1,
+      "4": 1,
+      "5": 1,
+      "6": 1,
+      "7": 1,
+      "8": 1,
+      "9": 1
+    },
+    "known_counts": {
+      "0": 4,
+      "1": 4,
+      "2": 4,
+      "3": 4,
+      "4": 4,
+      "5": 4,
+      "6": 4,
+      "7": 4,
+      "8": 4,
+      "9": 4
+    }
+  },
+  "uses_real_unknown_for_calibration": false
+}

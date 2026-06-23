@@ -1,0 +1,44 @@
+{
+  "fusion_lambda": 1.0,
+  "threshold": null,
+  "thresholds_per_class": [
+    0.8582596778869629,
+    0.9155684113502502,
+    0.8760507106781006,
+    0.676490068435669,
+    0.928695559501648,
+    0.888663649559021,
+    0.8572900295257568,
+    0.9039990901947021,
+    0.7592424154281616,
+    0.8835236430168152
+  ],
+  "threshold_mode": "supervised_calibrator_classwise",
+  "threshold_quantile": null,
+  "threshold_quantiles_per_class": [
+    0.96,
+    0.96,
+    0.96,
+    0.96,
+    0.96,
+    0.96,
+    0.96,
+    0.96,
+    0.96,
+    0.96
+  ],
+  "fusion_mode": "linear",
+  "score_calibration": {
+    "mode": "supervised_calibrator",
+    "path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\oracle_supervised_calibrator\\final\\supervised_calibrator.pt"
+  },
+  "known_rescue": {
+    "enabled": false
+  },
+  "calibration_provenance": {
+    "pseudo_unknown_direct_training": true,
+    "formal_val_known_accuracy": 0.946,
+    "formal_known_accuracy_target": 0.93,
+    "uses_real_unknown_for_selection": false
+  }
+}

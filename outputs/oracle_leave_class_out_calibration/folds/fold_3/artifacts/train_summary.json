@@ -1,0 +1,6 @@
+{
+  "checkpoint_path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\oracle_leave_class_out_calibration\\folds\\fold_3\\artifacts\\best_closed_set.pt",
+  "best_val_acc": 0.98875,
+  "num_known_classes": 8,
+  "signal_length": 256
+}
