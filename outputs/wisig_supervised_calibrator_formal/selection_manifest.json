@@ -1,0 +1,178 @@
+{
+  "selected": {
+    "key": "s2.0_l1.0_e250_r44_q0.9",
+    "pseudo_scale": 2.0,
+    "fusion_lambda": 1.0,
+    "epochs": 250,
+    "seed": 44,
+    "threshold_quantile": 0.9,
+    "threshold_safety": {
+      "thresholds": [
+        0.6348549127578735,
+        0.9659217000007629,
+        0.964699387550354,
+        0.40391620993614197,
+        0.81843501329422,
+        0.5946923494338989,
+        0.9302316904067993,
+        0.9648135304450989,
+        0.9715424180030823,
+        0.9770997762680054,
+        0.8651022911071777,
+        0.9405428767204285,
+        0.9488214254379272,
+        0.9075230956077576,
+        0.9660982489585876,
+        0.9461522698402405
+      ],
+      "quantiles_per_class": [
+        0.97,
+        1.0,
+        0.99,
+        0.99,
+        0.97,
+        0.97,
+        0.99,
+        1.0,
+        1.0,
+        1.0,
+        0.98,
+        0.99,
+        0.99,
+        0.98,
+        1.0,
+        0.99
+      ],
+      "known_accuracy": 0.98515625,
+      "pseudo_accepted": 784,
+      "pseudo_recall": 0.7379679144385027
+    },
+    "validation_metrics": {
+      "overall_accuracy": 0.8120318352059925,
+      "macro_precision": 0.6986212990112655,
+      "macro_recall": 0.9706157596728531,
+      "macro_f1": 0.7904406905317126,
+      "weighted_f1": 0.8284074014568102,
+      "known_accuracy": 0.98515625,
+      "unknown_precision": 0.9914683430624158,
+      "unknown_recall": 0.7379679144385026,
+      "known_fpr_as_unknown": 0.01484375,
+      "unknown_false_accept_rate": 0.2620320855614973,
+      "auroc": 0.9756809826203208,
+      "fpr95": 0.08515625,
+      "oscr": 0.9684206059909759,
+      "pseudo_unknown_recall": 0.7379679144385026,
+      "selection_score": 0.8889045545800616
+    },
+    "uses_real_unknown_for_selection": false
+  },
+  "formal_training": {
+    "training": {
+      "num_known": 1280,
+      "num_pseudo": 1280,
+      "seed": 44,
+      "epochs": 250,
+      "lr": 0.01
+    },
+    "threshold_safety": {
+      "thresholds": [
+        0.6348549127578735,
+        0.9659217000007629,
+        0.964699387550354,
+        0.40391620993614197,
+        0.81843501329422,
+        0.5946923494338989,
+        0.9302316904067993,
+        0.9648135304450989,
+        0.9715424180030823,
+        0.9770997762680054,
+        0.8651022911071777,
+        0.9405428767204285,
+        0.9488214254379272,
+        0.9075230956077576,
+        0.9660982489585876,
+        0.9461522698402405
+      ],
+      "quantiles_per_class": [
+        0.97,
+        1.0,
+        0.99,
+        0.99,
+        0.97,
+        0.97,
+        0.99,
+        1.0,
+        1.0,
+        1.0,
+        0.98,
+        0.99,
+        0.99,
+        0.98,
+        1.0,
+        0.99
+      ],
+      "known_accuracy": 0.98515625,
+      "pseudo_accepted": 784,
+      "pseudo_recall": 0.7379679144385027
+    },
+    "fusion_summary": {
+      "fusion_lambda": 1.0,
+      "threshold": null,
+      "thresholds_per_class": [
+        0.6348549127578735,
+        0.9659217000007629,
+        0.964699387550354,
+        0.40391620993614197,
+        0.81843501329422,
+        0.5946923494338989,
+        0.9302316904067993,
+        0.9648135304450989,
+        0.9715424180030823,
+        0.9770997762680054,
+        0.8651022911071777,
+        0.9405428767204285,
+        0.9488214254379272,
+        0.9075230956077576,
+        0.9660982489585876,
+        0.9461522698402405
+      ],
+      "threshold_mode": "supervised_calibrator_classwise",
+      "threshold_quantile": null,
+      "threshold_quantiles_per_class": [
+        0.97,
+        1.0,
+        0.99,
+        0.99,
+        0.97,
+        0.97,
+        0.99,
+        1.0,
+        1.0,
+        1.0,
+        0.98,
+        0.99,
+        0.99,
+        0.98,
+        1.0,
+        0.99
+      ],
+      "fusion_mode": "linear",
+      "score_calibration": {
+        "mode": "supervised_calibrator",
+        "path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\wisig_supervised_calibrator_formal\\final\\supervised_calibrator.pt"
+      },
+      "known_rescue": {
+        "enabled": false
+      },
+      "calibration_provenance": {
+        "pseudo_unknown_direct_training": true,
+        "formal_val_known_accuracy": 0.98515625,
+        "formal_known_accuracy_target": 0.985,
+        "formal_pseudo_recall": 0.7379679144385027,
+        "uses_real_unknown_for_selection": false
+      }
+    }
+  },
+  "uses_real_unknown_for_selection": false,
+  "config_fingerprint_sha256": "4e438c93bb3044fa8e193855c2456f0df59dbc59987010479d3c87e62c8ffa0d"
+}

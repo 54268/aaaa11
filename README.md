@@ -7,7 +7,7 @@
 ## 主要入口
 
 - `run_oracle.py`：Oracle 拒识主入口，默认连带做未知类细分。
-- `run_oracle_supervised_calibrator.py`：Oracle伪未知监督双重校准实验入口；复用闭集编码器和五折留类模型，自动选择外推尺度、融合权重、训练轮数、随机种子和按类别阈值。
+- `run_oracle_supervised_calibrator.py`：Oracle 伪未知监督校准主实验入口；复用闭集编码器和五折留类模型，自动选择外推尺度、融合权重、训练轮数、随机种子和按类别阈值。
 - `run_wisig.py`：WiSig 拒识主入口，默认连带做未知类细分。
 - `run_oracle_subdivision.py`：基于已有 Oracle 闭集模型，刷新开放集拒识中间结果后单独刷新未知类细分。
 - `run_wisig_subdivision.py`：基于已有 WiSig 闭集模型，刷新开放集拒识中间结果后单独刷新未知类细分。
@@ -35,7 +35,7 @@
 - `FUSION_LAMBDA_GRID`：OpenMax 分数和原型距离分数的候选融合权重；当前由已知验证集和伪未知集自动选择。
 - `THRESHOLD_GRID`：拒识阈值搜索范围。
 - `MIN_KNOWN_ACCURACY`：阈值搜索时要求的已知类准确率下限。
-- Oracle 当前最终表采用逐类阈值、`classwise_z` 分数校准和已知类救回；旧版伪未知监督双重校准单独实验仍保留，详细流程见 `伪未知监督双重校准流程说明.md`。论文主表口径以 `当前方法结果汇总.md` 和 `final_comparison_tables.md` 为准。
+- Oracle 论文主表口径采用伪未知监督校准器，即由 `q_OM`、`q_PD` 和融合分数输入小型校准网络输出 unknown probability；`classwise_z + manual_classwise threshold + known_rescue` 仅作为历史诊断配置，不作为主实验口径。
 - `SUBDIVISION_FEATURE_MODE`：未知类细分特征，可选 `embedding` / `embedding_stats` / `embedding_distance` / `embedding_score_distance` / `prototype_residual` / `residual_distance` / `score_distance`。
 - `SUBDIVISION_PCA_DIM`：细分前的 PCA 维度。
 - `SUBDIVISION_K_MIN` / `SUBDIVISION_K_MAX`：未知细分类数搜索范围；二者相同表示固定类别数。

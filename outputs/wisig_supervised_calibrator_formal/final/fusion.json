@@ -1,0 +1,57 @@
+{
+  "fusion_lambda": 1.0,
+  "threshold": null,
+  "thresholds_per_class": [
+    0.6348549127578735,
+    0.9659217000007629,
+    0.964699387550354,
+    0.40391620993614197,
+    0.81843501329422,
+    0.5946923494338989,
+    0.9302316904067993,
+    0.9648135304450989,
+    0.9715424180030823,
+    0.9770997762680054,
+    0.8651022911071777,
+    0.9405428767204285,
+    0.9488214254379272,
+    0.9075230956077576,
+    0.9660982489585876,
+    0.9461522698402405
+  ],
+  "threshold_mode": "supervised_calibrator_classwise",
+  "threshold_quantile": null,
+  "threshold_quantiles_per_class": [
+    0.97,
+    1.0,
+    0.99,
+    0.99,
+    0.97,
+    0.97,
+    0.99,
+    1.0,
+    1.0,
+    1.0,
+    0.98,
+    0.99,
+    0.99,
+    0.98,
+    1.0,
+    0.99
+  ],
+  "fusion_mode": "linear",
+  "score_calibration": {
+    "mode": "supervised_calibrator",
+    "path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\wisig_supervised_calibrator_formal\\final\\supervised_calibrator.pt"
+  },
+  "known_rescue": {
+    "enabled": false
+  },
+  "calibration_provenance": {
+    "pseudo_unknown_direct_training": true,
+    "formal_val_known_accuracy": 0.98515625,
+    "formal_known_accuracy_target": 0.985,
+    "formal_pseudo_recall": 0.7379679144385027,
+    "uses_real_unknown_for_selection": false
+  }
+}
