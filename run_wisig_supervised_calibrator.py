@@ -403,6 +403,29 @@ def write_comparison(output_root: Path, current: dict[str, Any], calibrated: dic
     (output_root / "comparison.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def apply_formal_wisig_subdivision_config(config: dict[str, Any], predictions_path: Path) -> None:
+    subdivision = config["unknown_subdivision"]
+    subdivision["enabled"] = True
+    subdivision["reuse_open_set_predictions"] = True
+    subdivision["open_set_predictions_path"] = str(predictions_path)
+    subdivision["feature_mode"] = "embedding_iq_stats"
+    subdivision["pca_dim"] = 96
+    subdivision["k_min"] = 12
+    subdivision["k_max"] = 12
+    subdivision["clustering_backend"] = "gmm_full_direct"
+    subdivision["target_num_clusters"] = 12
+    subdivision["target_k_strength"] = 1.0
+    subdivision["use_known_prototype_anchors"] = False
+    subdivision["known_reject_margin"] = -1.0
+    subdivision["overcluster_extra_clusters"] = 0
+    subdivision["overcluster_extra_candidates"] = [0, 1, 2, 3]
+    subdivision["m_selection_mode"] = "offline_min_gain"
+    subdivision["m_selection_min_quality_gain"] = 0.01
+    subdivision["merge_extra_clusters_to_target"] = True
+    subdivision["direct_confidence_quantile"] = 0.0
+    subdivision["direct_min_cluster_size"] = 0
+
+
 def main() -> None:
     torch.set_num_threads(1)
     config = build_config()
@@ -442,10 +465,9 @@ def main() -> None:
         ckpt_path=final_output / "best_closed_set.pt",
     )
     subdivision_config = copy.deepcopy(final_config)
-    subdivision_config["unknown_subdivision"]["enabled"] = True
-    subdivision_config["unknown_subdivision"]["reuse_open_set_predictions"] = True
-    subdivision_config["unknown_subdivision"]["open_set_predictions_path"] = str(
-        final_output / "open_set_predictions.csv"
+    apply_formal_wisig_subdivision_config(
+        subdivision_config,
+        final_output / "open_set_predictions.csv",
     )
     subdivision_metrics = run_unknown_subdivision(
         subdivision_config,

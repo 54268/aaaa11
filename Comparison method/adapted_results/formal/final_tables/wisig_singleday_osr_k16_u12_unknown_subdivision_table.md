@@ -1,3 +1,10 @@
-# wisig_singleday_osr_k16_u12 未知类细分对比表
+# wisig_singleday_osr_k16_u12 unknown subdivision
 
-WiSig single-day/fixed-RX 协议下未知类细分结果整体接近饱和；K-means 在本文 unknown cache、`embedding_stats`、标准化与 PCA96 特征上已经达到接近满分，因此该数据集不作为细分方法主表排名展示。细分方法主表采用 Oracle；WiSig 的饱和结果仅作为附录诊断保留。
+| method | nmi | ari | hungarian_accuracy | coverage_of_total_test_unknown |
+| --- | ---: | ---: | ---: | ---: |
+| K-means | 0.917103 | 0.806523 | 0.815104 | 1.000000 |
+| HDBSCAN | 0.963178 | 0.933374 | 0.922617 | 0.975938 |
+| OpenRFI | 0.981091 | 0.967620 | 0.962254 | 0.924479 |
+| PCBM (ours) | 0.998125 | 0.998637 | 0.999375 | 1.000000 |
+
+Note: K-means/HDBSCAN use direct FFT-magnitude + PCA32 clustering on the WiSig unknown test split. OpenRFI uses the formal adapted OpenRFI subdivision output. PCBM uses the supervised-calibrator unknown cache with `embedding_iq_stats`, PCA96, `gmm_full_direct`, automatic over-cluster search, and merge-to-target.
