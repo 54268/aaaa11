@@ -35,7 +35,7 @@
 - `FUSION_LAMBDA_GRID`：OpenMax 分数和原型距离分数的候选融合权重；当前由已知验证集和伪未知集自动选择。
 - `THRESHOLD_GRID`：拒识阈值搜索范围。
 - `MIN_KNOWN_ACCURACY`：阈值搜索时要求的已知类准确率下限。
-- Oracle当前正式采用伪未知监督双重校准器：保留OpenMax与原型距离的线性融合公式，并使用已知验证样本和特征层伪未知监督训练 `3→8→1` 校准器。五折自动选择结果为外推尺度1.5、`\lambda=1.0`、250轮、种子43和阈值分位点0.96；详细流程见 `伪未知监督双重校准流程说明.md`。
+- Oracle 当前最终表采用逐类阈值、`classwise_z` 分数校准和已知类救回；旧版伪未知监督双重校准单独实验仍保留，详细流程见 `伪未知监督双重校准流程说明.md`。论文主表口径以 `当前方法结果汇总.md` 和 `final_comparison_tables.md` 为准。
 - `SUBDIVISION_FEATURE_MODE`：未知类细分特征，可选 `embedding` / `embedding_stats` / `embedding_distance` / `embedding_score_distance` / `prototype_residual` / `residual_distance` / `score_distance`。
 - `SUBDIVISION_PCA_DIM`：细分前的 PCA 维度。
 - `SUBDIVISION_K_MIN` / `SUBDIVISION_K_MAX`：未知细分类数搜索范围；二者相同表示固定类别数。
