@@ -2,7 +2,7 @@
 
 项目已经整理成少量入口加函数目录的结构，不再使用 YAML 和命令行参数。
 
-更完整的方案背景、数据流和方法细节见 `项目详细说明.md`。新增的伪未知监督双重校准器及其框架位置见 `伪未知监督双重校准流程说明.md`。拒识后未知类细分的独立流程说明见 `未知类细分流程说明.md`。当前 WiSig 与 Oracle 的拒识、细分结果汇总见 `当前方法结果汇总.md`。
+更完整的方案背景、数据流和方法细节见 `项目详细说明.md`。新增的伪未知监督双重校准器及其框架位置见 `伪未知监督双重校准流程说明.md`。拒识后未知类细分的独立流程说明见 `未知类细分流程说明.md`，自动候选 K 搜索口径见 `自动K搜索与未知类细分流程说明.md`。当前 WiSig 与 Oracle 的拒识、细分结果汇总见 `当前方法结果汇总.md`。
 
 ## 主要入口
 
@@ -40,8 +40,8 @@
 - `SUBDIVISION_PCA_DIM`：细分前的 PCA 维度。
 - `SUBDIVISION_K_MIN` / `SUBDIVISION_K_MAX`：未知细分类数搜索范围；二者相同表示固定类别数。
 - `SUBDIVISION_CLUSTERING_BACKEND`：细分后端，可选 `kmeans`（球面 KMeans）、`agglomerative_cosine`（余弦凝聚式）、`hdbscan`（密度聚类）、`gmm` / `gmm_full`（高斯混合）、`gmm_full_direct`（GMM-full 直接出标签，不做原型再分配）。
-- `SUBDIVISION_TARGET_NUM_CLUSTERS`：若设置则提示自动 K 搜索向该值靠拢；`SUBDIVISION_TARGET_K_STRENGTH=1.0` 时直接锁定到此值。
-- `SUBDIVISION_OVERCLUSTER_EXTRA`：细分阶段的冗余候选分量数，记为 `m`。实际拟合候选数为 `K + m`，其中 `K` 是协议给定的真实未知类数量；当前离线敏感性分析扫描 `m ∈ {0, 1, 2, 3}`。Oracle 当前为 `m=2`，表示先拟合 8 个候选分量，最终只保留 6 个稳定未知细分类；WiSig 当前为 `m=0`，直接使用协议目标 12 类，避免把干净未知类拆成类内子模态。
+- `SUBDIVISION_TARGET_NUM_CLUSTERS`：历史兼容参数。主结果不再把真实未知类数作为给定 K；若该值被设置，只用于诊断或旧版给定 K 实验。
+- `SUBDIVISION_OVERCLUSTER_EXTRA`：历史 `K+m` 诊断参数。当前主结果改为自动搜索 GMM 候选分量数 `fit_K`，再通过低置信/小簇过滤和簇均衡自动合并得到最终 `effective_K`。Oracle 当前为 `fit_K=7 -> effective_K=6`，WiSig 当前为 `fit_K=13 -> effective_K=12`。
 - `SUBDIVISION_DIRECT_CONFIDENCE_QUANTILE`：`gmm_full_direct` 下按 GMM 后验置信度过滤低置信样本的分位数。
 - `SUBDIVISION_DIRECT_MIN_CLUSTER_SIZE`：`gmm_full_direct` 下候选簇低于该样本数时视为不稳定小簇，标为不确定样本。
 
@@ -73,8 +73,8 @@
 - `ari`：调整兰德指数，衡量聚类划分和真实类别的一致性。
 - `purity`：聚类纯度，仅作为诊断指标保留。
 - `hungarian_accuracy`：匈牙利匹配后的聚类准确率，是未知类细分最终汇总表的核心准确率。
-- `target_num_clusters`：协议目标未知细分类数，例如 Oracle 为 6，WiSig 为 12。
-- `fit_num_clusters`：实际拟合的候选簇数；Oracle 当前先拟合 8 个候选簇，再剔除低置信或不稳定小簇；WiSig 当前直接拟合 12 个候选簇。
+- `target_num_clusters`：历史兼容字段；当前主结果不把该字段作为真实未知类数输入模型。
+- `fit_num_clusters`：GMM 实际拟合的候选分量数；Oracle 当前自动选到 7，WiSig 当前自动选到 13。
 - `resolved_num_clusters`：剔除不确定样本后实际保留的有效细分类数。
 - `uncertain_size`：未强行分入细分类的样本数，包含低置信、小簇或疑似已知污染样本。
 - `coverage_of_total_test_unknown`：真实未知测试样本中最终参与细分评估的比例。

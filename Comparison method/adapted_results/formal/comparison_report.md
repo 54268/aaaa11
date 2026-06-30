@@ -23,7 +23,7 @@
 | K-means | 0.852434 | 0.832207 | 0.921844 | 0.967083 |
 | HDBSCAN | 0.684820 | 0.425885 | 0.487485 | 0.699167 |
 | OpenRFI | 0.931928 | 0.909938 | 0.930196 | 0.850000 |
-| PCBM (ours) | 0.991948 | 0.993851 | 0.997400 | 0.945583 |
+| PCBM (ours, auto K) | 0.991948 | 0.993851 | 0.997400 | 0.945583 |
 
 注：`coverage_of_total_test_unknown` 表示最终被分配到有效未知簇的真实未知样本比例，而不是单纯的拒识召回率。HDBSCAN 在细分聚类阶段会将低密度样本输出为 `-1`；OpenRFI 在 full-test-world 原型分组得到置信度后用 `confidence_threshold` 保留高置信结果，不是本文 PCBM 的 unknown cache 预筛选。
 
@@ -46,9 +46,9 @@
 | K-means | 0.917103 | 0.806523 | 0.815104 | 1.000000 |
 | HDBSCAN | 0.963178 | 0.933374 | 0.922617 | 0.975938 |
 | OpenRFI | 0.981091 | 0.967620 | 0.962254 | 0.924479 |
-| PCBM (ours) | 0.998125 | 0.998637 | 0.999375 | 1.000000 |
+| PCBM (ours, auto K) | 0.998125 | 0.998637 | 0.999375 | 1.000000 |
 
-注：K-means/HDBSCAN 采用 WiSig 未知测试集上的 FFT-magnitude + PCA32 直接聚类基线；K-means 不产生噪声标签，因此 coverage 为 1.000000。OpenRFI 采用 formal 适配输出；PCBM 采用监督校准器 unknown cache、`embedding_iq_stats`、PCA96、`gmm_full_direct`、自动过聚类搜索和 merge-to-target。
+注：K-means/HDBSCAN 采用 WiSig 未知测试集上的 FFT-magnitude + PCA32 直接聚类基线；K-means 不产生噪声标签，因此 coverage 为 1.000000。OpenRFI 采用 formal 适配输出；PCBM 采用监督校准器 unknown cache、`embedding_iq_stats`、PCA96、`gmm_full_direct`、自动候选 K 搜索和簇均衡自动合并。
 
 ## 结果文件
 
