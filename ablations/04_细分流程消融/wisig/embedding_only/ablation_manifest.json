@@ -3,9 +3,9 @@
   "category": "subdivision",
   "variant": "Embedding only",
   "checkpoint": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\wisig_supervised_calibrator_formal\\final\\best_closed_set.pt",
-  "source_rejection_dir": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\01_模块消融\\wisig\\full_method",
-  "source_metrics": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\01_模块消融\\wisig\\full_method\\open_set_metrics.json",
-  "source_predictions": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\01_模块消融\\wisig\\full_method\\open_set_predictions.csv",
+  "source_rejection_dir": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\wisig_supervised_calibrator_formal\\final",
+  "source_metrics": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\wisig_supervised_calibrator_formal\\final\\open_set_metrics.json",
+  "source_predictions": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\wisig_supervised_calibrator_formal\\final\\open_set_predictions.csv",
   "config": {
     "_config_path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\run_wisig.py",
     "_project_root": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code",

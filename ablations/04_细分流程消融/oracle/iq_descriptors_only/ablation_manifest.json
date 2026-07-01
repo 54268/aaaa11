@@ -3,9 +3,9 @@
   "category": "subdivision",
   "variant": "I/Q descriptors only",
   "checkpoint": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\oracle_supervised_calibrator\\final\\best_closed_set.pt",
-  "source_rejection_dir": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\01_模块消融\\oracle\\full_method",
-  "source_metrics": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\01_模块消融\\oracle\\full_method\\open_set_metrics.json",
-  "source_predictions": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\01_模块消融\\oracle\\full_method\\open_set_predictions.csv",
+  "source_rejection_dir": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\oracle_supervised_calibrator\\final",
+  "source_metrics": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\oracle_supervised_calibrator\\final\\open_set_metrics.json",
+  "source_predictions": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\oracle_supervised_calibrator\\final\\open_set_predictions.csv",
   "config": {
     "_config_path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\run_oracle.py",
     "_project_root": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code",

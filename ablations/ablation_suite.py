@@ -97,6 +97,8 @@ SUBDIVISION_VARIANTS = [
     ("full_subdivision", "Full subdivision", "embedding_iq_stats", True),
 ]
 
+FORMAL_SUBDIVISION_SUBDIR = "unknown_subdivision_true_auto_k_sample_unified_k2_20_merge"
+
 CORE_OPEN_SET_KEYS = [
     "overall_accuracy",
     "known_accuracy",
@@ -253,13 +255,24 @@ def _run_pipeline_variant(
 
 def _formal_rejection_source_dir(dataset: str) -> Path:
     candidates = [
-        _variant_dir("modules", dataset, "full_method"),
         Path(DATASETS[dataset]["formal_output"]),
+        _variant_dir("modules", dataset, "full_method"),
     ]
     for candidate in candidates:
         if (candidate / "open_set_metrics.json").exists() and (candidate / "open_set_predictions.csv").exists():
             return candidate
     raise FileNotFoundError(f"Missing formal rejection outputs for {dataset}")
+
+
+def _formal_subdivision_source_dir(dataset: str) -> Path:
+    formal_output = Path(DATASETS[dataset]["formal_output"])
+    preferred = formal_output / FORMAL_SUBDIVISION_SUBDIR
+    if (preferred / "unknown_subdivision_metrics.json").exists():
+        return preferred
+    candidates = sorted(formal_output.glob("unknown_subdivision*/unknown_subdivision_metrics.json"))
+    if candidates:
+        return candidates[0].parent
+    raise FileNotFoundError(f"Missing formal subdivision outputs for {dataset}: {formal_output}")
 
 
 def _run_unknown_subdivision_only(config: dict[str, Any]) -> dict[str, Any]:
@@ -307,6 +320,74 @@ def _run_reused_rejection_subdivision_variant(
         },
     )
     _run_unknown_subdivision_only(config)
+    return output_dir
+
+
+def _copy_formal_subdivision_result(
+    *,
+    dataset: str,
+    category: str,
+    variant_slug: str,
+    variant_name: str,
+) -> Path:
+    output_dir = _variant_dir(category, dataset, variant_slug)
+    config = _base_config(dataset)
+    _configure_output(config, output_dir, f"{dataset}_{category}_{variant_slug}")
+    checkpoint = Path(DATASETS[dataset]["checkpoint"])
+    ensure_dir(output_dir)
+    _prepare_checkpoint(output_dir, checkpoint)
+
+    rejection_dir = _formal_rejection_source_dir(dataset)
+    metrics_path = rejection_dir / "open_set_metrics.json"
+    predictions_path = rejection_dir / "open_set_predictions.csv"
+    shutil.copy2(metrics_path, output_dir / "open_set_metrics.json")
+    shutil.copy2(predictions_path, output_dir / "open_set_predictions.csv")
+
+    source_subdivision_dir = _formal_subdivision_source_dir(dataset)
+    destination_subdivision_dir = output_dir / "unknown_subdivision"
+    if destination_subdivision_dir.exists():
+        shutil.rmtree(destination_subdivision_dir)
+    shutil.copytree(source_subdivision_dir, destination_subdivision_dir)
+
+    subdivision_metrics = load_json(destination_subdivision_dir / "unknown_subdivision_metrics.json")
+    subdivision_cfg = config["unknown_subdivision"]
+    subdivision_cfg["enabled"] = True
+    subdivision_cfg["reuse_open_set_predictions"] = True
+    subdivision_cfg["open_set_predictions_path"] = str((output_dir / "open_set_predictions.csv").resolve())
+    subdivision_cfg["output_subdir"] = "unknown_subdivision"
+    for key in [
+        "feature_mode",
+        "target_num_clusters",
+        "target_k_strength",
+        "k_selection_mode",
+        "use_known_prototype_anchors",
+        "overcluster_extra_candidates",
+        "m_selection_mode",
+        "m_selection_min_quality_gain",
+        "merge_extra_clusters_to_target",
+        "auto_merge_small_clusters",
+        "auto_merge_max_source_mean_ratio",
+        "auto_merge_min_balance_gain",
+        "direct_confidence_quantile",
+        "direct_min_cluster_size",
+    ]:
+        if key in subdivision_metrics:
+            subdivision_cfg[key] = subdivision_metrics[key]
+
+    save_json(
+        output_dir / "ablation_manifest.json",
+        {
+            "dataset": dataset,
+            "category": category,
+            "variant": variant_name,
+            "checkpoint": str(checkpoint.resolve()),
+            "source_rejection_dir": str(rejection_dir.resolve()),
+            "source_metrics": str(metrics_path.resolve()),
+            "source_predictions": str(predictions_path.resolve()),
+            "source_subdivision_dir": str(source_subdivision_dir.resolve()),
+            "config": config,
+        },
+    )
     return output_dir
 
 
@@ -873,14 +954,30 @@ def run_subdivision_ablations(dataset: str) -> list[ResultRow]:
             config["unknown_subdivision"]["k_selection_mode"] = "sample_unified"
             config["unknown_subdivision"]["merge_extra_clusters_to_target"] = False
 
-        output_dir = _run_reused_rejection_subdivision_variant(
-            dataset=dataset,
-            category="subdivision",
-            variant_slug=slug,
-            variant_name=name,
-            config_mutator=mutate,
-        )
+        if slug == "full_subdivision":
+            output_dir = _copy_formal_subdivision_result(
+                dataset=dataset,
+                category="subdivision",
+                variant_slug=slug,
+                variant_name=name,
+            )
+        else:
+            output_dir = _run_reused_rejection_subdivision_variant(
+                dataset=dataset,
+                category="subdivision",
+                variant_slug=slug,
+                variant_name=name,
+                config_mutator=mutate,
+            )
         metrics = load_json(output_dir / "unknown_subdivision" / "unknown_subdivision_metrics.json")
+        row_feature_mode = str(metrics.get("feature_mode", feature_mode))
+        row_filtering = bool(use_filtering)
+        if slug == "full_subdivision":
+            row_filtering = bool(
+                float(metrics.get("direct_confidence_quantile", 0.0)) > 0.0
+                or int(metrics.get("direct_min_cluster_size", 0)) > 0
+                or float(metrics.get("uncertain_ratio", 0.0)) > 0.0
+            )
         rows.append(
             ResultRow(
                 category="subdivision",
@@ -889,8 +986,8 @@ def run_subdivision_ablations(dataset: str) -> list[ResultRow]:
                 variant_slug=slug,
                 output_dir=str(output_dir),
                 metrics={
-                    "feature_mode": feature_mode,
-                    "filtering": use_filtering,
+                    "feature_mode": row_feature_mode,
+                    "filtering": row_filtering,
                     **{key: metrics.get(key) for key in SUBDIVISION_KEYS},
                     "resolved_num_clusters": metrics.get("resolved_num_clusters"),
                     "uncertain_ratio": metrics.get("uncertain_ratio"),

@@ -3,9 +3,10 @@
   "category": "subdivision",
   "variant": "Full subdivision",
   "checkpoint": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\oracle_supervised_calibrator\\final\\best_closed_set.pt",
-  "source_rejection_dir": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\01_模块消融\\oracle\\full_method",
-  "source_metrics": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\01_模块消融\\oracle\\full_method\\open_set_metrics.json",
-  "source_predictions": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\01_模块消融\\oracle\\full_method\\open_set_predictions.csv",
+  "source_rejection_dir": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\oracle_supervised_calibrator\\final",
+  "source_metrics": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\oracle_supervised_calibrator\\final\\open_set_metrics.json",
+  "source_predictions": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\oracle_supervised_calibrator\\final\\open_set_predictions.csv",
+  "source_subdivision_dir": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\oracle_supervised_calibrator\\final\\unknown_subdivision_true_auto_k_sample_unified_k2_20_merge",
   "config": {
     "_config_path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\run_oracle.py",
     "_project_root": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code",
@@ -221,7 +222,7 @@
       "enabled": true,
       "method": "embedding_stats_gmm_full_direct",
       "output_subdir": "unknown_subdivision",
-      "feature_mode": "embedding_iq_stats",
+      "feature_mode": "embedding_stats",
       "pca_dim": 96,
       "k_min": 2,
       "k_max": 20,
@@ -252,7 +253,6 @@
       "stability_weight": 0.3,
       "db_weight": 0.25,
       "ch_weight": 0.3,
-      "merge_extra_clusters_to_target": false,
       "reuse_open_set_predictions": true,
       "open_set_predictions_path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\04_细分流程消融\\oracle\\full_subdivision\\open_set_predictions.csv"
     }

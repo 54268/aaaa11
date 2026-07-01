@@ -108,6 +108,29 @@ def test_ablation_suite_uses_current_formal_result_sources() -> None:
     assert ablation_suite.DATASETS["wisig"]["checkpoint"].name == "best_closed_set.pt"
 
 
+def test_formal_rejection_source_prefers_current_formal_output(tmp_path, monkeypatch) -> None:
+    ablation_root = tmp_path / "ablations"
+    stale_module_dir = ablation_root / ablation_suite.GROUP_DIRS["modules"] / "oracle" / "full_method"
+    current_formal_dir = tmp_path / "outputs" / "oracle_supervised_calibrator" / "final"
+    stale_module_dir.mkdir(parents=True)
+    current_formal_dir.mkdir(parents=True)
+    for directory in (stale_module_dir, current_formal_dir):
+        (directory / "open_set_metrics.json").write_text("{}", encoding="utf-8")
+        (directory / "open_set_predictions.csv").write_text(
+            "y_true,y_pred,unknown_score,q_om,q_pd,d_min\n",
+            encoding="utf-8",
+        )
+
+    monkeypatch.setattr(ablation_suite, "ABLATION_ROOT", ablation_root)
+    monkeypatch.setitem(
+        ablation_suite.DATASETS["oracle"],
+        "formal_output",
+        current_formal_dir,
+    )
+
+    assert ablation_suite._formal_rejection_source_dir("oracle") == current_formal_dir
+
+
 def test_loss_ablation_uses_consistent_component_weights() -> None:
     variants = {slug: (angle, prototype) for slug, _, angle, prototype in LOSS_VARIANTS}
 
@@ -325,6 +348,7 @@ def test_km_sensitivity_reuses_formal_rejection_outputs(tmp_path, monkeypatch) -
 def test_subdivision_ablations_reuse_formal_rejection_outputs(tmp_path, monkeypatch) -> None:
     ablation_root = tmp_path / "ablations"
     captured: list[tuple[str, dict]] = []
+    copied: list[str] = []
 
     def forbidden_pipeline_variant(*args, **kwargs):
         raise AssertionError("subdivision ablations must not rerun the OSR pipeline")
@@ -362,6 +386,27 @@ def test_subdivision_ablations_reuse_formal_rejection_outputs(tmp_path, monkeypa
         )
         return output_dir
 
+    def fake_copy_formal_subdivision_result(
+        *,
+        dataset: str,
+        category: str,
+        variant_slug: str,
+        variant_name: str,
+    ) -> Path:
+        copied.append(variant_slug)
+        output_dir = ablation_suite._variant_dir(category, dataset, variant_slug)
+        subdivision_dir = output_dir / "unknown_subdivision"
+        subdivision_dir.mkdir(parents=True)
+        (subdivision_dir / "unknown_subdivision_metrics.json").write_text(
+            (
+                '{"nmi": 0.99, "ari": 0.98, "purity": 0.97, '
+                '"hungarian_accuracy": 0.96, "coverage_of_total_test_unknown": 0.94, '
+                '"resolved_num_clusters": 6, "uncertain_ratio": 0.02}\n'
+            ),
+            encoding="utf-8",
+        )
+        return output_dir
+
     monkeypatch.setattr(ablation_suite, "ABLATION_ROOT", ablation_root)
     monkeypatch.setattr(
         ablation_suite,
@@ -375,11 +420,17 @@ def test_subdivision_ablations_reuse_formal_rejection_outputs(tmp_path, monkeypa
     )
     monkeypatch.setattr(ablation_suite, "_run_pipeline_variant", forbidden_pipeline_variant)
     monkeypatch.setattr(ablation_suite, "_run_reused_rejection_subdivision_variant", fake_reused_variant)
+    monkeypatch.setattr(ablation_suite, "_copy_formal_subdivision_result", fake_copy_formal_subdivision_result)
 
     rows = ablation_suite.run_subdivision_ablations("oracle")
 
     assert [row.variant_slug for row in rows] == [slug for slug, *_ in SUBDIVISION_VARIANTS]
-    assert [slug for slug, _ in captured] == [slug for slug, *_ in SUBDIVISION_VARIANTS]
+    assert [slug for slug, _ in captured] == [
+        "embedding_only",
+        "iq_descriptors_only",
+        "feature_fusion_wo_filtering",
+    ]
+    assert copied == ["full_subdivision"]
     by_slug = {slug: config["unknown_subdivision"] for slug, config in captured}
     assert by_slug["embedding_only"]["direct_confidence_quantile"] == 0.0
     assert by_slug["embedding_only"]["direct_min_cluster_size"] == 0
@@ -389,9 +440,5 @@ def test_subdivision_ablations_reuse_formal_rejection_outputs(tmp_path, monkeypa
     assert by_slug["embedding_only"]["merge_extra_clusters_to_target"] is False
     assert by_slug["feature_fusion_wo_filtering"]["direct_confidence_quantile"] == 0.0
     assert by_slug["feature_fusion_wo_filtering"]["merge_extra_clusters_to_target"] is False
-    assert by_slug["full_subdivision"]["direct_confidence_quantile"] == 0.02
-    assert by_slug["full_subdivision"]["direct_min_cluster_size"] == 200
-    assert by_slug["full_subdivision"]["target_num_clusters"] is None
-    assert by_slug["full_subdivision"]["target_k_strength"] == 0.0
-    assert by_slug["full_subdivision"]["k_selection_mode"] == "sample_unified"
-    assert by_slug["full_subdivision"]["merge_extra_clusters_to_target"] is False
+    assert rows[-1].metrics["nmi"] == 0.99
+    assert rows[-1].metrics["coverage_of_total_test_unknown"] == 0.94
