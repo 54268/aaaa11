@@ -201,6 +201,51 @@ def test_summary_generates_four_metric_module_table_and_figure(tmp_path, monkeyp
     assert "AUROC" not in markdown
 
 
+def test_summary_includes_automatic_k_selection_table(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(ablation_suite, "ABLATION_ROOT", tmp_path)
+    monkeypatch.setattr(ablation_suite, "_plot_bar_category", lambda *args, **kwargs: None)
+    rows = [
+        ResultRow(
+            category="subdivision",
+            dataset="oracle",
+            variant="Feature fusion",
+            variant_slug="full_subdivision",
+            output_dir="unused",
+            metrics={
+                "fit_num_clusters": 8,
+                "resolved_num_clusters": 6,
+                "coverage_of_total_test_unknown": 0.943083,
+                "nmi": 0.963448,
+                "ari": 0.954799,
+                "hungarian_accuracy": 0.979279,
+            },
+        ),
+        ResultRow(
+            category="subdivision",
+            dataset="wisig",
+            variant="Feature fusion",
+            variant_slug="full_subdivision",
+            output_dir="unused",
+            metrics={
+                "fit_num_clusters": 13,
+                "resolved_num_clusters": 12,
+                "coverage_of_total_test_unknown": 1.0,
+                "nmi": 0.998125,
+                "ari": 0.998637,
+                "hungarian_accuracy": 0.999375,
+            },
+        ),
+    ]
+
+    write_summary(rows)
+
+    markdown = (tmp_path / "消融结果汇总.md").read_text(encoding="utf-8")
+    assert "表 3. 自动 K 选择分析" in markdown
+    assert "| Dataset | fit_K | Final K | Coverage | NMI | ARI | Hungarian Acc. |" in markdown
+    assert "| Oracle | 8 | 6 | 0.943083 | 0.963448 | 0.954799 | 0.979279 |" in markdown
+    assert "| WiSig | 13 | 12 | 1.000000 | 0.998125 | 0.998637 | 0.999375 |" in markdown
+
+
 def test_ablation_table_starts_with_switch_columns() -> None:
     row = ResultRow(
         category="losses",
@@ -276,73 +321,12 @@ def test_single_feature_subdivision_variants_do_not_include_filtering() -> None:
 
     assert variants["iq_descriptors_only"] is False
     assert variants["embedding_only"] is False
-    assert variants["feature_fusion_wo_filtering"] is False
     assert variants["full_subdivision"] is True
-
-
-def test_km_sensitivity_reuses_formal_rejection_outputs(tmp_path, monkeypatch) -> None:
-    ablation_root = tmp_path / "ablations"
-    formal_output = tmp_path / "formal_pcbm"
-    checkpoint = tmp_path / "best_closed_set.pt"
-    formal_output.mkdir(parents=True)
-    checkpoint.write_bytes(b"checkpoint")
-    (formal_output / "open_set_metrics.json").write_text(
-        '{"unknown_recall": 0.9670416666666667}\n',
-        encoding="utf-8",
-    )
-    (formal_output / "open_set_predictions.csv").write_text(
-        "y_true,y_pred,unknown_score,q_om,q_pd,d_min\n0,0,0.1,0.1,0.1,0.1\n",
-        encoding="utf-8",
-    )
-
-    captured: list[dict] = []
-
-    def fake_run_unknown_subdivision(config: dict) -> dict:
-        captured.append(config)
-        subdivision_dir = Path(config["project"]["output_dir"]) / "unknown_subdivision"
-        subdivision_dir.mkdir(parents=True)
-        (subdivision_dir / "m_selection_history.json").write_text("[]\n", encoding="utf-8")
-        (subdivision_dir / "unknown_subdivision_metrics.json").write_text("{}\n", encoding="utf-8")
-        return {}
-
-    monkeypatch.setattr(ablation_suite, "ABLATION_ROOT", ablation_root)
-    monkeypatch.setitem(
-        ablation_suite.DATASETS,
-        "oracle",
-        {
-            **ablation_suite.DATASETS["oracle"],
-            "checkpoint": checkpoint,
-            "formal_output": formal_output,
-        },
-    )
-    monkeypatch.setattr(
-        ablation_suite,
-        "_base_config",
-        lambda dataset: {
-            "project": {},
-            "reporting": {},
-            "eval": {},
-            "unknown_subdivision": {},
-        },
-    )
-    monkeypatch.setattr(ablation_suite, "_run_unknown_subdivision_only", fake_run_unknown_subdivision)
-
-    output_dir = ablation_suite._run_reused_rejection_subdivision_variant(
-        dataset="oracle",
-        category="km",
-        variant_slug="m_0_1_2_3_auto",
-        variant_name="m=0,1,2,3,Auto",
-        config_mutator=lambda config: config["unknown_subdivision"].update({"overcluster_extra_candidates": [0, 1]}),
-    )
-
-    assert (output_dir / "open_set_metrics.json").read_text(encoding="utf-8") == (
-        formal_output / "open_set_metrics.json"
-    ).read_text(encoding="utf-8")
-    assert (output_dir / "open_set_predictions.csv").exists()
-    assert captured[0]["unknown_subdivision"]["reuse_open_set_predictions"] is True
-    assert captured[0]["unknown_subdivision"]["open_set_predictions_path"] == str(
-        (output_dir / "open_set_predictions.csv").resolve()
-    )
+    assert [name for _, name, _, _ in SUBDIVISION_VARIANTS] == [
+        "Embedding only",
+        "I/Q descriptors only",
+        "Feature fusion",
+    ]
 
 
 def test_subdivision_ablations_reuse_formal_rejection_outputs(tmp_path, monkeypatch) -> None:
@@ -428,7 +412,6 @@ def test_subdivision_ablations_reuse_formal_rejection_outputs(tmp_path, monkeypa
     assert [slug for slug, _ in captured] == [
         "embedding_only",
         "iq_descriptors_only",
-        "feature_fusion_wo_filtering",
     ]
     assert copied == ["full_subdivision"]
     by_slug = {slug: config["unknown_subdivision"] for slug, config in captured}
@@ -438,7 +421,6 @@ def test_subdivision_ablations_reuse_formal_rejection_outputs(tmp_path, monkeypa
     assert by_slug["embedding_only"]["target_k_strength"] == 0.0
     assert by_slug["embedding_only"]["k_selection_mode"] == "sample_unified"
     assert by_slug["embedding_only"]["merge_extra_clusters_to_target"] is False
-    assert by_slug["feature_fusion_wo_filtering"]["direct_confidence_quantile"] == 0.0
-    assert by_slug["feature_fusion_wo_filtering"]["merge_extra_clusters_to_target"] is False
+    assert rows[-1].variant == "Feature fusion"
     assert rows[-1].metrics["nmi"] == 0.99
     assert rows[-1].metrics["coverage_of_total_test_unknown"] == 0.94

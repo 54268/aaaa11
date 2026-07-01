@@ -104,7 +104,7 @@ def write_markdown(results: dict[str, list[dict[str, Any]]], output_path: Path) 
         "# 未知类细分聚类后端对比",
         "",
         "K-means、HDBSCAN 和 GMM-full-direct 使用相同的 unknown cache、`embedding_stats`、标准化与 PCA96。",
-        "前三种后端关闭 K+m 冗余和额外低置信/小簇过滤，用于单独比较聚类后端；Full GMM subdivision 为当前完整方法。",
+        "前三种后端关闭 auto-K 候选筛选与簇均衡合并，用于单独比较聚类后端；Full GMM subdivision 为当前完整方法。",
         "HDBSCAN 不使用真实未知类数，低密度噪声样本记为不确定样本。",
         "",
     ]
@@ -128,7 +128,7 @@ def write_markdown(results: dict[str, list[dict[str, Any]]], output_path: Path) 
                 [
                     "",
                     "Oracle 中，K-means 无法充分描述非球形未知类结构，HDBSCAN 只解析出 3 个有效簇。",
-                    "无后处理 GMM 的 NMI 高于 K-means，但并非所有指标都占优；当前完整方法依靠全协方差 GMM、K+m 冗余和不确定样本过滤获得最稳定的 6 簇结果。",
+                    "无后处理 GMM 的 NMI 高于 K-means，但并非所有指标都占优；当前完整方法依靠全协方差 GMM、auto-K 候选筛选和簇均衡合并获得最稳定的 6 簇结果。",
                 ]
             )
         elif dataset == "wisig":

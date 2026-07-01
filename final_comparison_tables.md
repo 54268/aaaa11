@@ -25,7 +25,7 @@
 | OpenRFI | 0.931928 | 0.909938 | 0.930196 | 0.850000 |
 | PCBM (ours, auto K) | 0.963448 | 0.954799 | 0.979279 | 0.943083 |
 
-注：PCBM 不预先使用真实未知类数。Oracle 在统一候选范围 `fit_K=2..20` 内自动选择 `fit_K=8`，经过低置信/小簇过滤后得到 `effective_K=6` 个有效未知簇。
+注：PCBM 不预先使用真实未知类数。Oracle 在统一候选范围 `fit_K=2..20` 内自动选择 `fit_K=8`，经过 auto-K GMM 内部候选筛选与合并后得到 `effective_K=6` 个有效未知簇。
 
 ## wisig_singleday_osr_k16_u12 开放集拒识
 
@@ -59,4 +59,4 @@ coverage_of_total_test_unknown
 = unknown_cache_recall * coverage_of_selected_true_unknown
 ```
 
-K-means 不产生 `-1`，因此覆盖率等于进入其评估集合的真实未知样本比例。HDBSCAN 会在细分聚类阶段将低密度样本标为噪声。OpenRFI 采用 full-test-world prototype grouping，并在分组后按置信度保留结果。PCBM 的不确定样本来自 GMM-full-direct 之后的低置信过滤、小簇过滤，以及自动簇均衡合并后的有效簇判定。
+K-means 不产生 `-1`，因此覆盖率等于进入其评估集合的真实未知样本比例。HDBSCAN 会在细分聚类阶段将低密度样本标为噪声。OpenRFI 采用 full-test-world prototype grouping，并在分组后按置信度保留结果。PCBM 的未覆盖样本来自 auto-K GMM 的候选筛选、簇均衡自动合并以及最终有效簇判定。

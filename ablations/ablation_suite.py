@@ -40,7 +40,6 @@ def build_wisig_config() -> dict[str, Any]:
 
 GROUP_DIRS = {
     "modules": "01_模块消融",
-    "km": "02_KM簇数消融",
     "losses": "03_损失函数消融",
     "subdivision": "04_细分流程消融",
 }
@@ -93,8 +92,7 @@ LOSS_VARIANTS = [
 SUBDIVISION_VARIANTS = [
     ("embedding_only", "Embedding only", "embedding", False),
     ("iq_descriptors_only", "I/Q descriptors only", "iq_stats", False),
-    ("feature_fusion_wo_filtering", "Feature fusion w/o filtering", "embedding_iq_stats", False),
-    ("full_subdivision", "Full subdivision", "embedding_iq_stats", True),
+    ("full_subdivision", "Feature fusion", "embedding_iq_stats", True),
 ]
 
 FORMAL_SUBDIVISION_SUBDIR = "unknown_subdivision_true_auto_k_sample_unified_k2_20_merge"
@@ -680,71 +678,6 @@ def run_module_ablations(dataset: str) -> list[ResultRow]:
     return rows
 
 
-def run_km_sensitivity(dataset: str) -> list[ResultRow]:
-    slug = "m_0_1_2_3_auto"
-    name = "m=0,1,2,3,Auto"
-
-    def mutate(config: dict[str, Any]) -> None:
-        config["unknown_subdivision"]["overcluster_extra_candidates"] = [0, 1, 2, 3]
-        config["unknown_subdivision"]["m_selection_mode"] = "offline_min_gain"
-        config["unknown_subdivision"]["m_selection_min_quality_gain"] = 0.01
-        config["unknown_subdivision"]["output_subdir"] = "unknown_subdivision"
-        config["unknown_subdivision"]["merge_extra_clusters_to_target"] = True
-        config["unknown_subdivision"]["direct_confidence_quantile"] = 0.0
-        config["unknown_subdivision"]["direct_min_cluster_size"] = 0
-
-    output_dir = _run_reused_rejection_subdivision_variant(
-        dataset=dataset,
-        category="km",
-        variant_slug=slug,
-        variant_name=name,
-        config_mutator=mutate,
-    )
-    subdivision_dir = output_dir / "unknown_subdivision"
-    history = _read_json(subdivision_dir / "m_selection_history.json")
-    selected = _read_json(subdivision_dir / "unknown_subdivision_metrics.json")
-    rows: list[ResultRow] = []
-    for item in history:
-        m = int(item["overcluster_extra_clusters"])
-        rows.append(
-            ResultRow(
-                category="km",
-                dataset=dataset,
-                variant=f"m={m}",
-                variant_slug=f"m{m}",
-                output_dir=str(output_dir),
-                metrics={
-                    "selected_m": m,
-                    "adjusted_quality": item.get("m_selection_offline_adjusted_quality"),
-                    "nmi": item.get("m_selection_offline_nmi"),
-                    "ari": item.get("m_selection_offline_ari"),
-                    "purity": item.get("m_selection_offline_purity"),
-                    "hungarian_accuracy": item.get("m_selection_offline_hungarian_accuracy"),
-                    "coverage_of_total_test_unknown": item.get("m_selection_offline_coverage"),
-                    "resolved_num_clusters": item.get("resolved_num_clusters"),
-                    "uncertain_ratio": item.get("uncertain_ratio"),
-                },
-            )
-        )
-    rows.append(
-        ResultRow(
-            category="km",
-            dataset=dataset,
-            variant="Auto",
-            variant_slug="auto",
-            output_dir=str(output_dir),
-            metrics={
-                "selected_m": selected.get("auto_selected_overcluster_extra_clusters"),
-                "adjusted_quality": selected.get("m_selection_offline_adjusted_quality"),
-                **{key: selected.get(key) for key in SUBDIVISION_KEYS},
-                "resolved_num_clusters": selected.get("resolved_num_clusters"),
-                "uncertain_ratio": selected.get("uncertain_ratio"),
-            },
-        )
-    )
-    return rows
-
-
 def run_loss_ablations(dataset: str) -> list[ResultRow]:
     return run_selected_loss_ablations(dataset, "all")
 
@@ -989,6 +922,7 @@ def run_subdivision_ablations(dataset: str) -> list[ResultRow]:
                     "feature_mode": row_feature_mode,
                     "filtering": row_filtering,
                     **{key: metrics.get(key) for key in SUBDIVISION_KEYS},
+                    "fit_num_clusters": metrics.get("fit_num_clusters"),
                     "resolved_num_clusters": metrics.get("resolved_num_clusters"),
                     "uncertain_ratio": metrics.get("uncertain_ratio"),
                 },
@@ -1030,6 +964,37 @@ def _markdown_table(rows: list[ResultRow], fields: list[tuple[str, str]]) -> lis
     for row in rows:
         payload = row.flat()
         lines.append("| " + " | ".join(_format(payload.get(key)) for key, _ in fields) + " |")
+    return lines
+
+
+def _automatic_k_selection_table(rows: list[ResultRow]) -> list[str]:
+    selected_rows = [
+        row
+        for row in rows
+        if row.category == "subdivision" and row.variant_slug == "full_subdivision"
+    ]
+    selected_rows.sort(key=lambda row: ["oracle", "wisig"].index(row.dataset))
+    lines = [
+        "| Dataset | fit_K | Final K | Coverage | NMI | ARI | Hungarian Acc. |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for row in selected_rows:
+        metrics = row.metrics
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    DATASETS[row.dataset]["display"],
+                    _format(metrics.get("fit_num_clusters")),
+                    _format(metrics.get("resolved_num_clusters")),
+                    _format(metrics.get("coverage_of_total_test_unknown")),
+                    _format(metrics.get("nmi")),
+                    _format(metrics.get("ari")),
+                    _format(metrics.get("hungarian_accuracy")),
+                ]
+            )
+            + " |"
+        )
     return lines
 
 
@@ -1214,8 +1179,8 @@ def _write_markdown(rows: list[ResultRow]) -> None:
     lines = [
         "# 消融实验结果汇总",
         "",
-        "四类消融均使用 Oracle 与 WiSig 两个数据集。所有汇总图位于本目录根部，",
-        "各数据集的代码、配置快照与原始输出位于四个分类子目录。",
+        "三类消融均使用 Oracle 与 WiSig 两个数据集。所有汇总图位于本目录根部，",
+        "各数据集的代码、配置快照与原始输出位于三个分类子目录。",
         "",
     ]
     for dataset in ["oracle", "wisig"]:
@@ -1245,26 +1210,6 @@ def _write_markdown(rows: list[ResultRow]) -> None:
             )
         lines.append(
             "该表体现模块加入后整体开放集能力的增强；Known Acc. 与 Unknown Recall 存在阈值权衡，不要求每个单项在每一步严格单调。"
-        )
-        lines.append("")
-
-        km_rows = [row for row in rows if row.dataset == dataset and row.category == "km"]
-        lines.extend(["### K+M 缓冲分量敏感性", ""])
-        lines.extend(
-            _markdown_table(
-                km_rows,
-                [
-                    ("variant", "m"),
-                    ("selected_m", "Selected m"),
-                    ("adjusted_quality", "Adjusted Quality"),
-                    ("nmi", "NMI"),
-                    ("ari", "ARI"),
-                    ("purity", "Purity"),
-                    ("hungarian_accuracy", "Hungarian Acc."),
-                    ("coverage_of_total_test_unknown", "Coverage"),
-                    ("resolved_num_clusters", "Resolved K"),
-                ],
-            )
         )
         lines.append("")
 
@@ -1301,16 +1246,15 @@ def _write_markdown(rows: list[ResultRow]) -> None:
         )
         lines.append("")
 
+    lines.extend(["## 表 3. 自动 K 选择分析", ""])
+    lines.extend(_automatic_k_selection_table(rows))
+    lines.append("")
+
     lines.extend(
         [
             "## 汇总图",
             "",
             "- `模块消融.png`（表格版）",
-            "- `KM簇数敏感性.png`",
-            "- `细分流程消融.png`",
-            "",
-            "Auto 的规则是：在 `m=0,1,2,3` 中选择满足目标簇数、且覆盖率修正质量提升超过 1 个百分点的最小 m。",
-            "若更大的 m 只带来不超过 1% 的提升，则视为冗余，不增加结构。",
             "",
         ]
     )
@@ -1483,39 +1427,6 @@ def _plot_table_category(
     plt.close(fig)
 
 
-def _plot_km(rows: list[ResultRow]) -> None:
-    fig, axes = plt.subplots(1, 2, figsize=(12.2, 4.8), sharey=True)
-    for ax, dataset in zip(axes, ["oracle", "wisig"]):
-        selected = [
-            row for row in rows if row.category == "km" and row.dataset == dataset and row.variant != "Auto"
-        ]
-        auto_rows = [
-            row for row in rows if row.category == "km" and row.dataset == dataset and row.variant == "Auto"
-        ]
-        if not selected or not auto_rows:
-            ax.set_visible(False)
-            continue
-        selected.sort(key=lambda row: int(row.metrics["selected_m"]))
-        x = [int(row.metrics["selected_m"]) for row in selected]
-        quality = [float(row.metrics.get("adjusted_quality") or 0.0) for row in selected]
-        auto = auto_rows[0]
-        auto_m = int(auto.metrics["selected_m"])
-        auto_quality = float(auto.metrics.get("adjusted_quality") or 0.0)
-        ax.plot(x, quality, marker="o", linewidth=2.2, color="#4E79A7")
-        ax.scatter([auto_m], [auto_quality], s=90, color="#E15759", zorder=5, label=f"Auto = {auto_m}")
-        ax.set_xticks([0, 1, 2, 3])
-        ax.set_xlabel("Buffer component m")
-        ax.set_ylabel("Coverage-adjusted quality")
-        ax.set_title(DATASETS[dataset]["display"])
-        ax.grid(alpha=0.25)
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-        ax.legend(frameon=False)
-    fig.tight_layout()
-    fig.savefig(ABLATION_ROOT / "KM簇数敏感性.png", dpi=280, bbox_inches="tight", facecolor="white")
-    plt.close(fig)
-
-
 def write_summary(rows: list[ResultRow]) -> None:
     for deprecated_name in ["损失函数消融.png"]:
         deprecated_path = ABLATION_ROOT / deprecated_name
@@ -1525,15 +1436,6 @@ def write_summary(rows: list[ResultRow]) -> None:
     _write_markdown(rows)
     if any(row.category == "modules" for row in rows):
         _plot_module_table(rows)
-    if any(row.category == "km" for row in rows):
-        _plot_km(rows)
-    if any(row.category == "subdivision" for row in rows):
-        _plot_bar_category(
-            rows,
-            "subdivision",
-            [("nmi", "NMI"), ("ari", "ARI"), ("purity", "Purity"), ("coverage_of_total_test_unknown", "Coverage")],
-            "细分流程消融.png",
-        )
 
 
 def _write_dataset_runner(category: str, dataset: str) -> None:
@@ -1580,6 +1482,10 @@ def collect_existing_results() -> list[ResultRow]:
     summary_path = ABLATION_ROOT / "消融结果汇总.json"
     if summary_path.exists():
         for item in _read_json(summary_path):
+            if item.get("category") not in GROUP_DIRS:
+                continue
+            if item.get("variant_slug") == "feature_fusion_wo_filtering":
+                continue
             metrics = {
                 key: value
                 for key, value in item.items()
@@ -1620,7 +1526,6 @@ def main() -> None:
     selected_datasets = _selected_datasets(args.dataset)
     runners = {
         "modules": run_module_ablations,
-        "km": run_km_sensitivity,
         "losses": run_loss_ablations,
         "subdivision": run_subdivision_ablations,
     }

@@ -1,6 +1,0 @@
-{
-  "checkpoint_path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\oracle_kri16_demod_known_first\\best_closed_set.pt",
-  "best_val_acc": 0.9745,
-  "num_known_classes": 10,
-  "signal_length": 256
-}

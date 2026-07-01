@@ -53,37 +53,20 @@ MODULE_ABLATION = {
     },
 }
 
-KM_SENSITIVITY = {
-    "Oracle": {
-        "labels": ["m=0", "m=1", "m=2", "m=3", "Auto"],
-        "adjusted_quality": [0.745862, 0.841655, 0.885741, 0.864713, 0.885741],
-        "coverage": [0.914250, 0.909000, 0.886292, 0.895542, 0.886292],
-        "resolved_k": [5, 6, 6, 7, 6],
-        "selected": "Auto -> m=2",
-    },
-    "WiSig": {
-        "labels": ["m=0", "m=1", "m=2", "m=3", "Auto"],
-        "adjusted_quality": [0.998878, 0.975676, 0.954992, 0.914294, 0.998878],
-        "coverage": [1.000000, 0.993437, 0.991354, 0.949271, 1.000000],
-        "resolved_k": [12, 13, 14, 14, 12],
-        "selected": "Auto -> m=0",
-    },
-}
-
 FLOW_ABLATION = {
     "Oracle": {
-        "labels": ["Embedding", "I/Q", "Fusion", "Full"],
-        "nmi": [0.853374, 0.716079, 0.904883, 0.999540],
-        "ari": [0.751999, 0.593146, 0.787661, 0.999758],
-        "hungarian_accuracy": [0.796252, 0.661353, 0.801637, 0.999904],
-        "coverage": [0.967083, 0.967083, 0.967083, 0.863833],
+        "labels": ["Embedding", "I/Q", "Feature fusion"],
+        "nmi": [0.741133, 0.740465, 0.963448],
+        "ari": [0.563345, 0.600239, 0.954799],
+        "hungarian_accuracy": [0.511527, 0.668581, 0.979279],
+        "coverage": [0.965167, 0.965167, 0.943083],
     },
     "WiSig": {
-        "labels": ["Embedding", "I/Q", "Fusion", "Full"],
-        "nmi": [0.997803, 0.884918, 0.998125, 0.998125],
-        "ari": [0.998409, 0.746998, 0.998637, 0.998637],
-        "hungarian_accuracy": [0.999271, 0.734583, 0.999375, 0.999375],
-        "coverage": [1.000000, 1.000000, 1.000000, 1.000000],
+        "labels": ["Embedding", "I/Q", "Feature fusion"],
+        "nmi": [0.997803, 0.771745, 0.998125],
+        "ari": [0.998409, 0.509703, 0.998637],
+        "hungarian_accuracy": [0.999271, 0.416563, 0.999375],
+        "coverage": [1.000000, 1.000000, 1.000000],
     },
 }
 
@@ -281,59 +264,6 @@ def plot_line_grid(
     return output_path
 
 
-def plot_km_sensitivity() -> Path:
-    dataset_names = list(KM_SENSITIVITY.keys())
-    fig, axes = plt.subplots(len(dataset_names), 1, figsize=(8.2, 6.2), squeeze=False)
-    all_values = [
-        value
-        for dataset in dataset_names
-        for value in KM_SENSITIVITY[dataset]["adjusted_quality"]  # type: ignore[index]
-    ]
-    y_limits = _ylim_for(all_values)
-    for row, dataset in enumerate(dataset_names):
-        ax = axes[row, 0]
-        labels = list(KM_SENSITIVITY[dataset]["labels"])  # type: ignore[arg-type]
-        values = list(KM_SENSITIVITY[dataset]["adjusted_quality"])  # type: ignore[arg-type]
-        coverage = list(KM_SENSITIVITY[dataset]["coverage"])  # type: ignore[arg-type]
-        resolved_k = list(KM_SENSITIVITY[dataset]["resolved_k"])  # type: ignore[arg-type]
-        xs = np.arange(len(labels))
-        ax.plot(
-            xs,
-            values,
-            color=LINE_COLOR,
-            linewidth=2.6,
-            marker="o",
-            markersize=7.0,
-            markerfacecolor="white",
-            markeredgewidth=2.1,
-        )
-        best_idx = int(np.argmax(values))
-        ax.scatter([best_idx], [values[best_idx]], s=95, color=ACCENT_COLOR, zorder=5)
-        ax.set_ylim(*y_limits)
-        ax.set_xticks(xs)
-        ax.set_xticklabels(labels)
-        ax.set_ylabel(f"{dataset}\nAdjusted Quality", fontsize=11, fontweight="bold")
-        ax.set_title(str(KM_SENSITIVITY[dataset]["selected"]), fontsize=11, pad=8)
-        _style_axis(ax)
-        y0, y1 = ax.get_ylim()
-        for x, value, cov, k in zip(xs, values, coverage, resolved_k):
-            ax.text(
-                x,
-                value + (y1 - y0) * 0.025,
-                f"{value:.3f}\nK={k}, C={cov:.3f}",
-                ha="center",
-                va="bottom",
-                fontsize=8.0,
-                color="#222222",
-            )
-    fig.suptitle("K+M 缓冲分量敏感性", fontsize=15, fontweight="bold", y=1.01)
-    fig.tight_layout(h_pad=2.0)
-    output_path = OUTPUT_DIR / "km_sensitivity.png"
-    fig.savefig(output_path, dpi=320, bbox_inches="tight", facecolor="white")
-    plt.close(fig)
-    return output_path
-
-
 def plot_backend_comparison() -> Path:
     dataset = "Oracle"
     metrics = ["nmi", "ari", "hungarian_accuracy", "coverage"]
@@ -390,7 +320,6 @@ def main() -> None:
     paths = [
         plot_open_set_comparison("Oracle"),
         plot_open_set_comparison("WiSig"),
-        plot_km_sensitivity(),
         plot_backend_comparison(),
     ]
     index_path = write_index(paths)

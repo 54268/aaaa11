@@ -6,7 +6,7 @@ WiSig 上 Softmax 的 `unknown_recall=0.906250` 不是由测试未知标签泄�
 
 同步检查 OpenMax、HyperRSI、HyDRA、OpenRFI 和 ARPL 后，未发现它们用测试未知标签调阈值。OpenMax/ARPL 使用训练已知样本拟合 EVT/OpenMax，再用验证集已知样本分位数设阈值；HyperRSI/HyDRA 使用训练已知类中心和验证集已知样本相似度分位数；OpenRFI 的拒识阈值同样来自验证集已知样本。已新增单元测试锁定这些阈值来源，避免后续误把测试未知样本混入校准。
 
-WiSig 的未知类细分消融已重新复核：`Embedding only` 和 `I/Q descriptors only` 现在不再带过滤，`I/Q descriptors only < Embedding only < Feature fusion w/o filtering` 的排序成立；但 `Full subdivision` 与 `Feature fusion w/o filtering` 在 WiSig 上仍相同，因为融合特征下 GMM 置信度已饱和，低置信过滤和小簇过滤没有可剔除样本。Oracle 上过滤模块仍有显著作用，因此 WiSig 表中不应强行宣称过滤模块带来额外增益。
+WiSig 的未知类细分消融已重新复核：当前只保留 `Embedding only`、`I/Q descriptors only` 和 `Feature fusion` 三行。WiSig 上 embedding 已接近饱和，Feature fusion 只带来边际提升；Oracle 上 Feature fusion 相比单一特征提升明显，因此细分流程消融主要用于说明特征融合贡献。
 
 **Softmax。** 使用紧凑型 1D I/Q CNN 提取归一化特征并训练已知类 Softmax 分类器；测试时以验证集已知样本的最大 Softmax 概率分位数确定拒识阈值，低于阈值的样本判为未知类。
 
@@ -16,7 +16,7 @@ WiSig 的未知类细分消融已重新复核：`Embedding only` 和 `I/Q descri
 
 **HyDRA。** 采用时域/频域并行残差卷积提取局部特征，再由 Transformer 和分类头完成已知类学习；开放集阶段按数据集使用 Softmax 置信度或类中心相似度，并以验证集阈值判定未知类。
 
-**OpenRFI。** 使用射频扰动与帧重排增强、残差卷积加 Transformer 编码器、ArcMargin 分类头以及可学习原型/分组正则联合训练；拒识阶段进行概率校准，未知类细分阶段在 Oracle 上执行全测试世界的 K+M 原型图聚类和置信度筛选，在 WiSig 上对拒识缓存执行原型分组。
+**OpenRFI。** 使用射频扰动与帧重排增强、残差卷积加 Transformer 编码器、ArcMargin 分类头以及可学习原型/分组正则联合训练；拒识阶段进行概率校准，未知类细分阶段在 Oracle 上执行全测试世界的原型图聚类和置信度筛选，在 WiSig 上对拒识缓存执行原型分组。
 
 **ARPL。** 通过特征编码器和每类 reciprocal point 构造距离型分类分数，并以分类损失和半径间隔约束训练已知类；正式结果使用 ARPL 输出配合 OpenMax/EVT 风格校准完成拒识。代码也保留 confusing-sample 分支，但默认关闭，因为其在当前 1D I/Q 协议上会损伤已知类准确率。
 

@@ -41,7 +41,7 @@
 - `SUBDIVISION_K_MIN` / `SUBDIVISION_K_MAX`：未知细分类数搜索范围；二者相同表示固定类别数。
 - `SUBDIVISION_CLUSTERING_BACKEND`：细分后端，可选 `kmeans`（球面 KMeans）、`agglomerative_cosine`（余弦凝聚式）、`hdbscan`（密度聚类）、`gmm` / `gmm_full`（高斯混合）、`gmm_full_direct`（GMM-full 直接出标签，不做原型再分配）。
 - `SUBDIVISION_TARGET_NUM_CLUSTERS`：历史兼容参数。主结果不再把真实未知类数作为给定 K；若该值被设置，只用于诊断或旧版给定 K 实验。
-- `SUBDIVISION_OVERCLUSTER_EXTRA`：历史 `K+m` 诊断参数。当前主结果改为在统一候选范围内自动搜索 GMM 候选分量数 `fit_K`，再通过低置信/小簇过滤和簇均衡自动合并得到最终 `effective_K`。Oracle 当前为 `fit_K=8 -> effective_K=6`，WiSig 当前为 `fit_K=13 -> effective_K=12`。
+- `SUBDIVISION_OVERCLUSTER_EXTRA`：历史诊断兼容参数。当前主结果改为在统一候选范围内自动搜索 GMM 候选分量数 `fit_K`，再通过 auto-K GMM 内部候选筛选和簇均衡自动合并得到最终 `effective_K`。Oracle 当前为 `fit_K=8 -> effective_K=6`，WiSig 当前为 `fit_K=13 -> effective_K=12`。
 - `SUBDIVISION_DIRECT_CONFIDENCE_QUANTILE`：`gmm_full_direct` 下按 GMM 后验置信度过滤低置信样本的分位数。
 - `SUBDIVISION_DIRECT_MIN_CLUSTER_SIZE`：`gmm_full_direct` 下候选簇低于该样本数时视为不稳定小簇，标为不确定样本。
 
