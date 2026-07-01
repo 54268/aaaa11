@@ -50,15 +50,15 @@ DATASETS = {
         "display": "Oracle",
         "formal_name": "oracle_kri16_demod",
         "build_config": build_oracle_config,
-        "checkpoint": PROJECT_ROOT / "outputs" / "oracle_kri16_demod_known_first" / "best_closed_set.pt",
-        "formal_output": PROJECT_ROOT / "outputs" / "oracle_kri16_demod_known_first",
+        "checkpoint": PROJECT_ROOT / "outputs" / "oracle_supervised_calibrator" / "final" / "best_closed_set.pt",
+        "formal_output": PROJECT_ROOT / "outputs" / "oracle_supervised_calibrator" / "final",
     },
     "wisig": {
         "display": "WiSig",
         "formal_name": "wisig_singleday_osr_k16_u12",
         "build_config": build_wisig_config,
-        "checkpoint": PROJECT_ROOT / "outputs" / "wisig_singleday_osr_k16_u12" / "best_closed_set.pt",
-        "formal_output": PROJECT_ROOT / "outputs" / "wisig_singleday_osr_k16_u12",
+        "checkpoint": PROJECT_ROOT / "outputs" / "wisig_supervised_calibrator_formal" / "final" / "best_closed_set.pt",
+        "formal_output": PROJECT_ROOT / "outputs" / "wisig_supervised_calibrator_formal" / "final",
     },
 }
 
@@ -868,7 +868,10 @@ def run_subdivision_ablations(dataset: str) -> list[ResultRow]:
                 base_min_cluster if use_filtering else 0
             )
             config["unknown_subdivision"]["output_subdir"] = "unknown_subdivision"
-            config["unknown_subdivision"]["merge_extra_clusters_to_target"] = True
+            config["unknown_subdivision"]["target_num_clusters"] = None
+            config["unknown_subdivision"]["target_k_strength"] = 0.0
+            config["unknown_subdivision"]["k_selection_mode"] = "sample_unified"
+            config["unknown_subdivision"]["merge_extra_clusters_to_target"] = False
 
         output_dir = _run_reused_rejection_subdivision_variant(
             dataset=dataset,

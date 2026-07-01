@@ -9,30 +9,30 @@
 | feature_mode | 聚类特征 | embedding_iq_stats |
 | use_known_prototype_anchors | 是否启用已知原型锚点 | False |
 | resolved_num_clusters | 自动确定的未知细分类数 | 6 |
-| target_num_clusters | 协议目标未知细分类数 | 6 |
-| fit_num_clusters | 实际拟合候选细分类数 | 8 |
-| overcluster_extra_clusters | 冗余候选细分类数 | 2 |
-| overcluster_extra_candidates | 参与自动选择的冗余候选列表 | [0, 1, 2, 3] |
-| auto_selected_overcluster_extra_clusters | 自动选择的冗余候选数 | 2 |
-| m_selection_mode | m 选择模式 | offline_min_gain |
+| target_num_clusters | 协议目标未知细分类数 | None |
+| fit_num_clusters | 实际拟合候选细分类数 | 7 |
+| overcluster_extra_clusters | 冗余候选细分类数 | 0 |
+| overcluster_extra_candidates | 参与自动选择的冗余候选列表 | [0] |
+| auto_selected_overcluster_extra_clusters | 自动选择的冗余候选数 | 0 |
+| m_selection_mode | m 选择模式 | unsupervised |
 | m_selection_min_quality_gain | 增加冗余分量所需最小质量增益 | 0.010000 |
-| m_selection_score | m 无监督诊断评分 | 1.280458 |
-| m_selection_offline_quality | 离线细分质量均值 | 0.989729 |
-| m_selection_offline_adjusted_quality | 覆盖率修正后的离线细分质量 | 0.957109 |
+| m_selection_score | m 无监督诊断评分 | 1.138427 |
+| m_selection_offline_quality | 离线细分质量均值 | 0.907977 |
+| m_selection_offline_adjusted_quality | 覆盖率修正后的离线细分质量 | 0.878051 |
 | direct_confidence_quantile | GMM低置信过滤分位数 | 0.000000 |
 | direct_min_cluster_size | GMM不稳定小簇最小样本数 | 0 |
 | selected_unknown_cache_size | 进入 unknown cache 的样本数 | 23377 |
 | uncertain_size | 未分配/不确定样本数 | 0 |
 | uncertain_ratio | 未分配/不确定样本比例 | 0.000000 |
-| cluster_size_min | 最小细分类样本数 | 3642 |
-| cluster_size_max | 最大细分类样本数 | 4169 |
+| cluster_size_min | 最小细分类样本数 | 2961 |
+| cluster_size_max | 最大细分类样本数 | 4960 |
 | cluster_size_mean | 平均细分类样本数 | 3896.166667 |
 | nearest_known_proto_distance_mean | 到最近已知原型的平均距离 | 0.546096 |
 | nearest_known_proto_distance_min | 到最近已知原型的最小距离 | 0.131498 |
-| nmi | 归一化互信息，越高表示聚类与真实未知类越一致 | 0.983607 |
-| ari | 调整兰德指数，越高表示聚类与真实未知类越一致 | 0.986599 |
-| purity | 纯度，每个聚类中主导真实类的占比 | 0.994356 |
-| hungarian_accuracy | 匈牙利匹配后的聚类准确率 | 0.994356 |
+| nmi | 归一化互信息，越高表示聚类与真实未知类越一致 | 0.901830 |
+| ari | 调整兰德指数，越高表示聚类与真实未知类越一致 | 0.860371 |
+| purity | 纯度，每个聚类中主导真实类的占比 | 0.934853 |
+| hungarian_accuracy | 匈牙利匹配后的聚类准确率 | 0.934853 |
 | unknown_cache_precision | unknown cache 中真实未知样本占比 | 0.992813 |
 | unknown_cache_recall | 真实未知样本进入 unknown cache 的比例 | 0.967042 |
 | coverage_of_total_test_unknown | 完成细分的真实未知样本覆盖率 | 0.967042 |

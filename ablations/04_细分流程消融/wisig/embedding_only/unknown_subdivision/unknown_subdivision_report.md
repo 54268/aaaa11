@@ -9,12 +9,12 @@
 | feature_mode | 聚类特征 | embedding |
 | use_known_prototype_anchors | 是否启用已知原型锚点 | False |
 | resolved_num_clusters | 自动确定的未知细分类数 | 12 |
-| target_num_clusters | 协议目标未知细分类数 | 12 |
+| target_num_clusters | 协议目标未知细分类数 | None |
 | fit_num_clusters | 实际拟合候选细分类数 | 12 |
 | overcluster_extra_clusters | 冗余候选细分类数 | 0 |
-| overcluster_extra_candidates | 参与自动选择的冗余候选列表 | [0, 1, 2, 3] |
+| overcluster_extra_candidates | 参与自动选择的冗余候选列表 | [0] |
 | auto_selected_overcluster_extra_clusters | 自动选择的冗余候选数 | 0 |
-| m_selection_mode | m 选择模式 | offline_min_gain |
+| m_selection_mode | m 选择模式 | unsupervised |
 | m_selection_min_quality_gain | 增加冗余分量所需最小质量增益 | 0.010000 |
 | m_selection_score | m 无监督诊断评分 | 1.332245 |
 | m_selection_offline_quality | 离线细分质量均值 | 0.998689 |

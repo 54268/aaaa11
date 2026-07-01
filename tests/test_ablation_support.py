@@ -95,6 +95,19 @@ def test_loss_ablation_can_select_one_resumable_variant() -> None:
     assert len(_selected_loss_variants("all")) == 4
 
 
+def test_ablation_suite_uses_current_formal_result_sources() -> None:
+    assert ablation_suite.DATASETS["oracle"]["formal_output"].parts[-2:] == (
+        "oracle_supervised_calibrator",
+        "final",
+    )
+    assert ablation_suite.DATASETS["wisig"]["formal_output"].parts[-2:] == (
+        "wisig_supervised_calibrator_formal",
+        "final",
+    )
+    assert ablation_suite.DATASETS["oracle"]["checkpoint"].name == "best_closed_set.pt"
+    assert ablation_suite.DATASETS["wisig"]["checkpoint"].name == "best_closed_set.pt"
+
+
 def test_loss_ablation_uses_consistent_component_weights() -> None:
     variants = {slug: (angle, prototype) for slug, _, angle, prototype in LOSS_VARIANTS}
 
@@ -370,8 +383,15 @@ def test_subdivision_ablations_reuse_formal_rejection_outputs(tmp_path, monkeypa
     by_slug = {slug: config["unknown_subdivision"] for slug, config in captured}
     assert by_slug["embedding_only"]["direct_confidence_quantile"] == 0.0
     assert by_slug["embedding_only"]["direct_min_cluster_size"] == 0
+    assert by_slug["embedding_only"]["target_num_clusters"] is None
+    assert by_slug["embedding_only"]["target_k_strength"] == 0.0
+    assert by_slug["embedding_only"]["k_selection_mode"] == "sample_unified"
+    assert by_slug["embedding_only"]["merge_extra_clusters_to_target"] is False
     assert by_slug["feature_fusion_wo_filtering"]["direct_confidence_quantile"] == 0.0
-    assert by_slug["feature_fusion_wo_filtering"]["merge_extra_clusters_to_target"] is True
+    assert by_slug["feature_fusion_wo_filtering"]["merge_extra_clusters_to_target"] is False
     assert by_slug["full_subdivision"]["direct_confidence_quantile"] == 0.02
     assert by_slug["full_subdivision"]["direct_min_cluster_size"] == 200
-    assert by_slug["full_subdivision"]["merge_extra_clusters_to_target"] is True
+    assert by_slug["full_subdivision"]["target_num_clusters"] is None
+    assert by_slug["full_subdivision"]["target_k_strength"] == 0.0
+    assert by_slug["full_subdivision"]["k_selection_mode"] == "sample_unified"
+    assert by_slug["full_subdivision"]["merge_extra_clusters_to_target"] is False
