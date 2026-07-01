@@ -1,6 +1,6 @@
 # Wisig 未知类细分结果
 
-当前协议：unknown cache 细分聚类（支持 KMeans / Agglomerative / GMM 后端；GMM-full-direct 直接由 GMM 输出候选标签，再通过 GMM 后验置信度和不稳定小簇规则标记不确定样本）。
+当前协议：unknown cache 细分聚类（支持 KMeans / Agglomerative / HDBSCAN / GMM 后端；GMM-full-direct 直接由 GMM 输出候选标签，再通过 GMM 后验置信度和不稳定小簇规则标记不确定样本）。
 
 | 指标键 | 中文说明 | 数值 |
 | --- | --- | ---: |
@@ -19,8 +19,8 @@
 | m_selection_score | m 无监督诊断评分 | 1.310311 |
 | m_selection_offline_quality | 离线细分质量均值 | 0.998878 |
 | m_selection_offline_adjusted_quality | 覆盖率修正后的离线细分质量 | 0.998878 |
-| direct_confidence_quantile | GMM低置信过滤分位数 | 0.100000 |
-| direct_min_cluster_size | GMM不稳定小簇最小样本数 | 160 |
+| direct_confidence_quantile | GMM低置信过滤分位数 | 0.000000 |
+| direct_min_cluster_size | GMM不稳定小簇最小样本数 | 0 |
 | selected_unknown_cache_size | 进入 unknown cache 的样本数 | 9634 |
 | uncertain_size | 未分配/不确定样本数 | 0 |
 | uncertain_ratio | 未分配/不确定样本比例 | 0.000000 |

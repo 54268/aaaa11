@@ -1,8 +1,20 @@
-# Oracle 伪未知监督校准器结果
+# Oracle Supervised Calibrator Current Result
 
-| 指标 | 旧手动版 | 伪未知阈值搜索版 | 五折阈值迁移版 | 可学习校准器版 |
-| --- | ---: | ---: | ---: | ---: |
-| Known Acc. | 96.3625% | 95.7000% | 96.3875% | 94.5500% |
-| Unknown Recall | 96.7042% | 89.0000% | 89.1875% | 96.5167% |
-| Macro F1 | 93.6905% | 86.8579% | 87.9637% | 92.8058% |
-| AUROC | 98.6836% | 98.7004% | 98.6035% | 98.1370% |
+This file records only the current paper-facing Oracle result. Historical manual-threshold,
+auto-threshold, and leave-class-out comparison rows were removed from the main output to avoid
+mixing old calibration settings with the final supervised-calibrator protocol.
+
+## Open-Set Rejection
+
+| known_accuracy | unknown_recall | unknown_precision | macro_f1 | oscr |
+| ---: | ---: | ---: | ---: | ---: |
+| 94.55 | 96.52 | 98.52 | 92.81 | 94.15 |
+
+## Unknown Subdivision
+
+| nmi | ari | hungarian_accuracy | coverage_of_total_test_unknown | fit_K | effective_K |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 96.34 | 95.48 | 97.93 | 94.31 | 8 | 6 |
+
+The subdivision stage uses true automatic candidate search over `K=2..20` with
+`target_num_clusters=null`; true unknown labels are used only for offline evaluation.

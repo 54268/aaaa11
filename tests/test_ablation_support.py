@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 
 import ablations.ablation_suite as ablation_suite
@@ -107,7 +109,7 @@ def test_loss_summary_uses_open_set_task_metrics_only() -> None:
         "known_accuracy",
         "unknown_recall",
         "macro_f1",
-        "auroc",
+        "oscr",
     ]
 
 
@@ -118,7 +120,7 @@ def test_module_summary_exposes_module_sensitive_open_set_metrics() -> None:
         ("known_accuracy", "Known Acc."),
         ("unknown_recall", "Unknown Recall"),
         ("macro_f1", "Macro F1"),
-        ("auroc", "AUROC"),
+        ("oscr", "OSCR"),
     ]
     assert getattr(ablation_suite, "MODULE_OPEN_SET_KEYS", []) == [
         key for key, _ in fields
@@ -156,11 +158,11 @@ def test_summary_generates_four_metric_module_table_and_figure(tmp_path, monkeyp
 
     markdown = (tmp_path / "消融结果汇总.md").read_text(encoding="utf-8")
     assert (tmp_path / "模块消融.png").exists()
-    assert "| Known Acc. | Unknown Recall | Macro F1 | AUROC |" in markdown
+    assert "| Known Acc. | Unknown Recall | Macro F1 | OSCR |" in markdown
     assert "Overall Acc." not in markdown
     assert "Unknown Precision" not in markdown
     assert "Known FPR" not in markdown
-    assert "OSCR" not in markdown
+    assert "AUROC" not in markdown
 
 
 def test_ablation_table_starts_with_switch_columns() -> None:
@@ -240,3 +242,136 @@ def test_single_feature_subdivision_variants_do_not_include_filtering() -> None:
     assert variants["embedding_only"] is False
     assert variants["feature_fusion_wo_filtering"] is False
     assert variants["full_subdivision"] is True
+
+
+def test_km_sensitivity_reuses_formal_rejection_outputs(tmp_path, monkeypatch) -> None:
+    ablation_root = tmp_path / "ablations"
+    formal_output = tmp_path / "formal_pcbm"
+    checkpoint = tmp_path / "best_closed_set.pt"
+    formal_output.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    (formal_output / "open_set_metrics.json").write_text(
+        '{"unknown_recall": 0.9670416666666667}\n',
+        encoding="utf-8",
+    )
+    (formal_output / "open_set_predictions.csv").write_text(
+        "y_true,y_pred,unknown_score,q_om,q_pd,d_min\n0,0,0.1,0.1,0.1,0.1\n",
+        encoding="utf-8",
+    )
+
+    captured: list[dict] = []
+
+    def fake_run_unknown_subdivision(config: dict) -> dict:
+        captured.append(config)
+        subdivision_dir = Path(config["project"]["output_dir"]) / "unknown_subdivision"
+        subdivision_dir.mkdir(parents=True)
+        (subdivision_dir / "m_selection_history.json").write_text("[]\n", encoding="utf-8")
+        (subdivision_dir / "unknown_subdivision_metrics.json").write_text("{}\n", encoding="utf-8")
+        return {}
+
+    monkeypatch.setattr(ablation_suite, "ABLATION_ROOT", ablation_root)
+    monkeypatch.setitem(
+        ablation_suite.DATASETS,
+        "oracle",
+        {
+            **ablation_suite.DATASETS["oracle"],
+            "checkpoint": checkpoint,
+            "formal_output": formal_output,
+        },
+    )
+    monkeypatch.setattr(
+        ablation_suite,
+        "_base_config",
+        lambda dataset: {
+            "project": {},
+            "reporting": {},
+            "eval": {},
+            "unknown_subdivision": {},
+        },
+    )
+    monkeypatch.setattr(ablation_suite, "_run_unknown_subdivision_only", fake_run_unknown_subdivision)
+
+    output_dir = ablation_suite._run_reused_rejection_subdivision_variant(
+        dataset="oracle",
+        category="km",
+        variant_slug="m_0_1_2_3_auto",
+        variant_name="m=0,1,2,3,Auto",
+        config_mutator=lambda config: config["unknown_subdivision"].update({"overcluster_extra_candidates": [0, 1]}),
+    )
+
+    assert (output_dir / "open_set_metrics.json").read_text(encoding="utf-8") == (
+        formal_output / "open_set_metrics.json"
+    ).read_text(encoding="utf-8")
+    assert (output_dir / "open_set_predictions.csv").exists()
+    assert captured[0]["unknown_subdivision"]["reuse_open_set_predictions"] is True
+    assert captured[0]["unknown_subdivision"]["open_set_predictions_path"] == str(
+        (output_dir / "open_set_predictions.csv").resolve()
+    )
+
+
+def test_subdivision_ablations_reuse_formal_rejection_outputs(tmp_path, monkeypatch) -> None:
+    ablation_root = tmp_path / "ablations"
+    captured: list[tuple[str, dict]] = []
+
+    def forbidden_pipeline_variant(*args, **kwargs):
+        raise AssertionError("subdivision ablations must not rerun the OSR pipeline")
+
+    def fake_reused_variant(
+        *,
+        dataset: str,
+        category: str,
+        variant_slug: str,
+        variant_name: str,
+        config_mutator,
+    ) -> Path:
+        config = {
+            "project": {},
+            "reporting": {},
+            "eval": {},
+            "unknown_subdivision": {
+                "direct_confidence_quantile": 0.02,
+                "direct_min_cluster_size": 200,
+            },
+        }
+        config_mutator(config)
+        captured.append((variant_slug, config))
+
+        output_dir = ablation_suite._variant_dir(category, dataset, variant_slug)
+        subdivision_dir = output_dir / "unknown_subdivision"
+        subdivision_dir.mkdir(parents=True)
+        (subdivision_dir / "unknown_subdivision_metrics.json").write_text(
+            (
+                '{"nmi": 0.9, "ari": 0.8, "purity": 0.85, '
+                '"hungarian_accuracy": 0.86, "coverage_of_total_test_unknown": 0.967, '
+                '"resolved_num_clusters": 6, "uncertain_ratio": 0.0}\n'
+            ),
+            encoding="utf-8",
+        )
+        return output_dir
+
+    monkeypatch.setattr(ablation_suite, "ABLATION_ROOT", ablation_root)
+    monkeypatch.setattr(
+        ablation_suite,
+        "_base_config",
+        lambda dataset: {
+            "unknown_subdivision": {
+                "direct_confidence_quantile": 0.02,
+                "direct_min_cluster_size": 200,
+            },
+        },
+    )
+    monkeypatch.setattr(ablation_suite, "_run_pipeline_variant", forbidden_pipeline_variant)
+    monkeypatch.setattr(ablation_suite, "_run_reused_rejection_subdivision_variant", fake_reused_variant)
+
+    rows = ablation_suite.run_subdivision_ablations("oracle")
+
+    assert [row.variant_slug for row in rows] == [slug for slug, *_ in SUBDIVISION_VARIANTS]
+    assert [slug for slug, _ in captured] == [slug for slug, *_ in SUBDIVISION_VARIANTS]
+    by_slug = {slug: config["unknown_subdivision"] for slug, config in captured}
+    assert by_slug["embedding_only"]["direct_confidence_quantile"] == 0.0
+    assert by_slug["embedding_only"]["direct_min_cluster_size"] == 0
+    assert by_slug["feature_fusion_wo_filtering"]["direct_confidence_quantile"] == 0.0
+    assert by_slug["feature_fusion_wo_filtering"]["merge_extra_clusters_to_target"] is True
+    assert by_slug["full_subdivision"]["direct_confidence_quantile"] == 0.02
+    assert by_slug["full_subdivision"]["direct_min_cluster_size"] == 200
+    assert by_slug["full_subdivision"]["merge_extra_clusters_to_target"] is True

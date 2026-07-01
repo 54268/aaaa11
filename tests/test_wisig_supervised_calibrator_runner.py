@@ -21,11 +21,18 @@ def test_apply_formal_wisig_subdivision_config_uses_recovered_settings(tmp_path)
     assert subdivision["enabled"] is True
     assert subdivision["reuse_open_set_predictions"] is True
     assert subdivision["open_set_predictions_path"] == str(predictions_path)
+    assert subdivision["output_subdir"] == "unknown_subdivision_true_auto_k_sample_unified_k2_20_merge"
     assert subdivision["feature_mode"] == "embedding_iq_stats"
     assert subdivision["pca_dim"] == 96
+    assert subdivision["k_min"] == 2
+    assert subdivision["k_max"] == 20
     assert subdivision["clustering_backend"] == "gmm_full_direct"
-    assert subdivision["overcluster_extra_candidates"] == [0, 1, 2, 3]
-    assert subdivision["m_selection_mode"] == "offline_min_gain"
-    assert subdivision["merge_extra_clusters_to_target"] is True
+    assert subdivision["target_num_clusters"] is None
+    assert subdivision["target_k_strength"] == 0.0
+    assert subdivision["k_selection_mode"] == "sample_unified"
+    assert subdivision["overcluster_extra_candidates"] == [0]
+    assert subdivision["m_selection_mode"] == "unsupervised"
+    assert subdivision["merge_extra_clusters_to_target"] is False
+    assert subdivision["auto_merge_small_clusters"] is True
     assert subdivision["direct_confidence_quantile"] == 0.0
     assert subdivision["direct_min_cluster_size"] == 0

@@ -25,6 +25,7 @@ from functions.methods.supervised_calibrator import (
 )
 from functions.model.closed_set import ClosedSetTrainer
 from functions.pipeline import evaluate_open_set_artifacts
+from functions.subdivision_pipeline import run_unknown_subdivision
 from run_oracle import build_config
 from run_oracle_leave_class_out import (
     _copy_formal_artifacts,
@@ -33,7 +34,7 @@ from run_oracle_leave_class_out import (
 
 
 ROOT = Path(__file__).resolve().parent
-METRIC_KEYS = ("known_accuracy", "unknown_recall", "macro_f1", "auroc")
+METRIC_KEYS = ("known_accuracy", "unknown_recall", "macro_f1", "oscr")
 
 
 def rescale_pseudo_embeddings(
@@ -352,6 +353,34 @@ def _write_comparison(
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def apply_formal_oracle_subdivision_config(config: dict[str, Any], predictions_path: Path) -> None:
+    subdivision = config["unknown_subdivision"]
+    subdivision["enabled"] = True
+    subdivision["reuse_open_set_predictions"] = True
+    subdivision["open_set_predictions_path"] = str(predictions_path)
+    subdivision["output_subdir"] = "unknown_subdivision_true_auto_k_sample_unified_k2_20_merge"
+    subdivision["feature_mode"] = "embedding_stats"
+    subdivision["pca_dim"] = 96
+    subdivision["k_min"] = 2
+    subdivision["k_max"] = 20
+    subdivision["clustering_backend"] = "gmm_full_direct"
+    subdivision["target_num_clusters"] = None
+    subdivision["target_k_strength"] = 0.0
+    subdivision["use_known_prototype_anchors"] = False
+    subdivision["known_reject_margin"] = -1.0
+    subdivision["k_selection_mode"] = "sample_unified"
+    subdivision["overcluster_extra_clusters"] = 0
+    subdivision["overcluster_extra_candidates"] = [0]
+    subdivision["m_selection_mode"] = "unsupervised"
+    subdivision["m_selection_min_quality_gain"] = 0.01
+    subdivision["merge_extra_clusters_to_target"] = False
+    subdivision["auto_merge_small_clusters"] = True
+    subdivision["auto_merge_max_source_mean_ratio"] = 0.65
+    subdivision["auto_merge_min_balance_gain"] = 0.15
+    subdivision["direct_confidence_quantile"] = 0.02
+    subdivision["direct_min_cluster_size"] = 200
+
+
 def main() -> None:
     torch.set_num_threads(1)
     config = build_config()
@@ -490,6 +519,15 @@ def main() -> None:
         final_config,
         ckpt_path=final_output / "best_closed_set.pt",
     )
+    subdivision_config = copy.deepcopy(final_config)
+    apply_formal_oracle_subdivision_config(
+        subdivision_config,
+        final_output / "open_set_predictions.csv",
+    )
+    subdivision_metrics = run_unknown_subdivision(
+        subdivision_config,
+        ckpt_path=final_output / "best_closed_set.pt",
+    )
 
     baseline = load_json(
         ROOT / "outputs" / "auto_fusion_calibration_comparison" / "baseline_metrics.json"
@@ -522,6 +560,7 @@ def main() -> None:
             "metrics": comparison,
             "selected": selected,
             "final_metrics": final_metrics,
+            "subdivision_metrics": subdivision_metrics,
             "uses_real_unknown_for_selection": False,
         },
     )
@@ -530,6 +569,8 @@ def main() -> None:
     print(f"selected={selected['key']}")
     for key in METRIC_KEYS:
         print(f"{key}: {final_metrics[key]:.6f}")
+    for key in ["nmi", "ari", "hungarian_accuracy", "coverage_of_total_test_unknown"]:
+        print(f"subdivision_{key}: {subdivision_metrics[key]:.6f}")
 
 
 if __name__ == "__main__":

@@ -16,27 +16,22 @@ fit_K
   -> effective_K
 ```
 
-因此 `fit_K` 可以大于最终有效簇数。Oracle 当前为 `fit_K=7 -> effective_K=6`；WiSig 当前为 `fit_K=13 -> effective_K=12`。
+因此 `fit_K` 可以大于最终有效簇数。Oracle 当前为 `fit_K=8 -> effective_K=6`；WiSig 当前为 `fit_K=13 -> effective_K=12`。
 
-## 2. 为什么旧 auto-K 不够
+## 2. 为什么不使用给定 K
 
-旧版 sample-only auto-K 只在抽样 cache 上根据内部聚类分数选 K，结果会明显欠分裂：
+旧版 `K+m` 诊断实验会把协议中的真实未知类数作为目标 K，再额外搜索缓冲分量 `m`。这个设置便于排查聚类后端和特征组合，但不符合真实开放场景，因为实际部署时通常不知道未知发射源数量。
 
-| 数据集/配置 | NMI | ARI | Hungarian Acc. | Coverage | fit_K | effective_K |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Oracle old sample auto-K | 0.759842 | 0.571284 | 0.507773 | 0.948833 | 3 | 3 |
-| WiSig old sample auto-K | 0.949306 | 0.840598 | 0.832708 | 1.000000 | 10 | 10 |
-
-原因是抽样阶段看不到完整过滤/合并后的簇结构。Oracle 的 `K=3` 在抽样上规模均衡，但实际把多个真实未知类合在一起；WiSig 的 `K=10` 也欠分裂。
+当前正式结果已经切换为 true auto-K：算法只知道统一候选范围 `fit_K=2..20`，不知道 Oracle 有 6 个未知类，也不知道 WiSig 有 12 个未知类。真实未知标签只用于最后离线评价，不参与选 K、过滤或合并。
 
 ## 3. 当前统一候选评分
 
-当前做法是对候选 `fit_K` 执行完整细分后，用同一套无标签得分选择候选：
+当前做法是在 unknown cache 抽样上扫描统一候选范围 `fit_K=2..20`，用同一套无标签得分选择候选；选中的 `fit_K` 再回到全量 unknown cache 上拟合、过滤和合并：
 
 ```text
 score(fit_K)
   = normalized(GMM lower_bound)
-  + 3.0 * cluster_balance
+  + 1.0 * cluster_balance
   - 0.03 * fit_K
 ```
 
@@ -53,18 +48,11 @@ score(fit_K)
 候选 GMM 可能把一个真实未知类拆成一个大簇和一个小簇。为避免把这种子模态当作新类别，当前加入无标签簇均衡合并：
 
 ```text
-while min_cluster_size / mean_cluster_size < 0.75:
+while min_cluster_size / mean_cluster_size < 0.65:
     将最小簇合并到最近中心
 ```
 
-WiSig 的 13 分量直接输出时：
-
-| 配置 | NMI | ARI | Hungarian Acc. | Coverage | fit_K | effective_K |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| direct 13 no merge | 0.986711 | 0.975586 | 0.960625 | 1.000000 | 13 | 13 |
-| unified auto-merge | 0.998125 | 0.998637 | 0.999375 | 1.000000 | 13 | 12 |
-
-自动合并只触发 1 次，把冗余小簇并回最近簇。
+在当前正式 WiSig 输出中，自动搜索先选择 `fit_K=13`，随后簇均衡合并规则触发 1 次，把冗余小簇并回最近簇，最终得到 `effective_K=12`。该过程只依据簇规模、中心距离和均衡性提升，不使用真实未知类标签或真实未知类数。
 
 ## 5. 整体细分流程
 
@@ -76,13 +64,14 @@ WiSig 的 13 分量直接输出时：
   -> 构造 embedding + I/Q statistics
   -> 标准化
   -> PCA96
-  -> 扫描候选 fit_K
+  -> 在抽样 cache 上扫描候选 fit_K=2..20
       -> GMM-full-direct
+      -> 计算无标签候选分数
+  -> 选择分数最高的 fit_K
+  -> 在全量 unknown cache 上拟合选中的 fit_K
       -> posterior confidence 过滤
       -> 小簇过滤
       -> 簇均衡自动合并
-      -> 计算无标签候选分数
-  -> 选择分数最高的 fit_K
   -> 输出有效未知簇与 -1 不确定样本
   -> 仅离线评估 NMI / ARI / Hungarian Acc. / Coverage
 ```
@@ -93,10 +82,10 @@ WiSig 的 13 分量直接输出时：
 
 | 数据集 | NMI | ARI | Hungarian Acc. | Coverage | fit_K | effective_K |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Oracle | 0.991948 | 0.993851 | 0.997400 | 0.945583 | 7 | 6 |
+| Oracle | 0.963448 | 0.954799 | 0.979279 | 0.943083 | 8 | 6 |
 | WiSig | 0.998125 | 0.998637 | 0.999375 | 1.000000 | 13 | 12 |
 
-Oracle 三个聚类一致性指标均超过 0.99，coverage 为 0.945583。WiSig 四项细分指标均高于当前 OpenRFI 细分结果。
+Oracle 三个聚类一致性指标均在 0.95 左右或以上，coverage 为 0.943083。WiSig 四项细分指标均高于当前 OpenRFI 细分结果。
 
 ## 7. 论文写法建议
 

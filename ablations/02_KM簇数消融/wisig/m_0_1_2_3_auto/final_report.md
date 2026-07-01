@@ -8,31 +8,31 @@
 
 | 指标键 | 中文名 | 数值 | 说明 |
 | --- | --- | ---: | --- |
-| overall_accuracy | 总体准确率 | 0.997204 | 已知类分对且未知类拒识正确的总比例，越高越好。 |
-| known_accuracy | 已知类准确率 | 0.986719 | 只看真实已知类样本，被分到正确已知类别的比例，越高越好。 |
-| macro_f1 | 宏平均 F1 | 0.993554 | 每个类别 F1 的平均值，更关注类别均衡表现，越高越好。 |
-| auroc | 已知/未知区分 AUROC | 0.995952 | unknown score 区分已知与未知的整体能力，越接近 1 越好。 |
-| fpr95 | 95% 未知召回下的已知误拒率 | 0.010937 | 未知召回约 95% 时，已知样本被误拒为 unknown 的比例，越低越好。 |
+| overall_accuracy | 总体准确率 | 0.996711 | 已知类分对且未知类拒识正确的总比例，越高越好。 |
+| known_accuracy | 已知类准确率 | 0.984375 | 只看真实已知类样本，被分到正确已知类别的比例，越高越好。 |
+| macro_f1 | 宏平均 F1 | 0.992430 | 每个类别 F1 的平均值，更关注类别均衡表现，越高越好。 |
+| auroc | 已知/未知区分 AUROC | 0.998926 | unknown score 区分已知与未知的整体能力，越接近 1 越好。 |
+| fpr95 | 95% 未知召回下的已知误拒率 | 0.001953 | 未知召回约 95% 时，已知样本被误拒为 unknown 的比例，越低越好。 |
 | unknown_recall | 未知类召回率 | 1.000000 | 真实未知类中被拒识为 unknown 的比例，越高越好。 |
 
 ## 补充指标
 
 | 指标键 | 中文名 | 数值 | 说明 |
 | --- | --- | ---: | --- |
-| macro_precision | 宏平均精确率 | 0.999792 | 每个类别 precision 的平均值，越高越好。 |
-| macro_recall | 宏平均召回率 | 0.987500 | 每个类别 recall 的平均值，越高越好。 |
-| weighted_f1 | 加权 F1 | 0.997186 | 按类别样本数加权后的 F1，越高越好。 |
-| unknown_precision | 未知类精确率 | 0.996471 | 被拒识为 unknown 的样本中真实未知类占比，越高越好。 |
-| known_fpr_as_unknown | 已知类误拒率 | 0.013281 | 真实已知类被错误拒识成 unknown 的比例，越低越好。 |
+| macro_precision | 宏平均精确率 | 0.999756 | 每个类别 precision 的平均值，越高越好。 |
+| macro_recall | 宏平均召回率 | 0.985294 | 每个类别 recall 的平均值，越高越好。 |
+| weighted_f1 | 加权 F1 | 0.996693 | 按类别样本数加权后的 F1，越高越好。 |
+| unknown_precision | 未知类精确率 | 0.995851 | 被拒识为 unknown 的样本中真实未知类占比，越高越好。 |
+| known_fpr_as_unknown | 已知类误拒率 | 0.015625 | 真实已知类被错误拒识成 unknown 的比例，越低越好。 |
 | unknown_false_accept_rate | 未知类误接收率 | 0.000000 | 真实未知类被错误接受为某个已知类的比例，越低越好。 |
-| oscr | 开放集分类识别曲线面积 | 0.986684 | 同时考虑已知类分类正确率和未知拒识能力的综合面积，越高越好。 |
+| oscr | 开放集分类识别曲线面积 | 0.984341 | 同时考虑已知类分类正确率和未知拒识能力的综合面积，越高越好。 |
 
 ## 实验协议
 
 | 字段 | 中文名 | 数值 |
 | --- | --- | --- |
-| threshold_strategy_used | 阈值策略 | `manual_global` |
-| threshold_mode | 阈值模式 | `manual_global` |
+| threshold_strategy_used | 阈值策略 | `global` |
+| threshold_mode | 阈值模式 | `global` |
 | score_calibration_mode | 分数校准方式 | `none` |
 | known_rescue_enabled | 已知类救回 | `False` |
 | number_of_tx | Tx 总数 | `28` |

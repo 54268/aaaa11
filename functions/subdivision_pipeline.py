@@ -16,6 +16,7 @@ from functions.methods.fusion import (
 )
 from functions.data.data_build import build_data_module
 from functions.methods.unknown_subdivision import (
+    _select_k_by_unified_score,
     evaluate_unknown_subdivision,
     fit_feature_preprocessor,
     run_ofscil_subdivision,
@@ -227,6 +228,149 @@ def _cluster_size_stats(labels: np.ndarray) -> dict[str, Any]:
     }
 
 
+def _load_open_set_predictions(path: str | Path, expected_size: int | None = None) -> dict[str, np.ndarray]:
+    path = Path(path)
+    required = ["y_true", "y_pred", "unknown_score", "q_om", "q_pd"]
+    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        if reader.fieldnames is None:
+            raise ValueError(f"Open-set prediction file has no header: {path}")
+        missing = [column for column in required if column not in reader.fieldnames]
+        if missing:
+            raise ValueError(f"Open-set prediction file is missing columns {missing}: {path}")
+        rows = list(reader)
+
+    if expected_size is not None and len(rows) != int(expected_size):
+        raise ValueError(f"Expected {expected_size} prediction rows in {path}, found {len(rows)}")
+
+    return {
+        "y_true": np.asarray([int(row["y_true"]) for row in rows], dtype=np.int64),
+        "y_pred": np.asarray([int(row["y_pred"]) for row in rows], dtype=np.int64),
+        "unknown_score": np.asarray([float(row["unknown_score"]) for row in rows], dtype=np.float64),
+        "q_om": np.asarray([float(row["q_om"]) for row in rows], dtype=np.float64),
+        "q_pd": np.asarray([float(row["q_pd"]) for row in rows], dtype=np.float64),
+    }
+
+
+def _merge_labels_to_target_k(
+    features: np.ndarray,
+    labels: np.ndarray,
+    target_k: int,
+) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
+    features = np.asarray(features, dtype=np.float64)
+    labels = np.asarray(labels, dtype=np.int64).copy()
+    target_k = int(target_k)
+    if target_k <= 0:
+        return labels, np.zeros((0, features.shape[1]), dtype=np.float64), {"merged_cluster_count": 0}
+
+    def valid_cluster_ids(current_labels: np.ndarray) -> list[int]:
+        return sorted(int(item) for item in np.unique(current_labels) if int(item) != -1)
+
+    def centers_for(current_labels: np.ndarray, cluster_ids: list[int]) -> dict[int, np.ndarray]:
+        return {cluster_id: features[current_labels == cluster_id].mean(axis=0) for cluster_id in cluster_ids}
+
+    original_k = len(valid_cluster_ids(labels))
+    merged_count = 0
+    while len(valid_cluster_ids(labels)) > target_k:
+        cluster_ids = valid_cluster_ids(labels)
+        counts = {cluster_id: int((labels == cluster_id).sum()) for cluster_id in cluster_ids}
+        source_id = min(cluster_ids, key=lambda cluster_id: (counts[cluster_id], cluster_id))
+        remaining_ids = [cluster_id for cluster_id in cluster_ids if cluster_id != source_id]
+        if not remaining_ids:
+            break
+        centers = centers_for(labels, cluster_ids)
+        source_center = centers[source_id]
+        target_id = min(
+            remaining_ids,
+            key=lambda cluster_id: float(np.linalg.norm(source_center - centers[cluster_id])),
+        )
+        labels[labels == source_id] = target_id
+        merged_count += 1
+
+    final_ids = valid_cluster_ids(labels)
+    remap = {cluster_id: idx for idx, cluster_id in enumerate(final_ids)}
+    remapped = np.asarray([remap.get(int(label), -1) for label in labels], dtype=np.int64)
+    final_centers = np.asarray(
+        [features[remapped == cluster_id].mean(axis=0) for cluster_id in range(len(final_ids))],
+        dtype=np.float64,
+    )
+    return remapped, final_centers, {
+        "merged_cluster_count": int(merged_count),
+        "pre_merge_num_clusters": int(original_k),
+        "post_merge_num_clusters": int(len(final_ids)),
+        "merge_target_num_clusters": int(target_k),
+    }
+
+
+def _merge_unbalanced_small_clusters(
+    features: np.ndarray,
+    labels: np.ndarray,
+    *,
+    max_source_mean_ratio: float = 0.65,
+    min_balance_gain: float = 0.15,
+) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
+    features = np.asarray(features, dtype=np.float64)
+    labels = np.asarray(labels, dtype=np.int64).copy()
+
+    def valid_cluster_ids(current_labels: np.ndarray) -> list[int]:
+        return sorted(int(item) for item in np.unique(current_labels) if int(item) != -1)
+
+    def remap_labels(current_labels: np.ndarray) -> np.ndarray:
+        final_ids = valid_cluster_ids(current_labels)
+        remap = {cluster_id: idx for idx, cluster_id in enumerate(final_ids)}
+        return np.asarray([remap.get(int(label), -1) for label in current_labels], dtype=np.int64)
+
+    def balance_for(current_labels: np.ndarray) -> float:
+        ids = valid_cluster_ids(current_labels)
+        if len(ids) <= 1:
+            return 1.0
+        counts = np.asarray([int((current_labels == cluster_id).sum()) for cluster_id in ids], dtype=np.float64)
+        return float(counts.min() / max(float(counts.mean()), 1.0))
+
+    def centers_for(current_labels: np.ndarray, cluster_ids: list[int]) -> dict[int, np.ndarray]:
+        return {cluster_id: features[current_labels == cluster_id].mean(axis=0) for cluster_id in cluster_ids}
+
+    pre_merge_k = len(valid_cluster_ids(labels))
+    merged_count = 0
+    while True:
+        cluster_ids = valid_cluster_ids(labels)
+        if len(cluster_ids) <= 2:
+            break
+        counts = {cluster_id: int((labels == cluster_id).sum()) for cluster_id in cluster_ids}
+        mean_count = float(np.mean(list(counts.values())))
+        source_id = min(cluster_ids, key=lambda cluster_id: (counts[cluster_id], cluster_id))
+        source_ratio = float(counts[source_id] / max(mean_count, 1.0))
+        if source_ratio > float(max_source_mean_ratio):
+            break
+        centers = centers_for(labels, cluster_ids)
+        source_center = centers[source_id]
+        target_id = min(
+            [cluster_id for cluster_id in cluster_ids if cluster_id != source_id],
+            key=lambda cluster_id: float(np.linalg.norm(source_center - centers[cluster_id])),
+        )
+        candidate = labels.copy()
+        candidate[candidate == source_id] = target_id
+        old_balance = balance_for(labels)
+        new_balance = balance_for(candidate)
+        if new_balance < old_balance + float(min_balance_gain):
+            break
+        labels = remap_labels(candidate)
+        merged_count += 1
+
+    final_ids = valid_cluster_ids(labels)
+    final_centers = np.asarray(
+        [features[labels == cluster_id].mean(axis=0) for cluster_id in final_ids],
+        dtype=np.float64,
+    )
+    return labels, final_centers, {
+        "auto_merged_cluster_count": int(merged_count),
+        "pre_auto_merge_num_clusters": int(pre_merge_k),
+        "post_auto_merge_num_clusters": int(len(final_ids)),
+        "auto_merge_max_source_mean_ratio": float(max_source_mean_ratio),
+        "auto_merge_min_balance_gain": float(min_balance_gain),
+    }
+
+
 def _as_int_candidates(value: Any, fallback: list[int]) -> list[int]:
     if value is None:
         raw_values = fallback
@@ -305,7 +449,18 @@ def _select_minimal_sufficient_m(
     ]
     eligible = sorted(eligible, key=lambda row: int(row.get("overcluster_extra_clusters", 0)))
     if not eligible:
-        return max(candidates, key=lambda row: float(row.get("m_selection_score", float("-inf"))))
+        return max(
+            candidates,
+            key=lambda row: (
+                float(
+                    row.get(
+                        "m_selection_offline_adjusted_quality",
+                        row.get("m_selection_score", float("-inf")),
+                    )
+                ),
+                float(row.get("m_selection_score", float("-inf"))),
+            ),
+        )
 
     selected = eligible[0]
     gain_floor = float(min_quality_gain) + 1e-12
@@ -395,10 +550,6 @@ def run_unknown_subdivision(
     trainer = ClosedSetTrainer(config, datamodule.bundle.num_known_classes, datamodule.bundle.signal_length)
     trainer.load_checkpoint(checkpoint_path_for(config, ckpt_path))
 
-    openmax = OpenMaxCalibrator.from_state_dict(load_pickle(output_dir / "openmax.pkl"))
-    fusion_cfg = load_json(output_dir / "fusion.json")
-    stats_file = np.load(output_dir / "distance_stats.npz")
-
     test_known = trainer.extract_embeddings(datamodule.test_known_dataloader())
     test_unknown = trainer.extract_embeddings(datamodule.test_unknown_dataloader())
     prototypes = test_known["prototypes"]
@@ -416,31 +567,45 @@ def run_unknown_subdivision(
         prototypes,
         float(config["model"]["temperature"]),
     )
-    openmax_out = openmax.predict(activations_from_distances(distances))
-    q_om = openmax_out["unknown_prob"]
-    q_pd = prototype_distance_unknown_score(distances, known_pred, stats_file["mu"], stats_file["sigma"])
-    q_u = fuse_unknown_score(
-        q_om,
-        q_pd,
-        float(fusion_cfg["fusion_lambda"]),
-        mode=str(fusion_cfg.get("fusion_mode", config["fusion"].get("mode", "linear"))),
-    )
-    q_u = apply_score_calibration(q_u, known_pred, fusion_cfg.get("score_calibration"))
-    y_pred = apply_unknown_rejection(
-        known_pred=known_pred,
-        q_u=q_u,
-        unknown_label=unknown_label,
-        threshold=fusion_cfg.get("threshold"),
-        thresholds_per_class=fusion_cfg.get("thresholds_per_class"),
-    )
-    y_pred = apply_known_rescue(
-        y_pred=y_pred,
-        known_pred=known_pred,
-        q_u=q_u,
-        distances=distances,
-        unknown_label=unknown_label,
-        rescue_config=fusion_cfg.get("known_rescue", config["fusion"].get("known_rescue")),
-    )
+    reuse_predictions = bool(cfg.get("reuse_open_set_predictions", False))
+    if reuse_predictions:
+        predictions_path = Path(cfg.get("open_set_predictions_path") or (output_dir / "open_set_predictions.csv"))
+        cached_predictions = _load_open_set_predictions(predictions_path, expected_size=len(all_embeddings))
+        if not np.array_equal(cached_predictions["y_true"], true_open_labels):
+            raise ValueError(f"Open-set prediction labels do not match current split: {predictions_path}")
+        y_pred = cached_predictions["y_pred"]
+        q_u = cached_predictions["unknown_score"]
+        q_om = cached_predictions["q_om"]
+        q_pd = cached_predictions["q_pd"]
+    else:
+        openmax = OpenMaxCalibrator.from_state_dict(load_pickle(output_dir / "openmax.pkl"))
+        fusion_cfg = load_json(output_dir / "fusion.json")
+        stats_file = np.load(output_dir / "distance_stats.npz")
+        openmax_out = openmax.predict(activations_from_distances(distances))
+        q_om = openmax_out["unknown_prob"]
+        q_pd = prototype_distance_unknown_score(distances, known_pred, stats_file["mu"], stats_file["sigma"])
+        q_u = fuse_unknown_score(
+            q_om,
+            q_pd,
+            float(fusion_cfg["fusion_lambda"]),
+            mode=str(fusion_cfg.get("fusion_mode", config["fusion"].get("mode", "linear"))),
+        )
+        q_u = apply_score_calibration(q_u, known_pred, fusion_cfg.get("score_calibration"))
+        y_pred = apply_unknown_rejection(
+            known_pred=known_pred,
+            q_u=q_u,
+            unknown_label=unknown_label,
+            threshold=fusion_cfg.get("threshold"),
+            thresholds_per_class=fusion_cfg.get("thresholds_per_class"),
+        )
+        y_pred = apply_known_rescue(
+            y_pred=y_pred,
+            known_pred=known_pred,
+            q_u=q_u,
+            distances=distances,
+            unknown_label=unknown_label,
+            rescue_config=fusion_cfg.get("known_rescue", config["fusion"].get("known_rescue")),
+        )
     selected_mask = y_pred == unknown_label
 
     data_root = Path(config["data"]["root"])
@@ -504,14 +669,18 @@ def run_unknown_subdivision(
     if merge_similarity_threshold is not None:
         merge_similarity_threshold = float(merge_similarity_threshold)
 
+    k_selection_mode = str(cfg.get("k_selection_mode", "extra_candidates")).lower()
     overcluster_candidates = _as_int_candidates(cfg.get("overcluster_extra_candidates"), [overcluster_extra])
     m_selection_mode = str(cfg.get("m_selection_mode", "unsupervised"))
     m_selection_min_quality_gain = float(cfg.get("m_selection_min_quality_gain", 0.01))
     seed = int(config.get("train", {}).get("seed", 42))
     true_unknown_mask = selected_true_open == unknown_label
 
-    def run_with_extra(extra_clusters: int) -> tuple[Any, int, int, int | None]:
-        fit_k_min, fit_k_max, fit_target_num_clusters = _fit_k_for_extra(cfg, target_num_clusters, extra_clusters)
+    def run_candidate(
+        fit_k_min: int,
+        fit_k_max: int,
+        fit_target_num_clusters: int | None,
+    ) -> tuple[Any, int, int, int | None]:
         candidate_result = run_ofscil_subdivision(
             prepared_samples,
             prepared_anchors,
@@ -539,12 +708,39 @@ def run_unknown_subdivision(
             ),
             density_cluster_selection_epsilon=float(cfg.get("density_cluster_selection_epsilon", 0.0)),
         )
+        if bool(cfg.get("merge_extra_clusters_to_target", False)) and target_num_clusters is not None:
+            merged_labels, merged_centers, merge_info = _merge_labels_to_target_k(
+                prepared_samples,
+                candidate_result.labels,
+                int(target_num_clusters),
+            )
+            candidate_result.labels = merged_labels
+            candidate_result.centers = merged_centers
+            candidate_result.resolved_k = int(merge_info["post_merge_num_clusters"])
+            candidate_result.diagnostics.update(merge_info)
+        elif bool(cfg.get("auto_merge_small_clusters", False)) and target_num_clusters is None:
+            merged_labels, merged_centers, merge_info = _merge_unbalanced_small_clusters(
+                prepared_samples,
+                candidate_result.labels,
+                max_source_mean_ratio=float(cfg.get("auto_merge_max_source_mean_ratio", 0.65)),
+                min_balance_gain=float(cfg.get("auto_merge_min_balance_gain", 0.15)),
+            )
+            candidate_result.labels = merged_labels
+            candidate_result.centers = merged_centers
+            candidate_result.resolved_k = int(merge_info["post_auto_merge_num_clusters"])
+            candidate_result.diagnostics.update(merge_info)
         return candidate_result, fit_k_min, fit_k_max, fit_target_num_clusters
 
-    selection_history: list[dict[str, Any]] = []
-    candidate_runs: dict[int, tuple[Any, int, int, int | None, dict[str, Any]]] = {}
-    for candidate_extra in overcluster_candidates:
-        candidate_result, candidate_k_min, candidate_k_max, candidate_target_k = run_with_extra(candidate_extra)
+    def run_with_extra(extra_clusters: int) -> tuple[Any, int, int, int | None]:
+        return run_candidate(*_fit_k_for_extra(cfg, target_num_clusters, extra_clusters))
+
+    def candidate_history_row(
+        candidate_key: int,
+        candidate_result: Any,
+        candidate_k_min: int,
+        candidate_k_max: int,
+        candidate_target_k: int | None,
+    ) -> dict[str, Any]:
         score_info = _subdivision_m_selection_score(candidate_result, target_num_clusters)
         candidate_eval_mask = true_unknown_mask & (candidate_result.labels != -1)
         offline_metrics = evaluate_unknown_subdivision(
@@ -563,11 +759,20 @@ def run_unknown_subdivision(
         )
         offline_coverage = float(candidate_eval_mask.sum() / max(len(test_unknown["labels"]), 1))
         offline_adjusted_quality = float(offline_quality * offline_coverage)
-        history_row = {
-            "overcluster_extra_clusters": int(candidate_extra),
+        fit_num_clusters = (
+            int(candidate_target_k)
+            if candidate_target_k is not None
+            else int(candidate_result.diagnostics.get("selected_num_clusters", candidate_result.resolved_k))
+        )
+        return {
+            "candidate_key": int(candidate_key),
+            "overcluster_extra_clusters": int(candidate_key),
             "fit_k_min": int(candidate_k_min),
             "fit_k_max": int(candidate_k_max),
-            "fit_num_clusters": int(candidate_target_k) if candidate_target_k is not None else int(candidate_result.resolved_k),
+            "fit_num_clusters": int(fit_num_clusters),
+            "k": int(fit_num_clusters),
+            "score": float(score_info["m_selection_score"]),
+            "cluster_max_balance": float(score_info["m_selection_cluster_balance"]),
             "resolved_num_clusters": int(candidate_result.resolved_k),
             "uncertain_size": int((candidate_result.labels == -1).sum()),
             "uncertain_ratio": float((candidate_result.labels == -1).mean()) if len(candidate_result.labels) else 0.0,
@@ -581,32 +786,108 @@ def run_unknown_subdivision(
             **score_info,
             **{key: value for key, value in candidate_result.diagnostics.items() if value is not None},
         }
-        selection_history.append(history_row)
-        candidate_runs[int(candidate_extra)] = (
-            candidate_result,
-            candidate_k_min,
-            candidate_k_max,
-            candidate_target_k,
-            history_row,
+
+    selection_history: list[dict[str, Any]] = []
+    candidate_runs: dict[int, tuple[Any, int, int, int | None, dict[str, Any]]] = {}
+    if target_num_clusters is None and k_selection_mode in {"auto", "full_candidate", "full_candidates"}:
+        fit_k_min = max(1, int(cfg.get("k_min", 2)))
+        fit_k_max = max(fit_k_min, int(cfg.get("k_max", 15)))
+        for candidate_k in range(fit_k_min, fit_k_max + 1):
+            candidate_result, candidate_k_min, candidate_k_max, candidate_target_k = run_candidate(
+                candidate_k,
+                candidate_k,
+                None,
+            )
+            history_row = candidate_history_row(
+                candidate_k,
+                candidate_result,
+                candidate_k_min,
+                candidate_k_max,
+                candidate_target_k,
+            )
+            history_row["overcluster_extra_clusters"] = 0
+            selection_history.append(history_row)
+            candidate_runs[int(candidate_k)] = (
+                candidate_result,
+                candidate_k_min,
+                candidate_k_max,
+                candidate_target_k,
+                history_row,
+            )
+
+        selected_k, enriched_history = _select_k_by_unified_score(
+            selection_history,
+            likelihood_weight=float(cfg.get("auto_k_likelihood_weight", 1.0)),
+            max_cluster_balance_weight=float(cfg.get("auto_k_cluster_balance_weight", 3.0)),
+            legacy_score_weight=float(cfg.get("auto_k_legacy_score_weight", 0.0)),
+            complexity_penalty=float(cfg.get("auto_k_complexity_penalty", 0.03)),
         )
+        selection_history = enriched_history
+        enriched_by_k = {int(row["fit_num_clusters"]): row for row in enriched_history}
+        selected_history = enriched_by_k[int(selected_k)]
+        candidate_runs[int(selected_k)] = (
+            candidate_runs[int(selected_k)][0],
+            candidate_runs[int(selected_k)][1],
+            candidate_runs[int(selected_k)][2],
+            candidate_runs[int(selected_k)][3],
+            selected_history,
+        )
+    else:
+        for candidate_extra in overcluster_candidates:
+            candidate_result, candidate_k_min, candidate_k_max, candidate_target_k = run_with_extra(candidate_extra)
+            history_row = candidate_history_row(
+                candidate_extra,
+                candidate_result,
+                candidate_k_min,
+                candidate_k_max,
+                candidate_target_k,
+            )
+            selection_history.append(history_row)
+            candidate_runs[int(candidate_extra)] = (
+                candidate_result,
+                candidate_k_min,
+                candidate_k_max,
+                candidate_target_k,
+                history_row,
+            )
 
     if not candidate_runs:
         raise RuntimeError("未知类细分 m 候选为空，无法执行聚类。")
 
-    if m_selection_mode == "offline_min_gain":
-        selected_history = _select_minimal_sufficient_m(
-            selection_history,
-            target_num_clusters=target_num_clusters,
-            min_quality_gain=m_selection_min_quality_gain,
-        )
-    elif m_selection_mode == "unsupervised":
-        selected_history = max(selection_history, key=lambda row: float(row["m_selection_score"]))
-    else:
-        raise ValueError(f"Unsupported unknown_subdivision.m_selection_mode: {m_selection_mode}")
+    if not (target_num_clusters is None and k_selection_mode in {"auto", "full_candidate", "full_candidates"}):
+        if m_selection_mode == "offline_min_gain":
+            selected_history = _select_minimal_sufficient_m(
+                selection_history,
+                target_num_clusters=target_num_clusters,
+                min_quality_gain=m_selection_min_quality_gain,
+            )
+        elif m_selection_mode == "unsupervised":
+            selected_history = max(selection_history, key=lambda row: float(row["m_selection_score"]))
+        else:
+            raise ValueError(f"Unsupported unknown_subdivision.m_selection_mode: {m_selection_mode}")
 
+    selected_candidate_key = int(selected_history.get("candidate_key", selected_history["overcluster_extra_clusters"]))
     overcluster_extra = int(selected_history["overcluster_extra_clusters"])
-    result, fit_k_min, fit_k_max, fit_target_num_clusters, selected_history = candidate_runs[overcluster_extra]
+    result, fit_k_min, fit_k_max, fit_target_num_clusters, selected_history = candidate_runs[selected_candidate_key]
     m_score_info = {key: value for key, value in selected_history.items() if key.startswith("m_selection_")}
+    auto_k_score_info = {
+        key: value
+        for key, value in selected_history.items()
+        if key in {"auto_k_score", "legacy_k_score", "likelihood_norm", "legacy_score_norm"}
+    }
+    selected_fit_num_clusters = int(
+        selected_history.get(
+            "fit_num_clusters",
+            int(fit_target_num_clusters) if fit_target_num_clusters is not None else int(result.resolved_k),
+        )
+    )
+    selected_k_search = next(
+        (row for row in result.k_search_history if int(row.get("k", -1)) == selected_fit_num_clusters),
+        {},
+    )
+    for key in ("auto_k_score", "legacy_k_score", "likelihood_norm", "legacy_score_norm"):
+        if key not in auto_k_score_info and key in selected_k_search:
+            auto_k_score_info[key] = selected_k_search[key]
 
     eval_mask = true_unknown_mask & (result.labels != -1)
     metrics = evaluate_unknown_subdivision(selected_names[eval_mask], result.labels[eval_mask])
@@ -622,13 +903,17 @@ def run_unknown_subdivision(
             "use_known_prototype_anchors": use_known_anchors,
             "resolved_num_clusters": int(result.resolved_k),
             "target_num_clusters": int(target_num_clusters) if target_num_clusters is not None else None,
-            "fit_num_clusters": int(fit_target_num_clusters) if fit_target_num_clusters is not None else int(result.resolved_k),
+            "fit_num_clusters": int(selected_fit_num_clusters),
+            "k_selection_mode": k_selection_mode,
+            "auto_k_candidate_min": int(cfg.get("k_min", 2)),
+            "auto_k_candidate_max": int(cfg.get("k_max", 15)),
             "overcluster_extra_clusters": int(overcluster_extra),
             "overcluster_extra_candidates": [int(item) for item in overcluster_candidates],
             "auto_selected_overcluster_extra_clusters": int(overcluster_extra),
             "m_selection_mode": m_selection_mode,
             "m_selection_min_quality_gain": m_selection_min_quality_gain,
             **m_score_info,
+            **auto_k_score_info,
             "direct_confidence_quantile": float(cfg.get("direct_confidence_quantile", 0.0)),
             "direct_min_cluster_size": int(cfg.get("direct_min_cluster_size", 0)),
             "density_min_cluster_size": int(cfg.get("density_min_cluster_size", 20)),
@@ -636,6 +921,8 @@ def run_unknown_subdivision(
                 None if cfg.get("density_min_samples") is None else int(cfg.get("density_min_samples"))
             ),
             "density_cluster_selection_epsilon": float(cfg.get("density_cluster_selection_epsilon", 0.0)),
+            "reuse_open_set_predictions": bool(reuse_predictions),
+            "open_set_predictions_path": str(cfg.get("open_set_predictions_path") or "") if reuse_predictions else "",
             "selected_unknown_cache_size": int(len(selected_indices)),
             "uncertain_size": int((result.labels == -1).sum()),
             "uncertain_ratio": float((result.labels == -1).mean()) if len(result.labels) else 0.0,

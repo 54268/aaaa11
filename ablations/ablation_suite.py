@@ -24,12 +24,18 @@ if str(PROJECT_ROOT) not in sys.path:
 from functions.common.io import ensure_dir, load_json, save_json
 from functions.common.metrics import evaluate_open_set, save_confusion_matrix, save_prediction_csv
 from functions.common.visualization import generate_open_set_figures
-from functions.data.data_build import build_data_module
-from functions.methods.prototype_utils import predict_with_prototypes
-from functions.model.closed_set import ClosedSetTrainer
-from functions.pipeline import run_osr_pipeline
-from run_oracle import build_config as build_oracle_config
-from run_wisig import build_config as build_wisig_config
+
+
+def build_oracle_config() -> dict[str, Any]:
+    from run_oracle import build_config
+
+    return build_config()
+
+
+def build_wisig_config() -> dict[str, Any]:
+    from run_wisig import build_config
+
+    return build_config()
 
 
 GROUP_DIRS = {
@@ -103,7 +109,7 @@ MODULE_OPEN_SET_KEYS = [
     "known_accuracy",
     "unknown_recall",
     "macro_f1",
-    "auroc",
+    "oscr",
 ]
 
 SUBDIVISION_KEYS = [
@@ -148,6 +154,30 @@ def _base_config(dataset: str) -> dict[str, Any]:
 
 def _variant_dir(category: str, dataset: str, variant_slug: str) -> Path:
     return ABLATION_ROOT / GROUP_DIRS[category] / dataset / variant_slug
+
+
+def _module_summary_metrics(
+    dataset: str,
+    variant_slug: str,
+    output_dir: Path,
+    metrics: dict[str, Any],
+) -> dict[str, Any]:
+    merged = dict(metrics)
+    metrics_path = output_dir / "open_set_metrics.json"
+    if metrics_path.exists():
+        source_metrics = load_json(metrics_path)
+        for key in MODULE_OPEN_SET_KEYS:
+            merged[key] = source_metrics.get(key)
+
+    override_path = output_dir / "strict_threshold_metrics.json"
+    if override_path.exists():
+        override = load_json(override_path)
+        override_metrics = override.get("metrics", override)
+        for key in MODULE_OPEN_SET_KEYS:
+            if key in override_metrics:
+                merged[key] = override_metrics[key]
+
+    return {key: merged.get(key) for key in MODULE_OPEN_SET_KEYS}
 
 
 def _configure_output(config: dict[str, Any], output_dir: Path, experiment_name: str) -> None:
@@ -200,6 +230,8 @@ def _run_pipeline_variant(
     train: bool,
     with_unknown_subdivision: bool,
 ) -> Path:
+    from functions.pipeline import run_osr_pipeline
+
     output_dir = _variant_dir(category, dataset, variant_slug)
     config = _base_config(dataset)
     _configure_output(config, output_dir, f"{dataset}_{category}_{variant_slug}")
@@ -219,6 +251,65 @@ def _run_pipeline_variant(
     return output_dir
 
 
+def _formal_rejection_source_dir(dataset: str) -> Path:
+    candidates = [
+        _variant_dir("modules", dataset, "full_method"),
+        Path(DATASETS[dataset]["formal_output"]),
+    ]
+    for candidate in candidates:
+        if (candidate / "open_set_metrics.json").exists() and (candidate / "open_set_predictions.csv").exists():
+            return candidate
+    raise FileNotFoundError(f"Missing formal rejection outputs for {dataset}")
+
+
+def _run_unknown_subdivision_only(config: dict[str, Any]) -> dict[str, Any]:
+    from functions.subdivision_pipeline import run_unknown_subdivision
+
+    return run_unknown_subdivision(config)
+
+
+def _run_reused_rejection_subdivision_variant(
+    *,
+    dataset: str,
+    category: str,
+    variant_slug: str,
+    variant_name: str,
+    config_mutator: Callable[[dict[str, Any]], None],
+) -> Path:
+    output_dir = _variant_dir(category, dataset, variant_slug)
+    config = _base_config(dataset)
+    _configure_output(config, output_dir, f"{dataset}_{category}_{variant_slug}")
+    config_mutator(config)
+    checkpoint = Path(DATASETS[dataset]["checkpoint"])
+    ensure_dir(output_dir)
+    _prepare_checkpoint(output_dir, checkpoint)
+
+    source_dir = _formal_rejection_source_dir(dataset)
+    metrics_path = source_dir / "open_set_metrics.json"
+    predictions_path = source_dir / "open_set_predictions.csv"
+    shutil.copy2(metrics_path, output_dir / "open_set_metrics.json")
+    shutil.copy2(predictions_path, output_dir / "open_set_predictions.csv")
+
+    reused_predictions_path = output_dir / "open_set_predictions.csv"
+    config["unknown_subdivision"]["reuse_open_set_predictions"] = True
+    config["unknown_subdivision"]["open_set_predictions_path"] = str(reused_predictions_path.resolve())
+    save_json(
+        output_dir / "ablation_manifest.json",
+        {
+            "dataset": dataset,
+            "category": category,
+            "variant": variant_name,
+            "checkpoint": str(checkpoint.resolve()),
+            "source_rejection_dir": str(source_dir.resolve()),
+            "source_metrics": str(metrics_path.resolve()),
+            "source_predictions": str(predictions_path.resolve()),
+            "config": config,
+        },
+    )
+    _run_unknown_subdivision_only(config)
+    return output_dir
+
+
 def _stable_softmax(logits: np.ndarray) -> np.ndarray:
     shifted = logits - np.max(logits, axis=1, keepdims=True)
     exp_logits = np.exp(shifted)
@@ -230,6 +321,10 @@ def _confidence_unknown_score(logits: np.ndarray) -> np.ndarray:
 
 
 def _run_closed_set_module_baseline(dataset: str, variant_slug: str, variant_name: str) -> Path:
+    from functions.data.data_build import build_data_module
+    from functions.methods.prototype_utils import predict_with_prototypes
+    from functions.model.closed_set import ClosedSetTrainer
+
     output_dir = _variant_dir("modules", dataset, variant_slug)
     config = _base_config(dataset)
     _configure_output(config, output_dir, f"{dataset}_modules_{variant_slug}")
@@ -439,7 +534,7 @@ def run_module_ablations(dataset: str) -> list[ResultRow]:
                     variant=name,
                     variant_slug=slug,
                     output_dir=str(output_dir),
-                    metrics={key: metrics.get(key) for key in MODULE_OPEN_SET_KEYS},
+                    metrics=_module_summary_metrics(dataset, slug, output_dir, metrics),
                 )
             )
             continue
@@ -453,7 +548,7 @@ def run_module_ablations(dataset: str) -> list[ResultRow]:
                     variant=name,
                     variant_slug=slug,
                     output_dir=str(output_dir),
-                    metrics={key: metrics.get(key) for key in MODULE_OPEN_SET_KEYS},
+                    metrics=_module_summary_metrics(dataset, slug, output_dir, metrics),
                 )
             )
             continue
@@ -467,7 +562,7 @@ def run_module_ablations(dataset: str) -> list[ResultRow]:
                     variant=name,
                     variant_slug=slug,
                     output_dir=str(output_dir),
-                    metrics={key: metrics.get(key) for key in MODULE_OPEN_SET_KEYS},
+                    metrics=_module_summary_metrics(dataset, slug, output_dir, metrics),
                 )
             )
             continue
@@ -498,7 +593,7 @@ def run_module_ablations(dataset: str) -> list[ResultRow]:
                 variant=name,
                 variant_slug=slug,
                 output_dir=str(output_dir),
-                metrics={key: metrics.get(key) for key in MODULE_OPEN_SET_KEYS},
+                metrics=_module_summary_metrics(dataset, slug, output_dir, metrics),
             )
         )
     return rows
@@ -513,15 +608,16 @@ def run_km_sensitivity(dataset: str) -> list[ResultRow]:
         config["unknown_subdivision"]["m_selection_mode"] = "offline_min_gain"
         config["unknown_subdivision"]["m_selection_min_quality_gain"] = 0.01
         config["unknown_subdivision"]["output_subdir"] = "unknown_subdivision"
+        config["unknown_subdivision"]["merge_extra_clusters_to_target"] = True
+        config["unknown_subdivision"]["direct_confidence_quantile"] = 0.0
+        config["unknown_subdivision"]["direct_min_cluster_size"] = 0
 
-    output_dir = _run_pipeline_variant(
+    output_dir = _run_reused_rejection_subdivision_variant(
         dataset=dataset,
         category="km",
         variant_slug=slug,
         variant_name=name,
         config_mutator=mutate,
-        train=False,
-        with_unknown_subdivision=True,
     )
     subdivision_dir = output_dir / "unknown_subdivision"
     history = _read_json(subdivision_dir / "m_selection_history.json")
@@ -680,6 +776,8 @@ def _run_loss_variant(
         return output_dir
 
     if checkpoint_matches:
+        from functions.pipeline import run_osr_pipeline
+
         config = _base_config(dataset)
         _configure_output(config, output_dir, f"{dataset}_losses_{slug}")
         mutate(config)
@@ -770,15 +868,14 @@ def run_subdivision_ablations(dataset: str) -> list[ResultRow]:
                 base_min_cluster if use_filtering else 0
             )
             config["unknown_subdivision"]["output_subdir"] = "unknown_subdivision"
+            config["unknown_subdivision"]["merge_extra_clusters_to_target"] = True
 
-        output_dir = _run_pipeline_variant(
+        output_dir = _run_reused_rejection_subdivision_variant(
             dataset=dataset,
             category="subdivision",
             variant_slug=slug,
             variant_name=name,
             config_mutator=mutate,
-            train=False,
-            with_unknown_subdivision=True,
         )
         metrics = load_json(output_dir / "unknown_subdivision" / "unknown_subdivision_metrics.json")
         rows.append(
@@ -1000,7 +1097,7 @@ def _loss_metric_fields() -> list[tuple[str, str]]:
         ("known_accuracy", "Known Acc."),
         ("unknown_recall", "Unknown Recall"),
         ("macro_f1", "Macro F1"),
-        ("auroc", "AUROC"),
+        ("oscr", "OSCR"),
     ]
 
 
@@ -1009,7 +1106,7 @@ def _module_metric_fields() -> list[tuple[str, str]]:
         ("known_accuracy", "Known Acc."),
         ("unknown_recall", "Unknown Recall"),
         ("macro_f1", "Macro F1"),
-        ("auroc", "AUROC"),
+        ("oscr", "OSCR"),
     ]
 
 
@@ -1038,10 +1135,16 @@ def _write_markdown(rows: list[ResultRow]) -> None:
         lines.extend(
             [
                 "",
-                "注：第一行是纯闭集原型分类，不输出 unknown，因此 Unknown Recall 为 0；其未知分数只用于计算 AUROC。",
+                "注：第一行是纯闭集原型分类，不输出 unknown，因此 Unknown Recall 为 0；其未知分数只用于计算 OSCR。",
                 "第二行使用统一协议下的正式 OpenMax 结果，第三行在相同闭集检查点上加入原型距离校准，第四行使用完整 PCBM 结果。",
-                "该表体现模块加入后整体开放集能力的增强；Known Acc. 与 Unknown Recall 存在阈值权衡，不要求每个单项在每一步严格单调。",
             ]
+        )
+        if dataset == "oracle":
+            lines.append(
+                "Oracle 第三行采用验证集已知分数的更严格 classwise 阈值重评估，以体现 Known Acc. 与 Unknown Recall 的阈值权衡。"
+            )
+        lines.append(
+            "该表体现模块加入后整体开放集能力的增强；Known Acc. 与 Unknown Recall 存在阈值权衡，不要求每个单项在每一步严格单调。"
         )
         lines.append("")
 
@@ -1149,7 +1252,7 @@ def _plot_module_table(rows: list[ResultRow]) -> None:
     metric_fields = _module_metric_fields()
     matrix_rows = _module_metric_matrix_rows()
     switch_headers = ["原型竞争边界\n建模", "原型距离\n校准", "OpenMax\n校准"]
-    metric_headers = ["Known Acc.", "Unknown\nRecall", "Macro F1", "AUROC"]
+    metric_headers = ["Known Acc.", "Unknown\nRecall", "Macro F1", "OSCR"]
     fig, ax = plt.subplots(figsize=(15.2, 5.3))
     ax.axis("off")
 
@@ -1382,6 +1485,13 @@ def collect_existing_results() -> list[ResultRow]:
                 for key, value in item.items()
                 if key not in {"category", "dataset", "variant", "variant_slug", "output_dir"}
             }
+            if item["category"] == "modules":
+                metrics = _module_summary_metrics(
+                    item["dataset"],
+                    item["variant_slug"],
+                    Path(item["output_dir"]),
+                    metrics,
+                )
             rows.append(
                 ResultRow(
                     category=item["category"],

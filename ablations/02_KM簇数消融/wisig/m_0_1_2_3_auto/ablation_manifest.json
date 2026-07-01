@@ -3,6 +3,9 @@
   "category": "km",
   "variant": "m=0,1,2,3,Auto",
   "checkpoint": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\wisig_singleday_osr_k16_u12\\best_closed_set.pt",
+  "source_rejection_dir": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\01_模块消融\\wisig\\full_method",
+  "source_metrics": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\01_模块消融\\wisig\\full_method\\open_set_metrics.json",
+  "source_predictions": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\01_模块消融\\wisig\\full_method\\open_set_predictions.csv",
   "config": {
     "_config_path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\run_wisig.py",
     "_project_root": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code",
@@ -71,11 +74,26 @@
       "euclid_weight": 1.0
     },
     "fusion": {
+      "mode": "linear",
       "lambda_grid": [
-        0.2
+        0.0,
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.5,
+        0.6,
+        0.7,
+        0.8,
+        0.9,
+        1.0
       ],
-      "manual_fusion_lambda": 0.2,
-      "manual_threshold": 0.94,
+      "score_calibration": "none",
+      "manual_threshold": null,
+      "manual_thresholds_per_class": null,
+      "known_rescue": {
+        "enabled": false
+      },
       "threshold_grid": [
         0.25,
         0.3,
@@ -98,14 +116,16 @@
         0.98,
         0.99
       ],
+      "threshold_mode": "global",
       "selection_weights": {
-        "known_accuracy": 0.8,
-        "unknown_recall": 0.05,
-        "macro_f1": 0.1,
+        "known_accuracy": 0.45,
+        "unknown_recall": 0.35,
+        "macro_f1": 0.15,
         "auroc": 0.05
       },
-      "known_quantile_floor": 0.995,
-      "min_known_accuracy": 0.98
+      "known_quantile_floor": 0.95,
+      "min_known_accuracy": 0.985,
+      "require_feasible": true
     },
     "eval": {
       "save_predictions": true
@@ -140,14 +160,17 @@
       ],
       "m_selection_mode": "offline_min_gain",
       "m_selection_min_quality_gain": 0.01,
-      "direct_confidence_quantile": 0.1,
-      "direct_min_cluster_size": 160,
+      "direct_confidence_quantile": 0.0,
+      "direct_min_cluster_size": 0,
       "n_init": 30,
       "agg_sample_size": 8000,
       "uncertain_penalty": 0.15,
       "stability_weight": 0.3,
       "db_weight": 0.25,
-      "ch_weight": 0.3
+      "ch_weight": 0.3,
+      "merge_extra_clusters_to_target": true,
+      "reuse_open_set_predictions": true,
+      "open_set_predictions_path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\02_KM簇数消融\\wisig\\m_0_1_2_3_auto\\open_set_predictions.csv"
     }
   }
 }

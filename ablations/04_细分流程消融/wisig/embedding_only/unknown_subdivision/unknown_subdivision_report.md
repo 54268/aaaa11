@@ -1,6 +1,6 @@
 # Wisig 未知类细分结果
 
-当前协议：unknown cache 细分聚类（支持 KMeans / Agglomerative / GMM 后端；GMM-full-direct 直接由 GMM 输出候选标签，再通过 GMM 后验置信度和不稳定小簇规则标记不确定样本）。
+当前协议：unknown cache 细分聚类（支持 KMeans / Agglomerative / HDBSCAN / GMM 后端；GMM-full-direct 直接由 GMM 输出候选标签，再通过 GMM 后验置信度和不稳定小簇规则标记不确定样本）。
 
 | 指标键 | 中文说明 | 数值 |
 | --- | --- | ---: |

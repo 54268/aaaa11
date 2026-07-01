@@ -51,7 +51,7 @@
   "test_known_sample_count": 8000,
   "test_unknown_sample_count": 24000,
   "split_file": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\data\\splits\\oracle\\oracle_main_sorted_k10_u6.json",
-  "output_dir": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\02_KM簇数消融\\oracle\\m_0_1_2_3_auto",
+  "output_dir": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\oracle_kri16_demod_known_first",
   "thresholds_per_class": [
     0.999999,
     0.999999,

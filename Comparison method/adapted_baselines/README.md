@@ -88,4 +88,4 @@ Comparison method/adapted_results/
 D:\Anaconda3\envs\pytorch\python.exe "D:\learn_pytorch\笔记\方案\os_sei_code\Comparison method\adapted_baselines\run_comparison.py"
 ```
 
-默认使用 `formal` 模式。若只想快速检查流程，把 `run_comparison.py` 顶部的 `RUN_MODE` 改成 `smoke` 即可。
+当前仅保留 `formal` 正式模式用于论文表格复现；历史快速调试输出已从仓库清理。

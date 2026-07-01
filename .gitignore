@@ -8,7 +8,20 @@ pytest-cache-files*/
 /data/
 /outputs/oracle_leave_class_out_calibration/folds/*/data/
 
-# 临时探索/调参日志和缓存
+# Temporary exploration/tuning logs and caches
 _explore_*.json
 _explore_*.log
 _run_*.log
+
+# Local diagnostic projects and probe/smoke outputs
+/test_wisig/
+**/*probe*/
+**/smoke/
+**/smoke_*/
+**/*_smoke/
+
+# Generated runtime caches
+**/.ipynb_checkpoints/
+**/cache/
+**/logs/
+**/__pycache__/

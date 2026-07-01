@@ -3,6 +3,9 @@
   "category": "km",
   "variant": "m=0,1,2,3,Auto",
   "checkpoint": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\oracle_kri16_demod_known_first\\best_closed_set.pt",
+  "source_rejection_dir": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\01_模块消融\\oracle\\full_method",
+  "source_metrics": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\01_模块消融\\oracle\\full_method\\open_set_metrics.json",
+  "source_predictions": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\01_模块消融\\oracle\\full_method\\open_set_predictions.csv",
   "config": {
     "_config_path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\run_oracle.py",
     "_project_root": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code",
@@ -70,44 +73,23 @@
     "fusion": {
       "mode": "linear",
       "lambda_grid": [
-        0.35
+        0.0,
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.5,
+        0.6,
+        0.7,
+        0.8,
+        0.9,
+        1.0
       ],
-      "manual_fusion_lambda": 0.35,
       "score_calibration": "classwise_z",
-      "manual_thresholds_per_class": [
-        0.999999,
-        0.999999,
-        0.999999,
-        0.999999,
-        0.999999,
-        0.999999,
-        0.946937,
-        0.968068,
-        0.618474,
-        0.65
-      ],
+      "manual_threshold": null,
+      "manual_thresholds_per_class": null,
       "known_rescue": {
-        "enabled": true,
-        "rules_per_class": [
-          {
-            "class_index": 6,
-            "max_score": 0.97,
-            "max_distance": 0.3,
-            "min_margin": 0.0
-          },
-          {
-            "class_index": 8,
-            "max_score": 0.85,
-            "max_distance": 0.05,
-            "min_margin": 1.6
-          },
-          {
-            "class_index": 9,
-            "max_score": 0.92,
-            "max_distance": 0.095,
-            "min_margin": 1.6
-          }
-        ]
+        "enabled": false
       },
       "threshold_grid": [
         0.28,
@@ -134,7 +116,7 @@
         0.86,
         0.88
       ],
-      "threshold_mode": "manual_classwise",
+      "threshold_mode": "classwise_joint",
       "classwise_quantile_grid": [
         0.9,
         0.93,
@@ -145,7 +127,21 @@
       ],
       "classwise_known_weight": 0.45,
       "classwise_unknown_weight": 0.55,
-      "classwise_min_known_accept": 0.88,
+      "classwise_known_penalty_grid": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.35,
+        0.5,
+        0.75,
+        1.0,
+        1.5,
+        2.0,
+        3.0,
+        5.0,
+        8.0
+      ],
       "selection_weights": {
         "known_accuracy": 0.45,
         "unknown_recall": 0.35,
@@ -153,7 +149,66 @@
         "auroc": 0.05
       },
       "known_quantile_floor": 0.95,
-      "min_known_accuracy": 0.91
+      "min_known_accuracy": 0.96,
+      "require_feasible": true,
+      "leave_class_out": {
+        "enabled": true,
+        "num_folds": 5,
+        "base_seed": 42,
+        "pseudo_max_samples": 800,
+        "min_known_accuracy": 0.95,
+        "selection_weights": {
+          "known_accuracy": 0.4,
+          "heldout_unknown_recall": 0.35,
+          "pseudo_unknown_recall": 0.1,
+          "macro_f1": 0.1,
+          "auroc": 0.05
+        },
+        "uses_real_unknown_for_calibration": false,
+        "output_dir": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\oracle_leave_class_out_calibration"
+      },
+      "supervised_calibrator": {
+        "enabled": true,
+        "hidden_dim": 8,
+        "pseudo_scale_grid": [
+          0.75,
+          1.0,
+          1.25,
+          1.5,
+          2.0
+        ],
+        "lambda_grid": [
+          0.0,
+          0.25,
+          0.5,
+          0.75,
+          1.0
+        ],
+        "epoch_grid": [
+          100,
+          250
+        ],
+        "seed_grid": [
+          42,
+          43,
+          44
+        ],
+        "learning_rate": 0.01,
+        "threshold_quantile_grid": [
+          0.9,
+          0.925,
+          0.95,
+          0.96,
+          0.97,
+          0.98,
+          0.99
+        ],
+        "min_known_accuracy": 0.95,
+        "formal_known_accuracy_target": 0.93,
+        "pseudo_max_samples": 3200,
+        "uses_real_unknown_for_selection": false,
+        "output_dir": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\outputs\\oracle_supervised_calibrator"
+      }
     },
     "eval": {
       "save_predictions": true
@@ -188,14 +243,17 @@
       "suspected_known_policy": "uncertain",
       "assignment_margin": 0.0,
       "known_reject_margin": -1.0,
-      "direct_confidence_quantile": 0.05,
-      "direct_min_cluster_size": 800,
+      "direct_confidence_quantile": 0.0,
+      "direct_min_cluster_size": 0,
       "n_init": 30,
       "agg_sample_size": 8000,
       "uncertain_penalty": 0.15,
       "stability_weight": 0.3,
       "db_weight": 0.25,
-      "ch_weight": 0.3
+      "ch_weight": 0.3,
+      "merge_extra_clusters_to_target": true,
+      "reuse_open_set_predictions": true,
+      "open_set_predictions_path": "D:\\learn_pytorch\\笔记\\方案\\os_sei_code\\ablations\\02_KM簇数消融\\oracle\\m_0_1_2_3_auto\\open_set_predictions.csv"
     }
   }
 }

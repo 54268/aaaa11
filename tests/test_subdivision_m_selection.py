@@ -98,3 +98,34 @@ def test_one_percentage_point_gain_is_not_enough_to_add_structure():
     )
 
     assert selected["overcluster_extra_clusters"] == 0
+
+
+def test_offline_selection_falls_back_to_best_adjusted_quality_when_no_candidate_hits_target():
+    candidates = [
+        {
+            "overcluster_extra_clusters": 0,
+            "resolved_num_clusters": 5,
+            "m_selection_score": 0.90,
+            "m_selection_offline_adjusted_quality": 0.700000,
+        },
+        {
+            "overcluster_extra_clusters": 1,
+            "resolved_num_clusters": 7,
+            "m_selection_score": 0.20,
+            "m_selection_offline_adjusted_quality": 0.760000,
+        },
+        {
+            "overcluster_extra_clusters": 2,
+            "resolved_num_clusters": 8,
+            "m_selection_score": 0.10,
+            "m_selection_offline_adjusted_quality": 0.820000,
+        },
+    ]
+
+    selected = _select_minimal_sufficient_m(
+        candidates,
+        target_num_clusters=6,
+        min_quality_gain=0.01,
+    )
+
+    assert selected["overcluster_extra_clusters"] == 2

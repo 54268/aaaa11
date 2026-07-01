@@ -500,6 +500,7 @@ def _scoring_for_k(
     labels: np.ndarray,
     second_labels: np.ndarray,
     centers: np.ndarray,
+    diagnostics: dict[str, Any] | None,
     known_anchor_features: np.ndarray | None,
     seed: int,
     k: int,
@@ -526,6 +527,13 @@ def _scoring_for_k(
         ch_score = 0.0
     stability = float(adjusted_rand_score(labels[common], second_labels[common])) if int(common.sum()) else 0.0
     uncertain_rate = float((labels == -1).mean())
+    if len(unique_clusters) > 0:
+        _, counts = np.unique(labels[valid], return_counts=True)
+        cluster_max_balance = float(counts.mean() / max(float(counts.max()), 1.0))
+        cluster_min_balance = float(counts.min() / max(float(counts.mean()), 1.0))
+    else:
+        cluster_max_balance = 0.0
+        cluster_min_balance = 0.0
     center_known_penalty = 0.0
     if known_anchor_features is not None and len(known_anchor_features) and len(centers):
         center_known = cosine_distance_matrix(centers, known_anchor_features).min(axis=1)
@@ -552,9 +560,57 @@ def _scoring_for_k(
         "calinski_harabasz_norm": float(ch_score),
         "stability": float(stability),
         "uncertain_rate": float(uncertain_rate),
+        "cluster_max_balance": float(cluster_max_balance),
+        "cluster_min_balance": float(cluster_min_balance),
         "center_known_penalty": float(center_known_penalty),
         "target_bonus": float(target_bonus),
+        **{key: value for key, value in (diagnostics or {}).items() if value is not None},
     }
+
+
+def _normalized_by_range(rows: list[dict[str, Any]], key: str) -> list[float]:
+    values = [float(row.get(key, 0.0)) for row in rows]
+    finite = [value for value in values if np.isfinite(value)]
+    if not finite:
+        return [0.0 for _ in rows]
+    min_value = min(finite)
+    max_value = max(finite)
+    if max_value <= min_value:
+        return [0.0 for _ in rows]
+    return [float((value - min_value) / (max_value - min_value)) if np.isfinite(value) else 0.0 for value in values]
+
+
+def _select_k_by_unified_score(
+    history: list[dict[str, Any]],
+    *,
+    likelihood_weight: float = 1.0,
+    max_cluster_balance_weight: float = 1.0,
+    legacy_score_weight: float = 0.0,
+    complexity_penalty: float = 0.03,
+) -> tuple[int, list[dict[str, Any]]]:
+    if not history:
+        return 1, []
+    likelihood_norm = _normalized_by_range(history, "gmm_lower_bound")
+    legacy_norm = _normalized_by_range(history, "score")
+    enriched: list[dict[str, Any]] = []
+    for row, likelihood_score, legacy_score in zip(history, likelihood_norm, legacy_norm):
+        auto_k_score = (
+            float(likelihood_weight) * likelihood_score
+            + float(max_cluster_balance_weight) * float(row.get("cluster_max_balance", 0.0))
+            + float(legacy_score_weight) * legacy_score
+            - float(complexity_penalty) * int(row["k"])
+        )
+        enriched.append(
+            {
+                **row,
+                "legacy_k_score": float(row.get("score", 0.0)),
+                "likelihood_norm": float(likelihood_score),
+                "legacy_score_norm": float(legacy_score),
+                "auto_k_score": float(auto_k_score),
+            }
+        )
+    selected = max(enriched, key=lambda row: (float(row["auto_k_score"]), -int(row["k"])))
+    return int(selected["k"]), enriched
 
 
 def estimate_k(
@@ -586,8 +642,6 @@ def estimate_k(
 
     upper = max(1, min(int(k_max), len(eval_features) - 1))
     lower = max(1, min(int(k_min), upper))
-    best_k = lower
-    best_score = -np.inf
     history: list[dict[str, Any]] = []
 
     for k in range(lower, upper + 1):
@@ -618,6 +672,7 @@ def estimate_k(
             labels=first.labels,
             second_labels=second.labels,
             centers=first.centers,
+            diagnostics=first.diagnostics,
             known_anchor_features=known_anchor_features,
             seed=seed,
             k=k,
@@ -631,10 +686,8 @@ def estimate_k(
         scoring["resolved_clusters"] = int(first.resolved_k)
         scoring["backend"] = str(backend)
         history.append(scoring)
-        if scoring["score"] > best_score:
-            best_score = float(scoring["score"])
-            best_k = int(k)
 
+    best_k, history = _select_k_by_unified_score(history)
     return best_k, history
 
 
@@ -663,7 +716,10 @@ def run_ofscil_subdivision(
     density_min_samples: int | None = None,
     density_cluster_selection_epsilon: float = 0.0,
 ) -> OfscilSubdivisionResult:
-    if target_num_clusters is not None and int(target_num_clusters) > 0 and k_min == k_max:
+    if k_min == k_max:
+        selected_k = int(k_min)
+        history = []
+    elif target_num_clusters is not None and int(target_num_clusters) > 0 and k_min == k_max:
         selected_k = int(target_num_clusters)
         history = []
     elif target_num_clusters is not None and int(target_num_clusters) > 0 and target_k_strength >= 1.0:
@@ -705,6 +761,7 @@ def run_ofscil_subdivision(
         density_cluster_selection_epsilon=density_cluster_selection_epsilon,
     )
     result.k_search_history.extend(history)
+    result.diagnostics["selected_num_clusters"] = int(selected_k)
     return result
 
 
