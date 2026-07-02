@@ -316,11 +316,11 @@ def test_distance_module_uses_shared_fusion_settings_without_dataset_tuning() ->
     assert config["fusion"]["selection_weights"] == {"macro_f1": 1.0}
 
 
-def test_single_feature_subdivision_variants_do_not_include_filtering() -> None:
+def test_subdivision_feature_variants_keep_common_auto_k_filtering() -> None:
     variants = {slug: use_filtering for slug, _, _, use_filtering in SUBDIVISION_VARIANTS}
 
-    assert variants["iq_descriptors_only"] is False
-    assert variants["embedding_only"] is False
+    assert variants["iq_descriptors_only"] is True
+    assert variants["embedding_only"] is True
     assert variants["full_subdivision"] is True
     assert [name for _, name, _, _ in SUBDIVISION_VARIANTS] == [
         "Embedding only",
@@ -402,6 +402,17 @@ def test_subdivision_ablations_reuse_formal_rejection_outputs(tmp_path, monkeypa
             },
         },
     )
+    formal_source = tmp_path / "formal_subdivision"
+    formal_source.mkdir()
+    (formal_source / "unknown_subdivision_metrics.json").write_text(
+        '{"direct_confidence_quantile": 0.015, "direct_min_cluster_size": 123}\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        ablation_suite,
+        "_formal_subdivision_source_dir",
+        lambda dataset: formal_source,
+    )
     monkeypatch.setattr(ablation_suite, "_run_pipeline_variant", forbidden_pipeline_variant)
     monkeypatch.setattr(ablation_suite, "_run_reused_rejection_subdivision_variant", fake_reused_variant)
     monkeypatch.setattr(ablation_suite, "_copy_formal_subdivision_result", fake_copy_formal_subdivision_result)
@@ -415,12 +426,13 @@ def test_subdivision_ablations_reuse_formal_rejection_outputs(tmp_path, monkeypa
     ]
     assert copied == ["full_subdivision"]
     by_slug = {slug: config["unknown_subdivision"] for slug, config in captured}
-    assert by_slug["embedding_only"]["direct_confidence_quantile"] == 0.0
-    assert by_slug["embedding_only"]["direct_min_cluster_size"] == 0
-    assert by_slug["embedding_only"]["target_num_clusters"] is None
-    assert by_slug["embedding_only"]["target_k_strength"] == 0.0
-    assert by_slug["embedding_only"]["k_selection_mode"] == "sample_unified"
-    assert by_slug["embedding_only"]["merge_extra_clusters_to_target"] is False
+    for slug in ["embedding_only", "iq_descriptors_only"]:
+        assert by_slug[slug]["direct_confidence_quantile"] == 0.015
+        assert by_slug[slug]["direct_min_cluster_size"] == 123
+        assert by_slug[slug]["target_num_clusters"] is None
+        assert by_slug[slug]["target_k_strength"] == 0.0
+        assert by_slug[slug]["k_selection_mode"] == "sample_unified"
+        assert by_slug[slug]["merge_extra_clusters_to_target"] is False
     assert rows[-1].variant == "Feature fusion"
     assert rows[-1].metrics["nmi"] == 0.99
     assert rows[-1].metrics["coverage_of_total_test_unknown"] == 0.94

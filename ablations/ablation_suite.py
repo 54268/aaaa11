@@ -90,8 +90,8 @@ LOSS_VARIANTS = [
 ]
 
 SUBDIVISION_VARIANTS = [
-    ("embedding_only", "Embedding only", "embedding", False),
-    ("iq_descriptors_only", "I/Q descriptors only", "iq_stats", False),
+    ("embedding_only", "Embedding only", "embedding", True),
+    ("iq_descriptors_only", "I/Q descriptors only", "iq_stats", True),
     ("full_subdivision", "Feature fusion", "embedding_iq_stats", True),
 ]
 
@@ -271,6 +271,15 @@ def _formal_subdivision_source_dir(dataset: str) -> Path:
     if candidates:
         return candidates[0].parent
     raise FileNotFoundError(f"Missing formal subdivision outputs for {dataset}: {formal_output}")
+
+
+def _formal_subdivision_filter_defaults(dataset: str, base: dict[str, Any]) -> tuple[float, int]:
+    metrics_path = _formal_subdivision_source_dir(dataset) / "unknown_subdivision_metrics.json"
+    metrics = load_json(metrics_path)
+    return (
+        float(metrics.get("direct_confidence_quantile", base.get("direct_confidence_quantile", 0.0))),
+        int(metrics.get("direct_min_cluster_size", base.get("direct_min_cluster_size", 0))),
+    )
 
 
 def _run_unknown_subdivision_only(config: dict[str, Any]) -> dict[str, Any]:
@@ -865,8 +874,7 @@ def run_selected_loss_ablations(
 def run_subdivision_ablations(dataset: str) -> list[ResultRow]:
     rows: list[ResultRow] = []
     base = _base_config(dataset)["unknown_subdivision"]
-    base_quantile = float(base.get("direct_confidence_quantile", 0.0))
-    base_min_cluster = int(base.get("direct_min_cluster_size", 0))
+    base_quantile, base_min_cluster = _formal_subdivision_filter_defaults(dataset, base)
     for slug, name, feature_mode, use_filtering in SUBDIVISION_VARIANTS:
         def mutate(
             config: dict[str, Any],
