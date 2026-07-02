@@ -7,7 +7,6 @@ from pathlib import Path
 import matplotlib.patheffects as path_effects
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.lines import Line2D
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 
@@ -28,6 +27,7 @@ from functions.methods.fusion import (
 )
 from functions.methods.openmax_wrapper import OpenMaxCalibrator
 from functions.methods.prototype_utils import activations_from_distances, predict_with_prototypes
+from functions.methods.supervised_calibrator import apply_supervised_calibrator_score
 from functions.model.closed_set import ClosedSetTrainer
 
 
@@ -36,9 +36,17 @@ PCA_DIM = 50
 TSNE_PERPLEXITY = 35
 MAX_CORRECT_PER_KNOWN_CLASS = 350
 MAX_CORRECT_UNKNOWN = 1500
-FIG_SIZE = (11.4, 7.6)
+FORMAL_OUTPUT_DIRS = {
+    "oracle": PROJECT_ROOT / "outputs" / "oracle_supervised_calibrator" / "final",
+    "wisig": PROJECT_ROOT / "outputs" / "wisig_supervised_calibrator_formal" / "final",
+}
+FIG_SIZE = (6.2, 4.1)
 FIG_DPI = 300
-POINT_SIZE = 9
+POINT_SIZE = 5.5
+UNKNOWN_POINT_SIZE = 5.0
+PROTOTYPE_SIZE = 150
+PROTOTYPE_LABEL_SIZE = 10
+TICK_LABEL_SIZE = 12
 
 plt.rcParams["font.sans-serif"] = ["Arial", "Microsoft YaHei", "DejaVu Sans"]
 plt.rcParams["axes.unicode_minus"] = False
@@ -59,7 +67,11 @@ def build_experiment_config(dataset: str) -> dict:
         from run_wisig import build_config
     else:
         raise ValueError("dataset must be oracle or wisig")
-    return build_config()
+    config = build_config()
+    formal_output_dir = FORMAL_OUTPUT_DIRS[dataset]
+    if formal_output_dir.exists():
+        config["project"]["output_dir"] = str(formal_output_dir.resolve())
+    return config
 
 
 def resolve_checkpoint_path(config: dict, checkpoint_arg: str | None) -> Path:
@@ -111,13 +123,22 @@ def extract_open_set_results(config: dict, checkpoint_path: Path) -> dict:
 
     q_om = openmax.predict(activations_from_distances(distances))["unknown_prob"]
     q_pd = prototype_distance_unknown_score(distances, known_pred, distance_stats["mu"], distance_stats["sigma"])
-    q_u = fuse_unknown_score(
-        q_om,
-        q_pd,
-        float(fusion_config["fusion_lambda"]),
-        mode=str(fusion_config.get("fusion_mode", config["fusion"].get("mode", "linear"))),
-    )
-    q_u = apply_score_calibration(q_u, known_pred, fusion_config.get("score_calibration"))
+    score_calibration_config = fusion_config.get("score_calibration") or {}
+    if score_calibration_config.get("mode") == "supervised_calibrator":
+        q_u = apply_supervised_calibrator_score(
+            q_om=q_om,
+            q_pd=q_pd,
+            fusion_lambda=float(fusion_config["fusion_lambda"]),
+            calibrator_path=score_calibration_config["path"],
+        )
+    else:
+        q_u = fuse_unknown_score(
+            q_om,
+            q_pd,
+            float(fusion_config["fusion_lambda"]),
+            mode=str(fusion_config.get("fusion_mode", config["fusion"].get("mode", "linear"))),
+        )
+        q_u = apply_score_calibration(q_u, known_pred, score_calibration_config)
     y_pred = apply_unknown_rejection(
         known_pred=known_pred,
         q_u=q_u,
@@ -202,7 +223,7 @@ def plot_global_tsne(
     class_colors = [plt.get_cmap("tab20")(i % 20) for i in range(unknown_label)]
 
     fig, ax = plt.subplots(figsize=FIG_SIZE)
-    fig.subplots_adjust(left=0.07, right=0.98, top=0.91, bottom=0.16)
+    fig.subplots_adjust(left=0.12, right=0.985, top=0.985, bottom=0.10)
     ax.set_facecolor("#FAFAFA")
 
     unknown_mask = y_true == unknown_label
@@ -210,7 +231,7 @@ def plot_global_tsne(
         ax.scatter(
             points_2d[unknown_mask, 0],
             points_2d[unknown_mask, 1],
-            s=8,
+            s=UNKNOWN_POINT_SIZE,
             c="lightgray",
             alpha=0.34,
             marker="o",
@@ -241,11 +262,11 @@ def plot_global_tsne(
         ax.scatter(
             x,
             y,
-            s=230,
+            s=PROTOTYPE_SIZE,
             c=[class_colors[class_id]],
             marker="*",
             edgecolors="white",
-            linewidths=1.4,
+            linewidths=1.1,
             zorder=6,
         )
         label = ax.annotate(
@@ -253,7 +274,7 @@ def plot_global_tsne(
             xy=(x, y),
             xytext=(5, 5),
             textcoords="offset points",
-            fontsize=8.5,
+            fontsize=PROTOTYPE_LABEL_SIZE,
             fontweight="bold",
             ha="left",
             va="bottom",
@@ -261,36 +282,13 @@ def plot_global_tsne(
         )
         label.set_path_effects([path_effects.withStroke(linewidth=2.6, foreground="white")])
 
-    dataset_label = "Oracle" if "oracle" in save_path.stem.lower() else "WiSig"
-    ax.set_title(
-        f"Open-set embedding distribution on {dataset_label}",
-        fontsize=14,
-        pad=10,
-        fontfamily="Arial",
-    )
-    ax.set_xlabel("t-SNE 1", fontsize=10, labelpad=7)
-    ax.set_ylabel("t-SNE 2", fontsize=10, labelpad=7)
+    ax.set_xlabel("")
+    ax.set_ylabel("")
     ax.grid(alpha=0.16, linestyle="-", linewidth=0.6)
-    ax.tick_params(labelsize=8, length=3)
+    ax.locator_params(axis="both", nbins=5)
+    ax.tick_params(labelsize=TICK_LABEL_SIZE, length=3.5, width=0.8)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-
-    legend_handles = [
-        Line2D([0], [0], marker="o", linestyle="None", markerfacecolor="gray", markeredgecolor="none", markersize=7, label="Known samples (true label color)"),
-        Line2D([0], [0], marker="o", linestyle="None", markerfacecolor="lightgray", markeredgecolor="none", markersize=7, label="Unknown samples"),
-        Line2D([0], [0], marker="*", linestyle="None", markerfacecolor="white", markeredgecolor="black", markersize=12, label="Known prototype"),
-    ]
-    ax.legend(
-        handles=legend_handles,
-        loc="upper center",
-        bbox_to_anchor=(0.5, -0.105),
-        ncol=3,
-        frameon=False,
-        fontsize=8.5,
-        columnspacing=1.15,
-        handletextpad=0.45,
-        borderaxespad=0,
-    )
 
     fig.savefig(save_path, dpi=FIG_DPI, bbox_inches="tight", pad_inches=0.06)
     plt.close(fig)
