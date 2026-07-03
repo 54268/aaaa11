@@ -1,0 +1,7 @@
+category,dataset,known_accuracy,macro_f1,mbs,oscr,pcbs_cae,provenance,unknown_recall,validation_auroc,validation_known_accuracy,validation_oscr,validation_pseudo_unknown_recall,variant,variant_slug
+boundary_modules,oracle,0.9782,0.6489,False,0.0,False,Closed-set prototype classifier; no open-set rejection operating point is applied.,0.0,,,,,Prototype classifier,prototype_classifier
+boundary_modules,oracle,0.9219,0.7945,True,0.8936,False,Supervised calibrator retrained with ordinary marginal boundary samples only; real test unknowns are not used for selection.,0.7495,0.9307,0.93,0.8982,0.5975,MBS-Calib,mbs_calib
+boundary_modules,oracle,0.9455,0.9281,True,0.9415,True,Formal Oracle supervised-calibrator PCBM output in outputs/oracle_supervised_calibrator/final.,0.9652,0.9566,0.93,0.9123,0.7659,PCBM,pcbm
+boundary_modules,wisig,0.998,0.6121,False,0.0,False,Closed-set prototype classifier; no open-set rejection operating point is applied.,0.0,,,,,Prototype classifier,prototype_classifier
+boundary_modules,wisig,0.9828,0.9917,True,0.9828,False,Current-artifact supervised calibrator retrained with ordinary marginal boundary samples only under the same 99.5% validation-known target used by WiSig PCBM.,1.0,0.9702,0.9953,0.9694,0.512,MBS-Calib,mbs_calib
+boundary_modules,wisig,0.9836,0.992,True,0.9836,True,Formal WiSig supervised-calibrator PCBM output in outputs/wisig_supervised_calibrator_formal/final after artifact-fingerprint cache invalidation and reselection.,1.0,0.9751,0.9953,0.9731,0.5862,PCBM,pcbm

@@ -17,6 +17,7 @@ from functions.methods.fusion import apply_unknown_rejection, prototype_distance
 from functions.methods.leave_class_out import balanced_pseudo_indices
 from functions.methods.openmax_wrapper import OpenMaxCalibrator
 from functions.methods.prototype_utils import activations_from_distances, predict_with_prototypes
+from functions.methods.pseudo_unknown import generate_hybrid_pseudo_unknown
 from functions.methods.supervised_calibrator import (
     build_calibrator_features,
     choose_classwise_thresholds_with_pseudo_guard,
@@ -24,7 +25,7 @@ from functions.methods.supervised_calibrator import (
     train_calibrator,
 )
 from functions.model.closed_set import ClosedSetTrainer
-from functions.pipeline import evaluate_open_set_artifacts
+from functions.pipeline import evaluate_open_set_artifacts, fit_openmax_artifacts, mine_boundary_artifacts
 from functions.subdivision_pipeline import run_unknown_subdivision
 from run_wisig import build_config
 
@@ -38,7 +39,7 @@ LAMBDA_GRID = [0.0, 0.25, 0.5, 0.75, 1.0]
 EPOCH_GRID = [100, 250]
 SEED_GRID = [42, 43, 44]
 THRESHOLD_QUANTILE_GRID = [0.90, 0.925, 0.95, 0.96, 0.97, 0.98, 0.99]
-FORMAL_KNOWN_ACCURACY_TARGET = 0.985
+FORMAL_KNOWN_ACCURACY_TARGET = 0.995
 PSEUDO_MAX_SAMPLES = 3200
 LEARNING_RATE = 0.01
 HIDDEN_DIM = 8
@@ -76,14 +77,69 @@ def copy_formal_artifacts(source_output: Path, final_output: Path) -> None:
         "openmax.pkl",
         "boundary_mining.npz",
         "boundary_summary.json",
-        "pseudo_unknown.npz",
-        "pseudo_unknown_summary.json",
         "openmax_summary.json",
         "train_summary.json",
     ]:
         source = source_output / name
         if source.exists():
             shutil.copy2(source, final_output / name)
+
+
+def generate_current_pseudo_unknown(
+    config: dict[str, Any],
+    source_output: Path,
+) -> dict[str, np.ndarray]:
+    boundary_file = np.load(source_output / "boundary_mining.npz", allow_pickle=True)
+    boundary = {key: boundary_file[key] for key in boundary_file.files}
+    pseudo_cfg = config["pseudo_unknown"]
+    return generate_hybrid_pseudo_unknown(
+        np.asarray(boundary["embeddings"], dtype=np.float32),
+        np.asarray(boundary["labels"], dtype=np.int64),
+        np.asarray(boundary["prototypes"], dtype=np.float32),
+        boundary,
+        ordinary_eta=float(pseudo_cfg["ordinary_eta"]),
+        critical_eta=float(pseudo_cfg["critical_eta"]),
+        critical_beta=float(pseudo_cfg["critical_beta"]),
+        ordinary_variations=int(pseudo_cfg["ordinary_variations"]),
+        critical_variations=int(pseudo_cfg["critical_variations"]),
+        jitter=float(pseudo_cfg["jitter"]),
+        use_critical_boundary=True,
+        seed=int(config["train"]["seed"]),
+    )
+
+
+def save_current_pseudo_unknown(
+    config: dict[str, Any],
+    source_output: Path,
+    final_output: Path,
+) -> None:
+    pseudo = generate_current_pseudo_unknown(config, source_output)
+    np.savez_compressed(
+        final_output / "pseudo_unknown.npz",
+        pseudo_embeddings=pseudo["pseudo_embeddings"],
+        pseudo_labels=pseudo["pseudo_labels"],
+        source_indices=pseudo["source_indices"],
+        source_classes=pseudo["source_classes"],
+        pseudo_kind=pseudo["pseudo_kind"],
+        summary=pseudo["summary"],
+        embedding_space="feature",
+    )
+    save_json(final_output / "pseudo_unknown_summary.json", pseudo["summary"])
+
+
+def artifact_fingerprint(output_dir: Path) -> str:
+    digest = hashlib.sha256()
+    for name in [
+        "best_closed_set.pt",
+        "boundary_mining.npz",
+        "distance_stats.npz",
+        "openmax.pkl",
+        "pseudo_unknown.npz",
+    ]:
+        path = output_dir / name
+        digest.update(name.encode("utf-8"))
+        digest.update(path.read_bytes())
+    return digest.hexdigest()
 
 
 def score_selection_candidate(metrics: dict[str, Any]) -> float:
@@ -120,7 +176,7 @@ def build_training_payload(
     )
 
     boundary = np.load(source_output / "boundary_mining.npz", allow_pickle=True)
-    pseudo = np.load(source_output / "pseudo_unknown.npz", allow_pickle=True)
+    pseudo = generate_current_pseudo_unknown(config, source_output)
     indices = balanced_pseudo_indices(
         pseudo["source_classes"],
         pseudo["pseudo_kind"],
@@ -188,7 +244,11 @@ def evaluate_pseudo_guard(
     return metrics
 
 
-def search_calibrator(config: dict[str, Any], output_root: Path) -> dict[str, Any]:
+def search_calibrator(
+    config: dict[str, Any],
+    output_root: Path,
+    artifact_hash: str,
+) -> dict[str, Any]:
     source_output = Path(config["project"]["output_dir"])
     payload_cache: dict[tuple[float, int], dict[str, np.ndarray]] = {}
     candidates: list[dict[str, Any]] = []
@@ -281,6 +341,9 @@ def search_calibrator(config: dict[str, Any], output_root: Path) -> dict[str, An
             "selected": selected,
             "candidates": candidates,
             "uses_real_unknown_for_selection": False,
+            "pseudo_source": "generated_from_boundary",
+            "boundary_source": "recomputed_from_checkpoint",
+            "artifact_fingerprint_sha256": artifact_hash,
         },
     )
     return selected
@@ -376,30 +439,18 @@ def train_selected_formal(
     }
 
 
-def write_comparison(output_root: Path, current: dict[str, Any], calibrated: dict[str, Any]) -> None:
+def write_comparison(output_root: Path, calibrated: dict[str, Any]) -> None:
     keys = ["known_accuracy", "unknown_recall", "macro_f1", "oscr", "auroc", "fpr95"]
-    rows = []
-    for key in keys:
-        rows.append(
-            {
-                "metric": key,
-                "current": float(current[key]),
-                "supervised_calibrator": float(calibrated[key]),
-                "delta_pp": float((calibrated[key] - current[key]) * 100.0),
-            }
-        )
+    rows = [{"metric": key, "supervised_calibrator": float(calibrated[key])} for key in keys]
     save_json(output_root / "comparison.json", rows)
     lines = [
-        "# WiSig supervised calibrator comparison",
+        "# WiSig supervised calibrator metrics",
         "",
-        "| metric | current | supervised_calibrator | delta_pp |",
-        "| --- | ---: | ---: | ---: |",
+        "| metric | supervised_calibrator |",
+        "| --- | ---: |",
     ]
     for row in rows:
-        lines.append(
-            f"| {row['metric']} | {row['current'] * 100:.2f} | "
-            f"{row['supervised_calibrator'] * 100:.2f} | {row['delta_pp']:.2f} |"
-        )
+        lines.append(f"| {row['metric']} | {row['supervised_calibrator'] * 100:.2f} |")
     (output_root / "comparison.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -436,19 +487,47 @@ def main() -> None:
     config = build_config()
     formal_candidates = sorted((ROOT / "ablations").glob("04_*/wisig/full_subdivision"))
     source_output = formal_candidates[0] if formal_candidates else ROOT / "outputs" / SOURCE_EXPERIMENT
-    config["project"]["output_dir"] = str(source_output.resolve())
-
     output_root = ensure_dir(ROOT / "outputs" / OUTPUT_EXPERIMENT)
     final_output = ensure_dir(output_root / "final")
-    selected_path = output_root / "selection_candidates.json"
-    if selected_path.exists():
-        selected = load_json(selected_path)["selected"]
-        print(f"[REUSE] selected={selected['key']}")
-    else:
-        selected = search_calibrator(config, output_root)
-        print(f"[SELECT] selected={selected['key']}")
 
     copy_formal_artifacts(source_output, final_output)
+    config["project"]["output_dir"] = str(final_output.resolve())
+    config["reporting"]["write_root_summaries"] = False
+    mine_boundary_artifacts(config, ckpt_path=final_output / "best_closed_set.pt")
+    fit_openmax_artifacts(config, ckpt_path=final_output / "best_closed_set.pt")
+    save_current_pseudo_unknown(config, final_output, final_output)
+    current_artifact_hash = artifact_fingerprint(final_output)
+
+    selected_path = output_root / "selection_candidates.json"
+    selected = None
+    if selected_path.exists():
+        cached_selection = load_json(selected_path)
+        cached_selected = cached_selection["selected"]
+        cached_known = float(
+            cached_selected.get("threshold_safety", {}).get("known_accuracy", 0.0)
+        )
+        cached_source = str(cached_selection.get("pseudo_source", ""))
+        cached_boundary = str(cached_selection.get("boundary_source", ""))
+        cached_hash = str(cached_selection.get("artifact_fingerprint_sha256", ""))
+        if (
+            cached_known >= FORMAL_KNOWN_ACCURACY_TARGET
+            and cached_source == "generated_from_boundary"
+            and cached_boundary == "recomputed_from_checkpoint"
+            and cached_hash == current_artifact_hash
+        ):
+            selected = cached_selected
+            print(f"[REUSE] selected={selected['key']}")
+        else:
+            print(
+                "[RESELECT] cached WiSig calibrator target "
+                f"{cached_known:.4f}, source={cached_source or 'legacy'}, "
+                f"boundary={cached_boundary or 'legacy'}, "
+                f"fingerprint={'match' if cached_hash == current_artifact_hash else 'changed'}"
+            )
+    if selected is None:
+        selected = search_calibrator(config, output_root, current_artifact_hash)
+        print(f"[SELECT] selected={selected['key']}")
+
     training_manifest = train_selected_formal(config, selected, final_output)
     selection_manifest = {
         "selected": selected,
@@ -479,12 +558,10 @@ def main() -> None:
         ckpt_path=final_output / "best_closed_set.pt",
     )
 
-    current_metrics = load_json(source_output / "open_set_metrics.json")
-    write_comparison(output_root, current_metrics, final_metrics)
+    write_comparison(output_root, final_metrics)
     save_json(
         output_root / "final_summary.json",
         {
-            "current_metrics": current_metrics,
             "supervised_calibrator_metrics": final_metrics,
             "subdivision_metrics": subdivision_metrics,
             "selected": selected,

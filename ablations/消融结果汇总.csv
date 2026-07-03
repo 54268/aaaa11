@@ -1,23 +1,21 @@
-﻿angular_loss,ari,auroc,best_val_acc,category,classification_loss,coverage_of_total_test_unknown,dataset,feature_mode,filtering,fit_num_clusters,hungarian_accuracy,known_accuracy,macro_f1,nmi,oscr,output_dir,overall_accuracy,prototype_loss,purity,resolved_num_clusters,uncertain_ratio,unknown_recall,variant,variant_slug
-False,,0.96148821875,0.989,losses,True,,oracle,,,,,0.8835,0.8941170451119033,,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\03_损失函数消融\oracle\ce_only,0.927375,False,,,,0.942,CE only,ce_only
-True,,0.9808420781249999,0.99025,losses,True,,oracle,,,,,0.88275,0.9275947622577777,,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\03_损失函数消融\oracle\ce_angular,0.96284375,False,,,,0.9895416666666667,CE + Angular,ce_angular
-False,,0.9679197578125,0.98775,losses,True,,oracle,,,,,0.875375,0.8952109327557841,,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\03_损失函数消融\oracle\ce_prototype,0.9381875,True,,,,0.959125,CE + Prototype,ce_prototype
-True,,0.9708264843750001,0.9835,losses,True,,oracle,,,,,0.873625,0.9210656976927664,,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\03_损失函数消融\oracle\full_embedding_learning,0.96034375,True,,,,0.98925,Full embedding learning,full_embedding_learning
-False,,0.9963336181640625,0.99921875,losses,True,,wisig,,,,,0.880859375,0.9390850940333604,,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\03_损失函数消融\wisig\ce_only,0.9749177631578947,False,,,,1.0,CE only,ce_only
-True,,0.9950341186523437,0.99921875,losses,True,,wisig,,,,,0.87890625,0.9380638554807824,,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\03_损失函数消融\wisig\ce_angular,0.9745065789473685,False,,,,1.0,CE + Angular,ce_angular
-False,,0.9969965820312501,0.99921875,losses,True,,wisig,,,,,0.883984375,0.9406992320065485,,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\03_损失函数消融\wisig\ce_prototype,0.9755756578947369,True,,,,1.0,CE + Prototype,ce_prototype
-True,,0.9948584594726563,0.99921875,losses,True,,wisig,,,,,0.884765625,0.9409260318068844,,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\03_损失函数消融\wisig\full_embedding_learning,0.9757401315789473,True,,,,1.0,Full embedding learning,full_embedding_learning
-,,,,modules,,,oracle,,,,,0.97825,0.648883237690296,,0.9445714687500001,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\oracle\closed_set_only,,,,,,0.0,闭集原型分类,closed_set_only
-,,,,modules,,,oracle,,,,,0.795875,0.8042557471842177,,0.7797450703125,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\oracle\openmax_only,,,,,,0.8867083333333333,OpenMax 校准,openmax_only
-,,,,modules,,,oracle,,,,,0.87325,0.9273304768042105,,0.8719774687499999,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\oracle\ordinary_mbs_only,,,,,,0.994375,OpenMax + 原型距离校准,ordinary_mbs_only
-,,,,modules,,,oracle,,,,,0.963625,0.9369046213998843,,0.9574822630208333,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\oracle\full_method,,,,,,0.9670416666666667,完整方法,full_method
-,,,,modules,,,wisig,,,,,0.998046875,0.6120623391579579,,0.9828382161458333,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\wisig\closed_set_only,,,,,,0.0,闭集原型分类,closed_set_only
-,,,,modules,,,wisig,,,,,0.89921875,0.9286241048192656,,0.8990385945638022,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\wisig\openmax_only,,,,,,0.9979166666666667,OpenMax 校准,openmax_only
-,,,,modules,,,wisig,,,,,0.896875,0.9476661190465506,,0.8968453776041669,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\wisig\ordinary_mbs_only,,,,,,1.0,OpenMax + 原型距离校准,ordinary_mbs_only
-,,,,modules,,,wisig,,,,,0.98671875,0.9935536101681589,,0.9866844482421876,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\01_模块消融\wisig\full_method,,,,,,1.0,完整方法,full_method
-,0.5695788813013719,,,subdivision,,0.9466666666666667,oracle,embedding,True,4,0.5168133802816901,,,0.7535482335976239,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\04_细分流程消融\oracle\embedding_only,,,0.5168133802816901,3,0.02003317596018885,,Embedding only,embedding_only
-,0.6085054907804521,,,subdivision,,0.946875,oracle,iq_stats,True,6,0.6792519251925192,,,0.7448793242987523,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\04_细分流程消融\oracle\iq_descriptors_only,,,0.6889328932893289,6,0.02003317596018885,,I/Q descriptors only,iq_descriptors_only
-,0.954798741194896,,,subdivision,,0.9430833333333334,oracle,embedding_stats,True,8,0.9792789608553504,,,0.9634476701501945,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\04_细分流程消融\oracle\full_subdivision,,,0.9792789608553504,6,0.03249542767215346,,Feature fusion,full_subdivision
-,0.9984092585143602,,,subdivision,,1.0,wisig,embedding,True,12,0.9992708333333333,,,0.9978032848998708,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\04_细分流程消融\wisig\embedding_only,,,0.9992708333333333,12,0.0,,Embedding only,embedding_only
-,0.5097030104849355,,,subdivision,,1.0,wisig,iq_stats,True,5,0.4165625,,,0.7717451232181217,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\04_细分流程消融\wisig\iq_descriptors_only,,,0.4165625,5,0.0,,I/Q descriptors only,iq_descriptors_only
-,0.99863679139135,,,subdivision,,1.0,wisig,embedding_iq_stats,False,13,0.999375,,,0.9981254482446456,,D:\learn_pytorch\笔记\方案\os_sei_code\ablations\04_细分流程消融\wisig\full_subdivision,,,0.999375,12,0.0,,Feature fusion,full_subdivision
+angular_loss,ari,auroc,category,classification_loss,coverage_of_total_test_unknown,dataset,feature_mode,fit_num_clusters,hungarian_accuracy,known_accuracy,macro_f1,mbs,nmi,oscr,pcbs_cae,prototype_loss,provenance,purity,resolved_num_clusters,uncertain_ratio,unknown_recall,validation_auroc,validation_known_accuracy,validation_oscr,validation_pseudo_unknown_recall,variant,variant_slug
+,,,boundary_modules,,,oracle,,,,0.9782,0.6489,False,,0.0,False,,Closed-set prototype classifier; no open-set rejection operating point is applied.,,,,0.0,,,,,Prototype classifier,prototype_classifier
+,,,boundary_modules,,,oracle,,,,0.9219,0.7945,True,,0.8936,False,,Supervised calibrator retrained with ordinary marginal boundary samples only; real test unknowns are not used for selection.,,,,0.7495,0.9307,0.93,0.8982,0.5975,MBS-Calib,mbs_calib
+,,,boundary_modules,,,oracle,,,,0.9455,0.9281,True,,0.9415,True,,Formal Oracle supervised-calibrator PCBM output in outputs/oracle_supervised_calibrator/final.,,,,0.9652,0.9566,0.93,0.9123,0.7659,PCBM,pcbm
+,,,boundary_modules,,,wisig,,,,0.998,0.6121,False,,0.0,False,,Closed-set prototype classifier; no open-set rejection operating point is applied.,,,,0.0,,,,,Prototype classifier,prototype_classifier
+,,,boundary_modules,,,wisig,,,,0.9828,0.9917,True,,0.9828,False,,Current-artifact supervised calibrator retrained with ordinary marginal boundary samples only under the same 99.5% validation-known target used by WiSig PCBM.,,,,1.0,0.9702,0.9953,0.9694,0.512,MBS-Calib,mbs_calib
+,,,boundary_modules,,,wisig,,,,0.9836,0.992,True,,0.9836,True,,Formal WiSig supervised-calibrator PCBM output in outputs/wisig_supervised_calibrator_formal/final after artifact-fingerprint cache invalidation and reselection.,,,,1.0,0.9751,0.9953,0.9731,0.5862,PCBM,pcbm
+False,,0.9615,losses,True,,oracle,,,,0.8835,0.8941,,,,,False,,,,,0.942,,,,,CE only,ce_only
+True,,0.9808,losses,True,,oracle,,,,0.8828,0.9276,,,,,False,,,,,0.9895,,,,,CE + Angular,ce_angular
+False,,0.9679,losses,True,,oracle,,,,0.8754,0.8952,,,,,True,,,,,0.9591,,,,,CE + Prototype,ce_prototype
+True,,0.9708,losses,True,,oracle,,,,0.8736,0.9211,,,,,True,,,,,0.9893,,,,,Full embedding learning,full_embedding_learning
+False,,0.9963,losses,True,,wisig,,,,0.8809,0.9391,,,,,False,,,,,1.0,,,,,CE only,ce_only
+True,,0.995,losses,True,,wisig,,,,0.8789,0.9381,,,,,False,,,,,1.0,,,,,CE + Angular,ce_angular
+False,,0.997,losses,True,,wisig,,,,0.884,0.9407,,,,,True,,,,,1.0,,,,,CE + Prototype,ce_prototype
+True,,0.9949,losses,True,,wisig,,,,0.8848,0.9409,,,,,True,,,,,1.0,,,,,Full embedding learning,full_embedding_learning
+,0.569579,,subdivision,,0.946667,oracle,embedding,4,0.516813,,,,0.753548,,,,,0.516813,3,0.020033,,,,,,Embedding only,embedding_only
+,0.608505,,subdivision,,0.946875,oracle,iq_stats,6,0.679252,,,,0.744879,,,,,0.688933,6,0.020033,,,,,,I/Q descriptors only,iq_descriptors_only
+,0.954799,,subdivision,,0.943083,oracle,embedding_stats,8,0.979279,,,,0.963448,,,,,0.979279,6,0.032495,,,,,,Feature fusion,feature_fusion
+,0.998409,,subdivision,,1.0,wisig,embedding,12,0.999271,,,,0.997803,,,,,0.999271,12,0.0,,,,,,Embedding only,embedding_only
+,0.509703,,subdivision,,1.0,wisig,iq_stats,5,0.416563,,,,0.771745,,,,,0.416563,5,0.0,,,,,,I/Q descriptors only,iq_descriptors_only
+,0.998637,,subdivision,,1.0,wisig,embedding_iq_stats,13,0.999375,,,,0.998125,,,,,0.999375,12,0.0,,,,,,Feature fusion,feature_fusion

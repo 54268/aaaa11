@@ -1,38 +1,26 @@
 [
   {
     "metric": "known_accuracy",
-    "current": 0.98671875,
-    "supervised_calibrator": 0.970703125,
-    "delta_pp": -1.6015624999999978
+    "supervised_calibrator": 0.98359375
   },
   {
     "metric": "unknown_recall",
-    "current": 1.0,
-    "supervised_calibrator": 1.0,
-    "delta_pp": 0.0
+    "supervised_calibrator": 1.0
   },
   {
     "metric": "macro_f1",
-    "current": 0.9935536101681589,
-    "supervised_calibrator": 0.9856712063610272,
-    "delta_pp": -0.7882403807131677
+    "supervised_calibrator": 0.9920208793779705
   },
   {
     "metric": "oscr",
-    "current": 0.9866844482421876,
-    "supervised_calibrator": 0.9706220296223957,
-    "delta_pp": -1.6062418619791852
+    "supervised_calibrator": 0.9835594278971356
   },
   {
     "metric": "auroc",
-    "current": 0.9959524943033854,
-    "supervised_calibrator": 0.9975982666015625,
-    "delta_pp": 0.1645772298177084
+    "supervised_calibrator": 0.9984173990885418
   },
   {
     "metric": "fpr95",
-    "current": 0.0109375,
-    "supervised_calibrator": 0.006640625,
-    "delta_pp": -0.42968749999999994
+    "supervised_calibrator": 0.0046875
   }
 ]

@@ -28,13 +28,13 @@ DATASETS = {
     "oracle": {
         "display": "Oracle",
         "comparison_name": "oracle_kri16_demod",
-        "ours": PROJECT_ROOT / "outputs" / "oracle_kri16_demod_known_first" / "open_set_predictions.csv",
+        "ours": PROJECT_ROOT / "outputs" / "oracle_supervised_calibrator" / "final" / "open_set_predictions.csv",
         "unknown_label": 10,
     },
     "wisig": {
         "display": "WiSig",
         "comparison_name": "wisig_singleday_osr_k16_u12",
-        "ours": PROJECT_ROOT / "outputs" / "wisig_singleday_osr_k16_u12" / "open_set_predictions.csv",
+        "ours": PROJECT_ROOT / "outputs" / "wisig_supervised_calibrator_formal" / "final" / "open_set_predictions.csv",
         "unknown_label": 16,
     },
 }
@@ -179,7 +179,6 @@ def _draw_confusion(ax: plt.Axes, data: PredictionData, title: str) -> tuple[np.
     ax.set_yticklabels(display_labels, fontsize=tick_fontsize)
     ax.set_xlabel("Predicted class")
     ax.set_ylabel("True class")
-    ax.set_title(title, fontsize=14, pad=10)
     ax.set_aspect("equal")
     ax.tick_params(length=0)
     ax.set_xticks(np.arange(-0.5, len(display_labels), 1), minor=True)
@@ -205,7 +204,7 @@ def _draw_confusion(ax: plt.Axes, data: PredictionData, title: str) -> tuple[np.
                     ha="center",
                     va="center",
                     fontsize=diagonal_fontsize if is_diag else off_diagonal_fontsize,
-                    color="white" if is_diag and value >= 0.52 else ("#b22222" if not is_diag else "#222222"),
+                    color="white" if is_diag and value >= 0.52 else "#1f1f1f",
                     fontweight="bold" if is_diag else "normal",
                 )
     return image, matrix, display_labels
@@ -223,12 +222,13 @@ def plot_confusion_matrix(dataset_key: str, output_path: str | Path) -> Path:
     class_count = data.unknown_label + 1
     figsize = (7.4, 6.5) if class_count <= 12 else (9.4, 8.2)
     fig, ax = plt.subplots(figsize=figsize)
-    image, _, _ = _draw_confusion(ax, data, f"{spec['display']} confusion matrix")
+    image, _, _ = _draw_confusion(ax, data, "")
     colorbar = fig.colorbar(image, ax=ax, fraction=0.046, pad=0.04)
     colorbar.set_label("Row-normalized rate")
     fig.tight_layout()
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=320, bbox_inches="tight", facecolor="white")
+    fig.savefig(output_path.with_suffix(".pdf"), bbox_inches="tight", facecolor="white")
     plt.close(fig)
     return output_path
 
