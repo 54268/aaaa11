@@ -1,0 +1,28 @@
+{
+  "variant": "MBS-Calib",
+  "selection_key": "s1.0_l1.0_e100_r44_q0.9",
+  "selection_note": "Recall-oriented ordinary-MBS supervised-calibrator setting used for the WiSig boundary module ablation. Real test unknown samples are not used for calibration or threshold selection.",
+  "config": {
+    "use_critical_boundary": false,
+    "pseudo_scale": 1.0,
+    "fusion_lambda": 1.0,
+    "epochs": 100,
+    "seed": 44,
+    "threshold_quantile": 0.9
+  },
+  "validation_metrics": {
+    "known_accuracy": 0.9953125,
+    "pseudo_unknown_recall": 0.239351851852,
+    "macro_f1": 0.604386126442,
+    "auroc": 0.940950520833,
+    "oscr": 0.939255099826,
+    "selection_score": 0.71117995447
+  },
+  "test_metrics": {
+    "known_accuracy": 0.982421875,
+    "unknown_recall": 0.804166666667,
+    "macro_f1": 0.915076337784,
+    "oscr": 0.979924804687,
+    "auroc": 0.991397806803
+  }
+}
