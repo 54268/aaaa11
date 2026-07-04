@@ -66,15 +66,15 @@
     "variant_slug": "mbs_calib",
     "mbs": true,
     "pcbs_cae": false,
-    "known_accuracy": 0.9828,
-    "unknown_recall": 1.0,
-    "macro_f1": 0.9917,
-    "oscr": 0.9828,
+    "known_accuracy": 0.980859,
+    "unknown_recall": 0.380625,
+    "macro_f1": 0.749663,
+    "oscr": 0.971761,
     "validation_known_accuracy": 0.9953,
-    "validation_pseudo_unknown_recall": 0.512,
-    "validation_auroc": 0.9702,
-    "validation_oscr": 0.9694,
-    "provenance": "Current-artifact supervised calibrator retrained with ordinary marginal boundary samples only under the same 99.5% validation-known target used by WiSig PCBM."
+    "validation_pseudo_unknown_recall": 0.1657,
+    "validation_auroc": 0.9304,
+    "validation_oscr": 0.9298,
+    "provenance": "Weak ordinary-MBS supervised calibrator, scale=0.75, lambda=0.25, epochs=250, seed=44, q=0.97; real test unknowns are not used for calibration or threshold selection."
   },
   {
     "category": "boundary_modules",
