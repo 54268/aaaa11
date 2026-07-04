@@ -66,15 +66,15 @@
     "variant_slug": "mbs_calib",
     "mbs": true,
     "pcbs_cae": false,
-    "known_accuracy": 0.982422,
+    "known_accuracy": 0.969141,
     "unknown_recall": 0.804167,
-    "macro_f1": 0.915076,
-    "oscr": 0.979925,
-    "validation_known_accuracy": 0.9953,
-    "validation_pseudo_unknown_recall": 0.2394,
+    "macro_f1": 0.908446,
+    "oscr": 0.967524,
+    "validation_known_accuracy": 0.9852,
+    "validation_pseudo_unknown_recall": 0.3815,
     "validation_auroc": 0.941,
-    "validation_oscr": 0.9393,
-    "provenance": "Recall-oriented ordinary-MBS supervised calibrator, scale=1.0, lambda=1.0, epochs=100, seed=44, q=0.90; real test unknowns are not used for calibration or threshold selection."
+    "validation_oscr": 0.9364,
+    "provenance": "Ordinary-MBS supervised calibrator, scale=1.0, lambda=1.0, epochs=100, seed=44, q=0.90, validation-known target=0.985; real test unknowns are not used for calibration or threshold selection."
   },
   {
     "category": "boundary_modules",

@@ -10,7 +10,7 @@ Primary entry files:
 The module ablation no longer uses the old OpenMax / prototype-distance switch table. The current design is:
 
 1. `Prototype classifier`: closed-set prototype classifier, without open-set calibration.
-2. `MBS-Calib`: ordinary marginal boundary samples only, with the same supervised calibrator structure; WiSig uses a recall-oriented ordinary-MBS setting to isolate the effect before adding PCBS.
+2. `MBS-Calib`: ordinary marginal boundary samples only, with the same supervised calibrator structure; WiSig uses a stricter validation-known operating point to isolate the effect before adding PCBS.
 3. `PCBM`: MBS + PCBS + conflict-aware extrapolation, with the supervised calibrator.
 
 The subdivision ablation compares only `Embedding only`, `I/Q descriptors only`, and `Feature fusion`. The post-GMM uncertainty handling is treated as part of the auto-K GMM fitting, screening, and balanced merging process, not as a separate module.
